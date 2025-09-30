@@ -1,0 +1,148 @@
+package components
+
+import (
+	"strings"
+	"fmt"
+)
+
+
+
+templ Index(options []Option) {
+	@BaseLayout("EsportsCalendar - Select Games") {
+		<div id="select" class="container mx-auto p-4">
+			<div class="max-w-2xl mx-auto">
+				<div class="card bg-base-100 shadow-xl">
+					<div class="card-body">
+						<h1 class="card-title text-3xl mb-6">Select games to track</h1>
+						
+						<form hx-get="/second" 
+							  hx-target="#select" 
+							  hx-swap="innerHTML"
+							  hx-push-url="true">
+							
+							<div class="space-y-4">
+								for _, opt := range options {
+									<div class="form-control">
+										<label class="label cursor-pointer">
+											<div class="option-content">
+												<img src={ opt.Logo } alt={ opt.Label } class="w-6 h-6 object-contain"/>
+												<span class="label-text text-lg">{ opt.Label }</span>
+											</div>
+											<input type="checkbox" 
+												   name="options" 
+												   value={ opt.ID }
+												   class="checkbox checkbox-primary"
+												   if opt.Checked {
+													   checked
+												   }/>
+										</label>
+									</div>
+								}
+							</div>
+
+							<div class="card-actions justify-end mt-6">
+								<button type="submit" class="btn btn-primary">
+									Continue to Next Page
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+									</svg>
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ SecondPage(selectedOptions []string) {
+	@BaseLayout("Second Page - Results") {
+		<div class="container mx-auto p-4">
+			<div class="max-w-2xl mx-auto">
+				@SecondPageContent(selectedOptions)
+			</div>
+		</div>
+	}
+}
+
+templ SecondPageContent(selectedOptions []string) {
+	<div class="card bg-base-100 shadow-xl">
+		<div class="card-body">
+			<h2 class="card-title text-2xl mb-4">Selected Options</h2>
+			
+			if len(selectedOptions) > 0 {
+
+				<div class="space-y-4">
+					<h3 class="font-semibold text-lg">Your selections:</h3>
+					<div class="grid gap-4">
+						for _, option := range selectedOptions {
+							<div class="card bg-base-200 shadow-md">
+								<div class="card-body p-4">
+									<h4 class="card-title text-base mb-3">Game ID: { option }</h4>
+									<div class="form-control">
+										<label class="label">
+											<span class="label-text font-medium">Select leagues for this game:</span>
+										</label>
+										<select 
+											name={ "league-" + option }
+											class="select select-bordered w-full focus:select-primary" 
+											multiple
+											size="4"
+											hx-get={ "/api/league-options/" + option }
+											hx-trigger="load"
+											hx-swap="innerHTML">
+											<option disabled selected>Loading leagues...</option>
+										</select>
+										<label class="label">
+											<span class="label-text-alt text-xs opacity-70">Hold Ctrl/Cmd to select multiple leagues</span>
+										</label>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="divider"></div>
+
+				<div class="stats shadow">
+					<div class="stat">
+						<div class="stat-title">Total Selected</div>
+						<div class="stat-value text-primary">{ len(selectedOptions) }</div>
+						<div class="stat-desc">Options chosen</div>
+					</div>
+				</div>
+			} else {
+				<div class="alert alert-warning">
+					<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					</svg>
+					<span>No options were selected. Please go back and select at least one option.</span>
+				</div>
+			}
+
+			<div class="card-actions justify-between mt-6">
+				<a href="/" class="btn btn-outline">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+					</svg>
+					Back to Options
+				</a>
+				
+				if len(selectedOptions) > 0 {
+					<button class="btn btn-success"
+							hx-post="/process"
+							hx-vals={ fmt.Sprintf(`{"options": "%s"}`, strings.Join(selectedOptions, ",")) }
+							hx-target="#result">
+						Process Selection
+					</button>
+				}
+			</div>
+
+			<div id="result" class="mt-4">
+				<!-- Processing results would appear here -->
+			</div>
+		</div>
+	</div>
+}

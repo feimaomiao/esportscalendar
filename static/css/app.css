@@ -1,0 +1,163 @@
+
+:root {
+  --primary-color: #570df8;
+  --secondary-color: #f000b8;
+  --accent-color: #37cdbe;
+}
+
+/* Custom animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card animations */
+.card {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Checkbox custom styling */
+.checkbox:checked {
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Button hover effects */
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom utility classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Alert custom styles */
+.alert {
+  border-left: 4px solid currentColor;
+}
+
+/* Stats card enhancement */
+.stats {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stat-title {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-value {
+  color: white !important;
+}
+
+/* Form control spacing */
+.form-control + .form-control {
+  margin-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* HTMX loading states */
+.htmx-request .htmx-indicator {
+  display: inline-block;
+}
+
+.htmx-indicator {
+  display: none;
+}
+
+/* Loading spinner */
+.htmx-indicator::after {
+  content: '';
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Option box styling */
+.form-control .label {
+  background-color: var(--color-base-100);
+  border: 2px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  justify-content: space-between !important;
+  min-height: 4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-control .label:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-base-200);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.form-control .label.label-checked {
+  border-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, var(--color-base-100));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Left side content (logo and text) */
+.option-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+.option-content .label-text {
+  text-align: center;
+  flex: 1;
+}
+
+/* Checkbox positioning on the right */
+.form-control .checkbox {
+  order: 2;
+  margin-left: auto;
+}
