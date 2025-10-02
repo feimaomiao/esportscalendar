@@ -23,6 +23,7 @@ func main() {
 	mux.HandleFunc("/", mw.IndexHandler)
 	mux.HandleFunc("/second", mw.SecondPageHandler)
 	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
+	mux.HandleFunc("/api/team-options/", mw.TeamOptionsHandler)
 
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))

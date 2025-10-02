@@ -47,7 +47,7 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 }
 
 const getLeaguesByGameID = `-- name: GetLeaguesByGameID :many
-SELECT l.id, l.name, l.slug, l.game_id, l.image_link
+SELECT l.id, l.name, l.slug, l.game_id, l.image_link, MIN(t.tier) as min_tier
 FROM LEAGUES l
 LEFT JOIN TOURNAMENTS t ON l.id = t.league_id
 WHERE l.game_id = $1
@@ -55,21 +55,31 @@ GROUP BY l.id, l.name, l.slug, l.game_id, l.image_link
 ORDER BY MIN(t.tier) ASC, l.name ASC
 `
 
-func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]League, error) {
+type GetLeaguesByGameIDRow struct {
+	ID        int32
+	Name      string
+	Slug      pgtype.Text
+	GameID    int32
+	ImageLink pgtype.Text
+	MinTier   interface{}
+}
+
+func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLeaguesByGameIDRow, error) {
 	rows, err := q.db.Query(ctx, getLeaguesByGameID, gameID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []League
+	var items []GetLeaguesByGameIDRow
 	for rows.Next() {
-		var i League
+		var i GetLeaguesByGameIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Slug,
 			&i.GameID,
 			&i.ImageLink,
+			&i.MinTier,
 		); err != nil {
 			return nil, err
 		}
@@ -100,6 +110,40 @@ func (q *Queries) GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series
 			&i.Slug,
 			&i.GameID,
 			&i.LeagueID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamsByGameID = `-- name: GetTeamsByGameID :many
+SELECT id, name, slug, acronym, image_link, game_id
+FROM teams
+WHERE game_id = $1
+ORDER BY name ASC
+`
+
+func (q *Queries) GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, error) {
+	rows, err := q.db.Query(ctx, getTeamsByGameID, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Team
+	for rows.Next() {
+		var i Team
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Acronym,
+			&i.ImageLink,
+			&i.GameID,
 		); err != nil {
 			return nil, err
 		}

@@ -20,18 +20,20 @@ templ Index(options []Option) {
 							  hx-swap="innerHTML"
 							  hx-push-url="true">
 							
-							<div class="space-y-4">
+							<div class="space-y-4" id="game-options">
 								for _, opt := range options {
 									<div class="form-control">
 										<label class="label cursor-pointer">
 											<div class="option-content">
-												<img src={ opt.Logo } alt={ opt.Label } class="w-6 h-6 object-contain"/>
+												<div class="bg-white rounded p-1 flex items-center justify-center">
+													<img src={ opt.Logo } alt={ opt.Label } class="w-6 h-6 object-contain"/>
+												</div>
 												<span class="label-text text-lg">{ opt.Label }</span>
 											</div>
-											<input type="checkbox" 
-												   name="options" 
+											<input type="checkbox"
+												   name="options"
 												   value={ opt.ID }
-												   class="checkbox checkbox-primary"
+												   class="checkbox checkbox-primary game-checkbox"
 												   if opt.Checked {
 													   checked
 												   }/>
@@ -41,7 +43,7 @@ templ Index(options []Option) {
 							</div>
 
 							<div class="card-actions justify-end mt-6">
-								<button type="submit" class="btn btn-primary">
+								<button type="submit" id="continue-btn" class="btn btn-primary" disabled>
 									Continue to Next Page
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -49,6 +51,26 @@ templ Index(options []Option) {
 								</button>
 							</div>
 						</form>
+
+						<script>
+							(function() {
+								const continueBtn = document.getElementById('continue-btn');
+								const checkboxes = document.querySelectorAll('.game-checkbox');
+
+								function updateButtonState() {
+									const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+									continueBtn.disabled = !anyChecked;
+								}
+
+								// Update button state on checkbox change
+								checkboxes.forEach(cb => {
+									cb.addEventListener('change', updateButtonState);
+								});
+
+								// Initial check
+								updateButtonState();
+							})();
+						</script>
 					</div>
 				</div>
 			</div>
@@ -56,21 +78,21 @@ templ Index(options []Option) {
 	}
 }
 
-templ SecondPage(selectedOptions []string) {
+templ SecondPage(selectedOptions []Option) {
 	@BaseLayout("Second Page - Results") {
 		<div class="container mx-auto p-4">
-			<div class="max-w-2xl mx-auto">
+			<div class="max-w-5xl mx-auto">
 				@SecondPageContent(selectedOptions)
 			</div>
 		</div>
 	}
 }
 
-templ SecondPageContent(selectedOptions []string) {
+templ SecondPageContent(selectedOptions []Option) {
 	<div class="card bg-base-100 shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">Selected Options</h2>
-			
+
 			if len(selectedOptions) > 0 {
 
 				<div class="space-y-4">
@@ -79,38 +101,84 @@ templ SecondPageContent(selectedOptions []string) {
 						for _, option := range selectedOptions {
 							<div class="card bg-base-200 shadow-md">
 								<div class="card-body p-4">
-									<h4 class="card-title text-base mb-3">Game ID: { option }</h4>
-									<div class="form-control">
-										<label class="label">
-											<span class="label-text font-medium">Select leagues for this game:</span>
-										</label>
-										<div class="relative">
-											<!-- Selected leagues display -->
-											<div id={ "selected-" + option } class="flex flex-wrap gap-2 mb-2 min-h-[2rem]"></div>
+									<div class="flex items-center gap-2 mb-3">
+										<div class="bg-white rounded p-1 flex items-center justify-center">
+											<img src={ option.Logo } alt={ option.Label } class="w-6 h-6 object-contain"/>
+										</div>
+										<h4 class="card-title text-base">{ option.Label }</h4>
+									</div>
 
-											<!-- Searchable dropdown -->
-											<div class="dropdown dropdown-open w-full" id={ "dropdown-container-" + option }>
-												<input
-													type="text"
-													id={ "search-" + option }
-													placeholder="Type to search leagues..."
-													class="input input-bordered w-full"
-													autocomplete="off"/>
-												<div class="absolute z-[1] w-full bg-base-100 rounded-box shadow-lg mt-1 hidden max-h-64 overflow-y-auto" id={ "dropdown-menu-" + option }>
-													<div id={ "loading-" + option } class="p-4 text-center">
-														<span class="loading loading-spinner loading-sm"></span>
-														<span class="ml-2">Loading leagues...</span>
-													</div>
-													<ul class="menu p-2 w-full hidden" id={ "league-list-" + option }></ul>
-													<div class="p-4 text-center text-sm opacity-70 hidden" id={ "no-results-" + option }>
-														No leagues found
+									<!-- Combined selected items display -->
+									<div class="mb-4">
+										<label class="label">
+											<span class="label-text font-medium">Selected Leagues & Teams:</span>
+										</label>
+										<div id={ "selected-combined-" + option.ID } class="flex flex-wrap gap-2 min-h-[2rem] p-2 bg-base-100 rounded-box"></div>
+									</div>
+
+									<!-- Search bars side by side on desktop -->
+									<div class="grid grid-cols-2 gap-4 items-start">
+										<!-- Leagues Section -->
+										<div>
+											<div class="mb-2">
+												<span class="font-medium">Search Leagues:</span>
+											</div>
+											<div class="relative">
+												<!-- Searchable dropdown -->
+												<div class="dropdown dropdown-open w-full" id={ "dropdown-container-" + option.ID }>
+													<input
+														type="text"
+														id={ "search-" + option.ID }
+														placeholder="Type to search leagues..."
+														class="input input-bordered w-full"
+														autocomplete="off"/>
+													<div class="absolute z-[1] w-full bg-base-100 rounded-box shadow-lg mt-1 hidden max-h-64 overflow-y-auto" id={ "dropdown-menu-" + option.ID }>
+														<div id={ "loading-" + option.ID } class="p-4 text-center">
+															<span class="loading loading-spinner loading-sm"></span>
+															<span class="ml-2">Loading leagues...</span>
+														</div>
+														<ul class="menu p-2 w-full hidden" id={ "league-list-" + option.ID }></ul>
+														<div class="p-4 text-center text-sm opacity-70 hidden" id={ "no-results-" + option.ID }>
+															No leagues found
+														</div>
 													</div>
 												</div>
 											</div>
+											<div class="mt-1">
+												<span class="text-xs opacity-70">Click to select/deselect</span>
+											</div>
 										</div>
-										<label class="label">
-											<span class="label-text-alt text-xs opacity-70">Click to select/deselect leagues</span>
-										</label>
+
+										<!-- Teams Section -->
+										<div>
+											<div class="mb-2">
+												<span class="font-medium">Search Teams:</span>
+											</div>
+											<div class="relative">
+												<!-- Searchable dropdown for teams -->
+												<div class="dropdown dropdown-open w-full" id={ "dropdown-teams-container-" + option.ID }>
+													<input
+														type="text"
+														id={ "search-teams-" + option.ID }
+														placeholder="Type to search teams..."
+														class="input input-bordered w-full"
+														autocomplete="off"/>
+													<div class="absolute z-[1] w-full bg-base-100 rounded-box shadow-lg mt-1 hidden max-h-64 overflow-y-auto" id={ "dropdown-teams-menu-" + option.ID }>
+														<div id={ "loading-teams-" + option.ID } class="p-4 text-center">
+															<span class="loading loading-spinner loading-sm"></span>
+															<span class="ml-2">Loading teams...</span>
+														</div>
+														<ul class="menu p-2 w-full hidden" id={ "team-list-" + option.ID }></ul>
+														<div class="p-4 text-center text-sm opacity-70 hidden" id={ "no-teams-results-" + option.ID }>
+															No teams found
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="mt-1">
+												<span class="text-xs opacity-70">Click to select/deselect</span>
+											</div>
+										</div>
 									</div>
 									@templ.Raw(fmt.Sprintf(`<script type="text/javascript">
 										(function() {
@@ -120,7 +188,7 @@ templ SecondPageContent(selectedOptions []string) {
 											const loadingElement = document.getElementById('loading-' + gameId);
 											const leagueList = document.getElementById('league-list-' + gameId);
 											const noResults = document.getElementById('no-results-' + gameId);
-											const selectedContainer = document.getElementById('selected-' + gameId);
+											const selectedCombinedContainer = document.getElementById('selected-combined-' + gameId);
 
 											let allLeagues = [];
 											let selectedLeagues = new Set();
@@ -136,7 +204,16 @@ templ SecondPageContent(selectedOptions []string) {
 														noResults.classList.remove('hidden');
 													} else if (data.leagues && data.leagues.length > 0) {
 														allLeagues = data.leagues;
+
+														// Auto-select tier 1 leagues
+														allLeagues.forEach(league => {
+															if (league.is_tier1) {
+																selectedLeagues.add(league.id);
+															}
+														});
+
 														renderLeagues(allLeagues);
+														updateCombinedDisplay();
 														leagueList.classList.remove('hidden');
 													} else {
 														noResults.textContent = 'No leagues available for this game';
@@ -164,7 +241,9 @@ templ SecondPageContent(selectedOptions []string) {
 													checkbox.checked = selectedLeagues.has(league.id);
 													checkbox.addEventListener('change', () => toggleLeague(league));
 
-													// Add league image
+													// Add league image with white background
+													const imgContainer = document.createElement('div');
+													imgContainer.className = 'bg-white rounded p-1 flex items-center justify-center';
 													const img = document.createElement('img');
 													img.src = league.image || '/static/images/default-logo.png';
 													img.alt = league.name;
@@ -172,13 +251,14 @@ templ SecondPageContent(selectedOptions []string) {
 													img.onerror = function() {
 														this.src = '/static/images/default-logo.png';
 													};
-													label.appendChild(img);
+													imgContainer.appendChild(img);
 
 													const span = document.createElement('span');
 													span.textContent = league.name;
 													span.className = 'text-sm';
 
 													label.appendChild(checkbox);
+													label.appendChild(imgContainer);
 													label.appendChild(span);
 													li.appendChild(label);
 													leagueList.appendChild(li);
@@ -192,43 +272,7 @@ templ SecondPageContent(selectedOptions []string) {
 												} else {
 													selectedLeagues.add(league.id);
 												}
-												updateSelectedDisplay();
-											}
-
-											// Update selected leagues display
-											function updateSelectedDisplay() {
-												selectedContainer.innerHTML = '';
-												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
-													const badge = document.createElement('div');
-													badge.className = 'badge badge-primary gap-2';
-
-													// Add league image
-													const img = document.createElement('img');
-													img.src = league.image || '/static/images/default-logo.png';
-													img.alt = league.name;
-													img.className = 'w-4 h-4 object-contain';
-													img.onerror = function() {
-														this.src = '/static/images/default-logo.png';
-													};
-													badge.appendChild(img);
-
-													const span = document.createElement('span');
-													span.textContent = league.name;
-													badge.appendChild(span);
-
-													const removeBtn = document.createElement('button');
-													removeBtn.className = 'btn btn-ghost btn-xs btn-circle';
-													removeBtn.innerHTML = '✕';
-													removeBtn.addEventListener('click', () => {
-														selectedLeagues.delete(league.id);
-														updateSelectedDisplay();
-														const filtered = filterLeagues(searchInput.value);
-														renderLeagues(filtered);
-													});
-
-													badge.appendChild(removeBtn);
-													selectedContainer.appendChild(badge);
-												});
+												updateCombinedDisplay();
 											}
 
 											// Filter leagues based on search input
@@ -263,8 +307,205 @@ templ SecondPageContent(selectedOptions []string) {
 													dropdownMenu.classList.add('hidden');
 												}
 											});
+
+											// TEAMS SECTION
+											const searchTeamsInput = document.getElementById('search-teams-' + gameId);
+											const dropdownTeamsMenu = document.getElementById('dropdown-teams-menu-' + gameId);
+											const loadingTeamsElement = document.getElementById('loading-teams-' + gameId);
+											const teamList = document.getElementById('team-list-' + gameId);
+											const noTeamsResults = document.getElementById('no-teams-results-' + gameId);
+
+											let allTeams = [];
+											let selectedTeams = new Set();
+
+											// Fetch teams from API
+											fetch('/api/team-options/' + gameId)
+												.then(response => response.json())
+												.then(data => {
+													loadingTeamsElement.classList.add('hidden');
+
+													if (data.error) {
+														noTeamsResults.textContent = data.message;
+														noTeamsResults.classList.remove('hidden');
+													} else if (data.teams && data.teams.length > 0) {
+														allTeams = data.teams;
+														renderTeams(allTeams);
+														updateCombinedDisplay();
+														teamList.classList.remove('hidden');
+													} else {
+														noTeamsResults.textContent = 'No teams available for this game';
+														noTeamsResults.classList.remove('hidden');
+													}
+												})
+												.catch(error => {
+													loadingTeamsElement.classList.add('hidden');
+													noTeamsResults.textContent = 'Failed to load teams. Please try again.';
+													noTeamsResults.classList.remove('hidden');
+													console.error('Error fetching teams:', error);
+												});
+
+											// Render teams list
+											function renderTeams(teams) {
+												teamList.innerHTML = '';
+												teams.forEach(team => {
+													const li = document.createElement('li');
+													const label = document.createElement('label');
+													label.className = 'label cursor-pointer justify-start gap-2 p-2';
+
+													const checkbox = document.createElement('input');
+													checkbox.type = 'checkbox';
+													checkbox.className = 'checkbox checkbox-sm checkbox-primary';
+													checkbox.checked = selectedTeams.has(team.id);
+													checkbox.addEventListener('change', () => toggleTeam(team));
+
+													// Add team image with white background
+													const imgContainer = document.createElement('div');
+													imgContainer.className = 'bg-white rounded p-1 flex items-center justify-center';
+													const img = document.createElement('img');
+													img.src = team.image || '/static/images/default-logo.png';
+													img.alt = team.name;
+													img.className = 'w-6 h-6 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													imgContainer.appendChild(img);
+
+													const span = document.createElement('span');
+													span.textContent = team.acronym ? team.acronym + ' - ' + team.name : team.name;
+													span.className = 'text-sm';
+
+													label.appendChild(checkbox);
+													label.appendChild(imgContainer);
+													label.appendChild(span);
+													li.appendChild(label);
+													teamList.appendChild(li);
+												});
+											}
+
+											// Toggle team selection
+											function toggleTeam(team) {
+												if (selectedTeams.has(team.id)) {
+													selectedTeams.delete(team.id);
+												} else {
+													selectedTeams.add(team.id);
+												}
+												updateCombinedDisplay();
+											}
+
+											// Update combined display with both leagues and teams
+											function updateCombinedDisplay() {
+												selectedCombinedContainer.innerHTML = '';
+
+												// Add selected leagues
+												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
+													const badge = document.createElement('div');
+													badge.className = 'badge badge-primary badge-lg gap-2 rounded-md py-3';
+
+													// Add league image with white background
+													const imgContainer = document.createElement('div');
+													imgContainer.className = 'bg-white rounded p-0.5 flex items-center justify-center';
+													const img = document.createElement('img');
+													img.src = league.image || '/static/images/default-logo.png';
+													img.alt = league.name;
+													img.className = 'w-5 h-5 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													imgContainer.appendChild(img);
+													badge.appendChild(imgContainer);
+
+													const span = document.createElement('span');
+													span.textContent = league.name;
+													span.className = 'text-sm';
+													badge.appendChild(span);
+
+													const removeBtn = document.createElement('button');
+													removeBtn.className = 'btn btn-ghost btn-xs btn-circle ml-1';
+													removeBtn.innerHTML = '✕';
+													removeBtn.addEventListener('click', () => {
+														selectedLeagues.delete(league.id);
+														updateCombinedDisplay();
+														const filtered = filterLeagues(searchInput.value);
+														renderLeagues(filtered);
+													});
+
+													badge.appendChild(removeBtn);
+													selectedCombinedContainer.appendChild(badge);
+												});
+
+												// Add selected teams
+												allTeams.filter(t => selectedTeams.has(t.id)).forEach(team => {
+													const badge = document.createElement('div');
+													badge.className = 'badge badge-secondary badge-lg gap-2 rounded-md py-3';
+
+													// Add team image with white background
+													const imgContainer = document.createElement('div');
+													imgContainer.className = 'bg-white rounded p-0.5 flex items-center justify-center';
+													const img = document.createElement('img');
+													img.src = team.image || '/static/images/default-logo.png';
+													img.alt = team.name;
+													img.className = 'w-5 h-5 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													imgContainer.appendChild(img);
+													badge.appendChild(imgContainer);
+
+													const span = document.createElement('span');
+													span.textContent = team.acronym ? team.acronym + ' - ' + team.name : team.name;
+													span.className = 'text-sm';
+													badge.appendChild(span);
+
+													const removeBtn = document.createElement('button');
+													removeBtn.className = 'btn btn-ghost btn-xs btn-circle ml-1';
+													removeBtn.innerHTML = '✕';
+													removeBtn.addEventListener('click', () => {
+														selectedTeams.delete(team.id);
+														updateCombinedDisplay();
+														const filtered = filterTeams(searchTeamsInput.value);
+														renderTeams(filtered);
+													});
+
+													badge.appendChild(removeBtn);
+													selectedCombinedContainer.appendChild(badge);
+												});
+											}
+
+											// Filter teams based on search input
+											function filterTeams(query) {
+												const lowerQuery = query.toLowerCase();
+												return allTeams.filter(team =>
+													team.name.toLowerCase().includes(lowerQuery) ||
+													(team.acronym && team.acronym.toLowerCase().includes(lowerQuery))
+												);
+											}
+
+											// Search input event for teams
+											searchTeamsInput.addEventListener('input', (e) => {
+												const filtered = filterTeams(e.target.value);
+												if (filtered.length > 0) {
+													renderTeams(filtered);
+													teamList.classList.remove('hidden');
+													noTeamsResults.classList.add('hidden');
+												} else {
+													teamList.classList.add('hidden');
+													noTeamsResults.classList.remove('hidden');
+												}
+											});
+
+											// Show dropdown on focus for teams
+											searchTeamsInput.addEventListener('focus', () => {
+												dropdownTeamsMenu.classList.remove('hidden');
+											});
+
+											// Hide dropdown when clicking outside for teams
+											document.addEventListener('click', (e) => {
+												if (!searchTeamsInput.contains(e.target) && !dropdownTeamsMenu.contains(e.target)) {
+													dropdownTeamsMenu.classList.add('hidden');
+												}
+											});
 										})();
-									</script>`, option))
+									</script>`, option.ID))
 								</div>
 							</div>
 						}
@@ -300,7 +541,13 @@ templ SecondPageContent(selectedOptions []string) {
 				if len(selectedOptions) > 0 {
 					<button class="btn btn-success"
 							hx-post="/process"
-							hx-vals={ fmt.Sprintf(`{"options": "%s"}`, strings.Join(selectedOptions, ",")) }
+							hx-vals={ func() string {
+								var ids []string
+								for _, opt := range selectedOptions {
+									ids = append(ids, opt.ID)
+								}
+								return fmt.Sprintf(`{"options": "%s"}`, strings.Join(ids, ","))
+							}() }
 							hx-target="#result">
 						Process Selection
 					</button>
