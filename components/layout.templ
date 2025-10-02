@@ -27,9 +27,6 @@ templ BaseLayout(title string) {
 				<a href="/" class="btn btn-ghost text-xl font-bold text-primary">EsportsCalendar</a>
 			</div>
 			<div class="navbar-center hidden lg:flex">
-				<ul class="menu menu-horizontal px-1">
-					<li><a href="#how-to-use" class="hover:text-primary">How to Use</a></li>
-				</ul>
 			</div>
 			<div class="navbar-end gap-2">
 				<!-- Theme Toggle -->
@@ -52,9 +49,25 @@ templ BaseLayout(title string) {
 			</div>
 		</nav>
 		
-		<div class="min-h-screen bg-base-200 pt-16">
+		<div class="min-h-screen bg-base-200 pt-16 pb-16">
 			{ children... }
 		</div>
+
+		<!-- Footer -->
+		<footer class="footer p-4 bg-base-300 text-base-content">
+			<aside>
+				<p>
+					<a href="https://icons8.com" target="_blank" rel="noopener noreferrer" class="link link-hover">Icons by Icons8</a>
+				</p>
+			</aside>
+			<nav class="mx-auto">
+				<a href="#how-to-use" class="link link-hover">How to Use</a>
+			</nav>
+			<nav class="ml-auto">
+				<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="link link-hover">Issues</a>
+			</nav>
+		</footer>
+
 		<!-- Custom JavaScript -->
 		<script src="/static/js/app.js"></script>
 		<script>

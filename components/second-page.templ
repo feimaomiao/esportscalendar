@@ -100,6 +100,12 @@ templ SecondPageContent(selectedOptions []Option) {
 			</div>
 		</div>
 	</div>
+
+	<script>
+		console.log('DEBUG: Inline script executing');
+		console.log('DEBUG: Submit button exists?', !!document.getElementById('submit-selection-btn'));
+	</script>
+	<script src="/static/js/lts.js"></script>
 }
 
 templ GameSelectionCard(option Option) {
@@ -114,9 +120,15 @@ templ GameSelectionCard(option Option) {
 
 			<!-- Combined selected items display -->
 			<div class="mb-4">
-				<label class="label">
+				<div class="flex justify-between items-center mb-2">
 					<span class="label-text font-medium">Selected Leagues & Teams:</span>
-				</label>
+					<button type="button" id={ "deselect-all-" + option.ID } class="btn btn-ghost btn-sm">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						Deselect All
+					</button>
+				</div>
 				<div id={ "selected-combined-" + option.ID } class="selected-items-container"></div>
 			</div>
 
@@ -147,9 +159,6 @@ templ GameSelectionCard(option Option) {
 							</div>
 						</div>
 					</div>
-					<div class="mt-1">
-						<span class="text-xs opacity-70">Click to select/deselect</span>
-					</div>
 				</div>
 
 				<!-- Teams Section -->
@@ -176,9 +185,6 @@ templ GameSelectionCard(option Option) {
 								</div>
 							</div>
 						</div>
-					</div>
-					<div class="mt-1">
-						<span class="text-xs opacity-70">Click to select/deselect</span>
 					</div>
 				</div>
 			</div>

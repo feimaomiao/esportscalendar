@@ -461,4 +461,33 @@ function initGameSelection(gameId) {
 			dropdownTeamsMenu.style.display = 'none';
 		}
 	});
+
+	// Deselect all button - needs to reference both leagues and teams
+	function setupDeselectAllButton() {
+		const deselectAllBtn = document.getElementById('deselect-all-' + gameId);
+		if (deselectAllBtn) {
+			deselectAllBtn.addEventListener('click', () => {
+				console.log('Deselect all clicked for game:', gameId);
+				console.log('Before clear - Leagues:', selectedLeagues.size, 'Teams:', selectedTeams.size);
+
+				selectedLeagues.clear();
+				selectedTeams.clear();
+
+				console.log('After clear - Leagues:', selectedLeagues.size, 'Teams:', selectedTeams.size);
+
+				updateCombinedDisplay();
+
+				// Re-render both lists to update checkboxes
+				if (allLeagues.length > 0) {
+					renderLeagues(searchInput.value ? filterLeagues(searchInput.value) : allLeagues);
+				}
+				if (allTeams.length > 0) {
+					renderTeams(searchTeamsInput.value ? filterTeams(searchTeamsInput.value) : allTeams);
+				}
+			});
+		}
+	}
+
+	// Call setup after a brief delay to ensure both lists are loaded
+	setTimeout(setupDeselectAllButton, 100);
 }

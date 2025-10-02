@@ -170,7 +170,7 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Full page load
-	component := components.SecondPageContent(selectedOptions)
+	component := components.SecondPage(selectedOptions)
 	component.Render(m.Context, w)
 }
 func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -380,4 +380,23 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Cache", "MISS")
 	w.Write(responseBytes)
+}
+func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[ENTRY] PreviewHandler() - Processing request from %s %s", r.Method, r.URL.Path)
+
+	// Parse JSON body with selections
+	var requestBody map[string]interface{}
+	if r.Header.Get("Content-Type") == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			log.Printf("[ERROR] Failed to parse JSON body: %v", err)
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		log.Printf("[DEBUG] Received selections: %+v", requestBody)
+	}
+
+	// For now, just render the preview page
+	// In the future, this will process the selections and generate calendar data
+	component := components.PreviewPage(requestBody)
+	component.Render(m.Context, w)
 }

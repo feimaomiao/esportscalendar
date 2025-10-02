@@ -58,7 +58,13 @@
 				const scripts = container.querySelectorAll('script');
 				scripts.forEach(oldScript => {
 					const newScript = document.createElement('script');
-					newScript.textContent = oldScript.textContent;
+					// Copy src attribute if present (external script)
+					if (oldScript.src) {
+						newScript.src = oldScript.src;
+					} else {
+						// Inline script
+						newScript.textContent = oldScript.textContent;
+					}
 					oldScript.parentNode.replaceChild(newScript, oldScript);
 				});
 
