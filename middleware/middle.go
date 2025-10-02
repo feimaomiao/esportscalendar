@@ -127,15 +127,21 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 
 	// Convert to response format
 	type LeagueResponse struct {
-		ID   int32  `json:"id"`
-		Name string `json:"name"`
+		ID    int32  `json:"id"`
+		Name  string `json:"name"`
+		Image string `json:"image"`
 	}
 
 	var leagueList []LeagueResponse
 	for _, league := range leagues {
+		image := "/static/images/default-logo.png"
+		if league.ImageLink.Valid && league.ImageLink.String != "" {
+			image = league.ImageLink.String
+		}
 		leagueList = append(leagueList, LeagueResponse{
-			ID:   league.ID,
-			Name: league.Name,
+			ID:    league.ID,
+			Name:  league.Name,
+			Image: image,
 		})
 	}
 

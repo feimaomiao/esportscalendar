@@ -378,6 +378,16 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 													checkbox.checked = selectedLeagues.has(league.id);
 													checkbox.addEventListener('change', () => toggleLeague(league));
 
+													// Add league image
+													const img = document.createElement('img');
+													img.src = league.image || '/static/images/default-logo.png';
+													img.alt = league.name;
+													img.className = 'w-6 h-6 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													label.appendChild(img);
+
 													const span = document.createElement('span');
 													span.textContent = league.name;
 													span.className = 'text-sm';
@@ -405,7 +415,20 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
 													const badge = document.createElement('div');
 													badge.className = 'badge badge-primary gap-2';
-													badge.innerHTML = '<span>' + league.name + '</span>';
+
+													// Add league image
+													const img = document.createElement('img');
+													img.src = league.image || '/static/images/default-logo.png';
+													img.alt = league.name;
+													img.className = 'w-4 h-4 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													badge.appendChild(img);
+
+													const span = document.createElement('span');
+													span.textContent = league.name;
+													badge.appendChild(span);
 
 													const removeBtn = document.createElement('button');
 													removeBtn.className = 'btn btn-ghost btn-xs btn-circle';
@@ -471,7 +494,7 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(len(selectedOptions))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 256, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 279, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -499,7 +522,7 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"options": "%s"}`, strings.Join(selectedOptions, ",")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 280, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 303, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {

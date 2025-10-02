@@ -164,6 +164,16 @@ templ SecondPageContent(selectedOptions []string) {
 													checkbox.checked = selectedLeagues.has(league.id);
 													checkbox.addEventListener('change', () => toggleLeague(league));
 
+													// Add league image
+													const img = document.createElement('img');
+													img.src = league.image || '/static/images/default-logo.png';
+													img.alt = league.name;
+													img.className = 'w-6 h-6 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													label.appendChild(img);
+
 													const span = document.createElement('span');
 													span.textContent = league.name;
 													span.className = 'text-sm';
@@ -191,7 +201,20 @@ templ SecondPageContent(selectedOptions []string) {
 												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
 													const badge = document.createElement('div');
 													badge.className = 'badge badge-primary gap-2';
-													badge.innerHTML = '<span>' + league.name + '</span>';
+
+													// Add league image
+													const img = document.createElement('img');
+													img.src = league.image || '/static/images/default-logo.png';
+													img.alt = league.name;
+													img.className = 'w-4 h-4 object-contain';
+													img.onerror = function() {
+														this.src = '/static/images/default-logo.png';
+													};
+													badge.appendChild(img);
+
+													const span = document.createElement('span');
+													span.textContent = league.name;
+													badge.appendChild(span);
 
 													const removeBtn = document.createElement('button');
 													removeBtn.className = 'btn btn-ghost btn-xs btn-circle';
