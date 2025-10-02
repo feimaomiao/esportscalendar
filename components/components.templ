@@ -84,20 +84,75 @@ templ SecondPageContent(selectedOptions []string) {
 										<label class="label">
 											<span class="label-text font-medium">Select leagues for this game:</span>
 										</label>
-										<select 
-											name={ "league-" + option }
-											class="select select-bordered w-full focus:select-primary" 
-											multiple
-											size="4"
-											hx-get={ "/api/league-options/" + option }
-											hx-trigger="load"
-											hx-swap="innerHTML">
-											<option disabled selected>Loading leagues...</option>
-										</select>
+										<div class="relative">
+											<select 
+												id={ "select-" + option }
+												name={ "league-" + option }
+												class="select select-bordered w-full focus:select-primary" 
+												multiple
+												size="4">
+												<option disabled selected>Loading leagues...</option>
+											</select>
+											<div id={ "loading-" + option } class="loading-indicator absolute top-2 right-2">
+												<span class="loading loading-spinner loading-sm"></span>
+											</div>
+										</div>
 										<label class="label">
 											<span class="label-text-alt text-xs opacity-70">Hold Ctrl/Cmd to select multiple leagues</span>
 										</label>
 									</div>
+									@templ.Raw(fmt.Sprintf(`<script type="text/javascript">
+										(function() {
+											const gameId = %q;
+											const selectElement = document.getElementById('select-' + gameId);
+											const loadingElement = document.getElementById('loading-' + gameId);
+											
+											// Show loading indicator
+											loadingElement.style.display = 'block';
+											
+											fetch('/api/league-options/' + gameId)
+												.then(response => response.json())
+												.then(data => {
+													// Clear existing options
+													selectElement.innerHTML = '';
+													
+													if (data.error) {
+														// Handle error
+														const errorOption = document.createElement('option');
+														errorOption.disabled = true;
+														errorOption.textContent = data.message;
+														selectElement.appendChild(errorOption);
+													} else if (data.leagues && data.leagues.length > 0) {
+														// Add leagues as options
+														data.leagues.forEach(league => {
+															const option = document.createElement('option');
+															option.value = league.id;
+															option.textContent = league.name;
+															selectElement.appendChild(option);
+														});
+													} else {
+														// No leagues available
+														const noLeaguesOption = document.createElement('option');
+														noLeaguesOption.disabled = true;
+														noLeaguesOption.textContent = 'No leagues available for this game';
+														selectElement.appendChild(noLeaguesOption);
+													}
+												})
+												.catch(error => {
+													// Handle fetch error
+													selectElement.innerHTML = '';
+													const errorOption = document.createElement('option');
+													errorOption.disabled = true;
+													errorOption.textContent = 'Failed to load leagues. Please try again.';
+													selectElement.appendChild(errorOption);
+													console.error('Error fetching leagues:', error);
+												})
+												.finally(() => {
+													// Hide loading indicator
+													loadingElement.style.display = 'none';
+												});
+										})();
+									</script>`, option))
 								</div>
 							</div>
 						}

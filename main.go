@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	log.Println("[ENTRY] main() - Starting application")
 	mux := http.NewServeMux()
 
 	// Serve static files for CSS and JS
@@ -21,7 +22,6 @@ func main() {
 	// Routes
 	mux.HandleFunc("/", mw.IndexHandler)
 	mux.HandleFunc("/second", mw.SecondPageHandler)
-	mux.HandleFunc("/api/serieslist/", mw.SeriesListHandler)
 	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
 
 	log.Println("Server starting on :8080")

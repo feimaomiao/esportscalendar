@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,20 +12,21 @@ import (
 
 	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Middleware struct {
-	DB      *pgx.Conn
+	DB      *pgxpool.Pool
 	DBConn  *dbtypes.Queries
 	Context context.Context
 }
 
 func InitMiddleHandler() Middleware {
+	log.Println("[ENTRY] InitMiddleHandler() - Initializing middleware with database connection")
 	connStr := fmt.Sprintf("host=localhost port=5432 user=%s password=%s dbname=esports sslmode=disable",
 		os.Getenv("postgres_user"),
 		os.Getenv("postgres_password"))
-	conn, err := pgx.Connect(context.Background(), connStr)
+	conn, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		panic(err)
 	}
@@ -38,6 +40,7 @@ func InitMiddleHandler() Middleware {
 	}
 }
 func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[ENTRY] IndexHandler() - Processing request from %s %s", r.Method, r.URL.Path)
 	// Fetch options from database or define statically
 
 	games, err := m.DBConn.GetAllGames(m.Context)
@@ -70,6 +73,7 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[ENTRY] SecondPageHandler() - Processing request from %s %s", r.Method, r.URL.Path)
 	// Parse selected options from query params or form data
 	r.ParseForm()
 	selectedOptions := r.Form["options"]
@@ -85,66 +89,62 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	component := components.SecondPageContent(selectedOptions)
 	component.Render(m.Context, w)
 }
-
-func (m *Middleware) SeriesListHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract game ID from URL path
-	path := strings.TrimPrefix(r.URL.Path, "/api/serieslist/")
-	gameID, err := strconv.ParseInt(path, 10, 32)
-	if err != nil {
-		http.Error(w, "Invalid game ID", http.StatusBadRequest)
-		return
-	}
-
-	// Fetch series from database
-	series, err := m.DBConn.GetSeriesByGameID(m.Context, int32(gameID))
-	if err != nil {
-		http.Error(w, "Failed to fetch series", http.StatusInternalServerError)
-		return
-	}
-
-	// Convert to response format
-	type SeriesResponse struct {
-		ID   int32  `json:"id"`
-		Name string `json:"name"`
-	}
-
-	var response []SeriesResponse
-	for _, serie := range series {
-		response = append(response, SeriesResponse{
-			ID:   serie.ID,
-			Name: serie.Name,
-		})
-	}
-
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[ENTRY] LeagueOptionsHandler() - Processing API request from %s %s", r.Method, r.URL.Path)
 	// Extract game ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/league-options/")
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
-		http.Error(w, "Invalid game ID", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]interface{}{
+			"error":   true,
+			"message": "Invalid game ID",
+			"leagues": []interface{}{},
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Fetch leagues from database
 	leagues, err := m.DBConn.GetLeaguesByGameID(m.Context, int32(gameID))
 	if err != nil {
-		http.Error(w, "Failed to fetch leagues", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		var message string
+		// Check if it's a connection error or other database issue
+		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "connect") {
+			message = "Database connection error. Please try again later."
+		} else {
+			message = "Unable to load leagues. Please refresh the page: " + err.Error()
+		}
+		response := map[string]interface{}{
+			"error":   true,
+			"message": message,
+			"leagues": []interface{}{},
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	// Generate HTML options
-	w.Header().Set("Content-Type", "text/html")
-	if len(leagues) == 0 {
-		w.Write([]byte(`<option disabled>No leagues available for this game</option>`))
-		return
+	// Convert to response format
+	type LeagueResponse struct {
+		ID   int32  `json:"id"`
+		Name string `json:"name"`
 	}
 
+	var leagueList []LeagueResponse
 	for _, league := range leagues {
-		w.Write([]byte(fmt.Sprintf(`<option value="%d">%s</option>`, league.ID, league.Name)))
+		leagueList = append(leagueList, LeagueResponse{
+			ID:   league.ID,
+			Name: league.Name,
+		})
 	}
+
+	// Return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"error":   false,
+		"message": "",
+		"leagues": leagueList,
+	}
+	json.NewEncoder(w).Encode(response)
 }

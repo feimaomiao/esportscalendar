@@ -47,32 +47,29 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 }
 
 const getLeaguesByGameID = `-- name: GetLeaguesByGameID :many
-SELECT id, name, slug, image_link, game_id FROM leagues WHERE game_id = $1 ORDER BY name ASC
+SELECT l.id, l.name, l.slug, l.game_id, l.image_link
+FROM LEAGUES l
+LEFT JOIN TOURNAMENTS t ON l.id = t.league_id
+WHERE l.game_id = $1
+GROUP BY l.id, l.name, l.slug, l.game_id, l.image_link
+ORDER BY MIN(t.tier) ASC, l.name ASC
 `
 
-type GetLeaguesByGameIDRow struct {
-	ID        int32
-	Name      string
-	Slug      pgtype.Text
-	ImageLink pgtype.Text
-	GameID    int32
-}
-
-func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLeaguesByGameIDRow, error) {
+func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]League, error) {
 	rows, err := q.db.Query(ctx, getLeaguesByGameID, gameID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetLeaguesByGameIDRow
+	var items []League
 	for rows.Next() {
-		var i GetLeaguesByGameIDRow
+		var i League
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Slug,
-			&i.ImageLink,
 			&i.GameID,
+			&i.ImageLink,
 		); err != nil {
 			return nil, err
 		}
