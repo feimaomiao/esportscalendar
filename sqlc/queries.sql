@@ -89,3 +89,42 @@ SELECT id, name, slug, acronym, image_link, game_id
 FROM teams
 WHERE game_id = $1
 ORDER BY name ASC;
+
+-- name: GetMatchesBySelections :many
+SELECT
+    m.id,
+    m.name,
+    m.slug,
+    m.expected_start_time,
+    m.finished,
+    m.team1_id,
+    m.team2_id,
+    m.team1_score,
+    m.team2_score,
+    m.amount_of_games,
+    m.game_id,
+    m.league_id,
+    m.series_id,
+    m.tournament_id,
+    g.name as game_name,
+    l.name as league_name,
+    t1.name as team1_name,
+    t1.acronym as team1_acronym,
+    t1.image_link as team1_image,
+    t2.name as team2_name,
+    t2.acronym as team2_acronym,
+    t2.image_link as team2_image
+FROM matches m
+INNER JOIN games g ON m.game_id = g.id
+INNER JOIN leagues l ON m.league_id = l.id
+INNER JOIN teams t1 ON m.team1_id = t1.id
+INNER JOIN teams t2 ON m.team2_id = t2.id
+WHERE
+    m.expected_start_time >= NOW() - INTERVAL '7 days'
+    AND m.expected_start_time <= NOW() + INTERVAL '7 days'
+    AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
+    AND (
+        (CARDINALITY(sqlc.arg(league_ids)::int[]) = 0 OR m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR (CARDINALITY(sqlc.arg(team_ids)::int[]) = 0 OR m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[]))
+    )
+ORDER BY m.expected_start_time ASC;

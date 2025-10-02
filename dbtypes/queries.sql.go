@@ -91,6 +91,120 @@ func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLe
 	return items, nil
 }
 
+const getMatchesBySelections = `-- name: GetMatchesBySelections :many
+SELECT
+    m.id,
+    m.name,
+    m.slug,
+    m.expected_start_time,
+    m.finished,
+    m.team1_id,
+    m.team2_id,
+    m.team1_score,
+    m.team2_score,
+    m.amount_of_games,
+    m.game_id,
+    m.league_id,
+    m.series_id,
+    m.tournament_id,
+    g.name as game_name,
+    l.name as league_name,
+    t1.name as team1_name,
+    t1.acronym as team1_acronym,
+    t1.image_link as team1_image,
+    t2.name as team2_name,
+    t2.acronym as team2_acronym,
+    t2.image_link as team2_image
+FROM matches m
+INNER JOIN games g ON m.game_id = g.id
+INNER JOIN leagues l ON m.league_id = l.id
+INNER JOIN teams t1 ON m.team1_id = t1.id
+INNER JOIN teams t2 ON m.team2_id = t2.id
+WHERE
+    m.expected_start_time >= NOW() - INTERVAL '7 days'
+    AND m.expected_start_time <= NOW() + INTERVAL '7 days'
+    AND m.game_id = ANY($1::int[])
+    AND (
+        (CARDINALITY($2::int[]) = 0 OR m.league_id = ANY($2::int[]))
+        OR (CARDINALITY($3::int[]) = 0 OR m.team1_id = ANY($3::int[]) OR m.team2_id = ANY($3::int[]))
+    )
+ORDER BY m.expected_start_time ASC
+`
+
+type GetMatchesBySelectionsParams struct {
+	GameIds   []int32
+	LeagueIds []int32
+	TeamIds   []int32
+}
+
+type GetMatchesBySelectionsRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	ExpectedStartTime pgtype.Timestamp
+	Finished          bool
+	Team1ID           int32
+	Team2ID           int32
+	Team1Score        int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+	GameName          string
+	LeagueName        string
+	Team1Name         string
+	Team1Acronym      pgtype.Text
+	Team1Image        pgtype.Text
+	Team2Name         string
+	Team2Acronym      pgtype.Text
+	Team2Image        pgtype.Text
+}
+
+func (q *Queries) GetMatchesBySelections(ctx context.Context, arg GetMatchesBySelectionsParams) ([]GetMatchesBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getMatchesBySelections, arg.GameIds, arg.LeagueIds, arg.TeamIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetMatchesBySelectionsRow
+	for rows.Next() {
+		var i GetMatchesBySelectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.ExpectedStartTime,
+			&i.Finished,
+			&i.Team1ID,
+			&i.Team2ID,
+			&i.Team1Score,
+			&i.Team2Score,
+			&i.AmountOfGames,
+			&i.GameID,
+			&i.LeagueID,
+			&i.SeriesID,
+			&i.TournamentID,
+			&i.GameName,
+			&i.LeagueName,
+			&i.Team1Name,
+			&i.Team1Acronym,
+			&i.Team1Image,
+			&i.Team2Name,
+			&i.Team2Acronym,
+			&i.Team2Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSeriesByGameID = `-- name: GetSeriesByGameID :many
 SELECT id, name, slug, game_id, league_id FROM series WHERE game_id = $1 ORDER BY name ASC
 `

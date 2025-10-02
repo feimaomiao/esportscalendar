@@ -1,16 +1,19 @@
 package components
 
-templ PreviewPage(selections interface{}) {
+import "github.com/feimaomiao/esportscalendar/dbtypes"
+import "fmt"
+
+templ PreviewPage(matches []dbtypes.GetMatchesBySelectionsRow) {
 	@BaseLayout("Preview - EsportsCalendar") {
 		<div class="container mx-auto p-4">
 			<div class="max-w-5xl mx-auto">
-				@PreviewPageContent(selections)
+				@PreviewPageContent(matches)
 			</div>
 		</div>
 	}
 }
 
-templ PreviewPageContent(selections interface{}) {
+templ PreviewPageContent(matches []dbtypes.GetMatchesBySelectionsRow) {
 	<div class="card bg-base-100 shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">Preview Your Calendar</h2>
@@ -19,11 +22,98 @@ templ PreviewPageContent(selections interface{}) {
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 				</svg>
-				<span>This is a preview of your selected leagues and teams. The calendar view will be implemented soon.</span>
+				<span>Showing matches from 7 days ago to 7 days from now based on your selections.</span>
 			</div>
 
 			<div id="preview-content" class="mt-4">
-				<div class="loading loading-spinner loading-lg mx-auto"></div>
+				if len(matches) == 0 {
+					<div class="alert alert-warning">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+						</svg>
+						<span>No matches found for your selections in the next 14 days.</span>
+					</div>
+				} else {
+					<div class="stats shadow mb-4">
+						<div class="stat">
+							<div class="stat-title">Total Matches</div>
+							<div class="stat-value text-primary">{ fmt.Sprintf("%d", len(matches)) }</div>
+						</div>
+					</div>
+
+					<div class="overflow-x-auto">
+						<table class="table table-zebra w-full">
+							<thead>
+								<tr>
+									<th>Date & Time</th>
+									<th>Game</th>
+									<th>League</th>
+									<th>Match</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, match := range matches {
+									<tr>
+										<td>
+											if match.ExpectedStartTime.Valid {
+												<span class="font-mono text-sm">
+													{ match.ExpectedStartTime.Time.Format("2006-01-02 15:04") }
+												</span>
+											} else {
+												<span class="text-gray-500">TBD</span>
+											}
+										</td>
+										<td>
+											<span class="badge badge-outline">{ match.GameName }</span>
+										</td>
+										<td>
+											<div class="font-medium">{ match.LeagueName }</div>
+										</td>
+										<td>
+											<div class="flex items-center gap-2">
+												<div class="flex items-center gap-1">
+													if match.Team1Image.Valid && match.Team1Image.String != "" {
+														<img src={ match.Team1Image.String } alt={ match.Team1Name } class="w-6 h-6 rounded"/>
+													}
+													<span class="font-semibold">
+														if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
+															{ match.Team1Acronym.String }
+														} else {
+															{ match.Team1Name }
+														}
+													</span>
+												</div>
+												<span class="text-gray-500">vs</span>
+												<div class="flex items-center gap-1">
+													if match.Team2Image.Valid && match.Team2Image.String != "" {
+														<img src={ match.Team2Image.String } alt={ match.Team2Name } class="w-6 h-6 rounded"/>
+													}
+													<span class="font-semibold">
+														if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
+															{ match.Team2Acronym.String }
+														} else {
+															{ match.Team2Name }
+														}
+													</span>
+												</div>
+											</div>
+										</td>
+										<td>
+											if match.Finished {
+												<span class="badge badge-success">
+													Finished { fmt.Sprintf("%d-%d", match.Team1Score, match.Team2Score) }
+												</span>
+											} else {
+												<span class="badge badge-info">Upcoming</span>
+											}
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
 			</div>
 
 			<div class="card-actions justify-between mt-6">

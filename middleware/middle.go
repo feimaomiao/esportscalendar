@@ -432,8 +432,60 @@ func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[DEBUG] Received selections: %+v", requestBody)
 	}
 
-	// For now, just render the preview page
-	// In the future, this will process the selections and generate calendar data
-	component := components.PreviewPage(requestBody)
+	// Extract game IDs, league IDs, and team IDs from selections
+	var gameIDs []int32
+	var leagueIDs []int32
+	var teamIDs []int32
+
+	for gameIDStr, selectionData := range requestBody {
+		gameID, err := strconv.ParseInt(gameIDStr, 10, 32)
+		if err != nil {
+			log.Printf("[WARN] Invalid game ID: %s", gameIDStr)
+			continue
+		}
+		gameIDs = append(gameIDs, int32(gameID))
+
+		if selectionMap, ok := selectionData.(map[string]interface{}); ok {
+			// Extract league IDs
+			if leagues, ok := selectionMap["leagues"].([]interface{}); ok {
+				for _, league := range leagues {
+					if leagueID, ok := league.(float64); ok {
+						leagueIDs = append(leagueIDs, int32(leagueID))
+					}
+				}
+			}
+
+			// Extract team IDs
+			if teams, ok := selectionMap["teams"].([]interface{}); ok {
+				for _, team := range teams {
+					if teamID, ok := team.(float64); ok {
+						teamIDs = append(teamIDs, int32(teamID))
+					}
+				}
+			}
+		}
+	}
+
+	log.Printf("[DEBUG] Parsed IDs - Games: %v, Leagues: %v, Teams: %v", gameIDs, leagueIDs, teamIDs)
+
+	// Fetch matches from database
+	var matches []dbtypes.GetMatchesBySelectionsRow
+	if len(gameIDs) > 0 {
+		var err error
+		matches, err = m.DBConn.GetMatchesBySelections(m.Context, dbtypes.GetMatchesBySelectionsParams{
+			GameIds:   gameIDs,
+			LeagueIds: leagueIDs,
+			TeamIds:   teamIDs,
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to fetch matches: %v", err)
+			http.Error(w, "Failed to fetch matches", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("[DEBUG] Found %d matches", len(matches))
+	}
+
+	// Render the preview page with matches
+	component := components.PreviewPage(matches)
 	component.Render(m.Context, w)
 }
