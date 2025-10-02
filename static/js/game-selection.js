@@ -1,5 +1,13 @@
 // Game selection - League and Team management
 function initGameSelection(gameId) {
+	console.log('initGameSelection called with gameId:', gameId, 'type:', typeof gameId);
+
+	// Validate gameId
+	if (!gameId || gameId === 'null' || gameId === 'undefined') {
+		console.error('Invalid gameId:', gameId);
+		return;
+	}
+
 	const searchInput = document.getElementById('search-' + gameId);
 	const dropdownMenu = document.getElementById('dropdown-menu-' + gameId);
 	const loadingElement = document.getElementById('loading-' + gameId);
@@ -7,11 +15,27 @@ function initGameSelection(gameId) {
 	const noResults = document.getElementById('no-results-' + gameId);
 	const selectedCombinedContainer = document.getElementById('selected-combined-' + gameId);
 
+	console.log('Elements found:', {
+		searchInput: !!searchInput,
+		dropdownMenu: !!dropdownMenu,
+		loadingElement: !!loadingElement,
+		leagueList: !!leagueList,
+		noResults: !!noResults,
+		selectedCombinedContainer: !!selectedCombinedContainer
+	});
+
+	if (!searchInput || !dropdownMenu || !loadingElement) {
+		console.error('Required elements not found for gameId:', gameId);
+		return;
+	}
+
 	let allLeagues = [];
 	let selectedLeagues = new Set();
 
 	// Fetch leagues from API
-	fetch('/api/league-options/' + gameId)
+	const apiUrl = '/api/league-options/' + gameId;
+	console.log('Fetching leagues from:', apiUrl);
+	fetch(apiUrl)
 		.then(response => response.json())
 		.then(data => {
 			loadingElement.classList.add('hidden');
@@ -133,14 +157,12 @@ function initGameSelection(gameId) {
 
 	// Show dropdown on focus
 	searchInput.addEventListener('focus', () => {
-		dropdownMenu.classList.remove('hidden');
 		dropdownMenu.style.display = 'block';
 	});
 
 	// Hide dropdown when clicking outside
 	document.addEventListener('click', (e) => {
 		if (!searchInput.contains(e.target) && !dropdownMenu.contains(e.target)) {
-			dropdownMenu.classList.add('hidden');
 			dropdownMenu.style.display = 'none';
 		}
 	});
@@ -152,11 +174,21 @@ function initGameSelection(gameId) {
 	const teamList = document.getElementById('team-list-' + gameId);
 	const noTeamsResults = document.getElementById('no-teams-results-' + gameId);
 
+	console.log('Team elements found:', {
+		searchTeamsInput: !!searchTeamsInput,
+		dropdownTeamsMenu: !!dropdownTeamsMenu,
+		loadingTeamsElement: !!loadingTeamsElement,
+		teamList: !!teamList,
+		noTeamsResults: !!noTeamsResults
+	});
+
 	let allTeams = [];
 	let selectedTeams = new Set();
 
 	// Fetch teams from API
-	fetch('/api/team-options/' + gameId)
+	const teamApiUrl = '/api/team-options/' + gameId;
+	console.log('Fetching teams from:', teamApiUrl);
+	fetch(teamApiUrl)
 		.then(response => response.json())
 		.then(data => {
 			loadingTeamsElement.classList.add('hidden');
@@ -350,14 +382,12 @@ function initGameSelection(gameId) {
 
 	// Show dropdown on focus for teams
 	searchTeamsInput.addEventListener('focus', () => {
-		dropdownTeamsMenu.classList.remove('hidden');
 		dropdownTeamsMenu.style.display = 'block';
 	});
 
 	// Hide dropdown when clicking outside for teams
 	document.addEventListener('click', (e) => {
 		if (!searchTeamsInput.contains(e.target) && !dropdownTeamsMenu.contains(e.target)) {
-			dropdownTeamsMenu.classList.add('hidden');
 			dropdownTeamsMenu.style.display = 'none';
 		}
 	});

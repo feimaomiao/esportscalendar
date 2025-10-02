@@ -149,10 +149,11 @@
   align-items: center;
   justify-content: flex-start;
   gap: 1rem;
+  flex: 1;
 }
 
 .option-content .label-text {
-  text-align: center;
+  text-align: left;
   flex: 1;
 }
 
@@ -170,6 +171,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  width: 2rem;
+  height: 2rem;
+  max-width: 2rem;
+  max-height: 2rem;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .game-icon {
@@ -218,9 +227,10 @@
   position: absolute;
   z-index: 10;
   width: 100%;
-  background-color: var(--color-base-100);
-  border-radius: var(--radius-box);
+  background-color: oklch(var(--b1));
+  border-radius: var(--rounded-box, 0.5rem);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid oklch(var(--bc) / 0.2);
   margin-top: 0.25rem;
   display: none;
   max-height: 16rem;

@@ -20,12 +20,57 @@ templ SecondPageContent(selectedOptions []Option) {
 			if len(selectedOptions) > 0 {
 				<div class="space-y-4">
 					<h3 class="font-semibold text-lg">Your selections:</h3>
-					<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-4" id="game-cards-container">
 						for _, option := range selectedOptions {
 							@GameSelectionCard(option)
 						}
 					</div>
 				</div>
+
+				<script>
+					// Initialize all game cards
+					(function() {
+						console.log('Initialization script executing...');
+
+						function initializeCards() {
+							const gameCards = document.querySelectorAll('[data-game-id]');
+							console.log('Found', gameCards.length, 'game cards to initialize');
+
+							if (gameCards.length === 0) {
+								console.error('No game cards found!');
+								return;
+							}
+
+							gameCards.forEach(function(card) {
+								const gameId = card.getAttribute('data-game-id');
+								console.log('Initializing game card with ID:', gameId, 'Type:', typeof gameId);
+								if (gameId && typeof initGameSelection === 'function') {
+									initGameSelection(gameId);
+								} else {
+									console.error('Cannot initialize card. GameId:', gameId, 'initGameSelection available:', typeof initGameSelection);
+								}
+							});
+						}
+
+						// Load the game-selection script if not already loaded
+						if (typeof initGameSelection !== 'function') {
+							console.log('Loading game-selection.js...');
+							var script = document.createElement('script');
+							script.src = '/static/js/game-selection.js';
+							script.onload = function() {
+								console.log('game-selection.js loaded successfully');
+								initializeCards();
+							};
+							script.onerror = function() {
+								console.error('Failed to load game-selection.js');
+							};
+							document.head.appendChild(script);
+						} else {
+							console.log('initGameSelection already available');
+							initializeCards();
+						}
+					})();
+				</script>
 
 				<div class="divider"></div>
 
@@ -62,7 +107,7 @@ templ SecondPageContent(selectedOptions []Option) {
 }
 
 templ GameSelectionCard(option Option) {
-	<div class="card bg-base-200 shadow-md">
+	<div class="card bg-base-200 shadow-md" data-game-id={ option.ID }>
 		<div class="card-body p-4">
 			<div class="game-header">
 				<div class="game-icon-large-container">
@@ -142,12 +187,6 @@ templ GameSelectionCard(option Option) {
 				</div>
 			</div>
 
-			<script src={ "/static/js/game-selection.js?gameId=" + option.ID }></script>
-			<script>
-				if (typeof initGameSelection === 'function') {
-					initGameSelection({ templ.JSONString(option.ID) });
-				}
-			</script>
 		</div>
 	</div>
 }
