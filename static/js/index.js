@@ -17,6 +17,14 @@
 	// Initial check
 	updateButtonState();
 
+	// Handle Enter key to submit form if any checkbox is checked
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter' && !continueBtn.disabled) {
+			e.preventDefault();
+			form.requestSubmit();
+		}
+	});
+
 	// Handle form submission
 	form.addEventListener('submit', async (e) => {
 		e.preventDefault();
@@ -30,7 +38,7 @@
 
 		// Send POST request with JSON body
 		try {
-			const response = await fetch('/second', {
+			const response = await fetch('/lts', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -54,7 +62,7 @@
 					oldScript.parentNode.replaceChild(newScript, oldScript);
 				});
 
-				window.history.pushState({}, '', '/second');
+				window.history.pushState({}, '', '/lts');
 			} else {
 				console.error('Request failed:', response.statusText);
 				alert('Request failed: ' + response.statusText);

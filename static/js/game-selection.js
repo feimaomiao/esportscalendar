@@ -31,6 +31,7 @@ function initGameSelection(gameId) {
 
 	let allLeagues = [];
 	let selectedLeagues = new Set();
+	let currentFilteredLeagues = [];
 
 	// Fetch leagues from API
 	const apiUrl = '/api/league-options/' + gameId;
@@ -45,6 +46,7 @@ function initGameSelection(gameId) {
 				noResults.classList.remove('hidden');
 			} else if (data.leagues && data.leagues.length > 0) {
 				allLeagues = data.leagues;
+				currentFilteredLeagues = data.leagues;
 
 				// Auto-select tier 1 leagues
 				allLeagues.forEach(league => {
@@ -69,10 +71,13 @@ function initGameSelection(gameId) {
 		});
 
 	// Render leagues list
+	let highlightedLeagueIndex = -1;
 	function renderLeagues(leagues) {
 		leagueList.innerHTML = '';
-		leagues.forEach(league => {
+		highlightedLeagueIndex = -1;
+		leagues.forEach((league, index) => {
 			const li = document.createElement('li');
+			li.setAttribute('data-index', index);
 			const label = document.createElement('label');
 			label.className = 'label cursor-pointer justify-start gap-2 p-2';
 
@@ -125,10 +130,10 @@ function initGameSelection(gameId) {
 	}
 
 	// Search input event
-	let currentFilteredLeagues = [];
 	searchInput.addEventListener('input', (e) => {
 		const filtered = filterLeagues(e.target.value);
 		currentFilteredLeagues = filtered;
+		highlightedLeagueIndex = -1;
 		if (filtered.length > 0) {
 			renderLeagues(filtered);
 			leagueList.classList.remove('hidden');
@@ -139,19 +144,49 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Handle Enter key to select first result
-	searchInput.addEventListener('keydown', (e) => {
-		if (e.key === 'Enter' && currentFilteredLeagues.length > 0) {
-			e.preventDefault();
-			const firstLeague = currentFilteredLeagues[0];
-			if (!selectedLeagues.has(firstLeague.id)) {
-				selectedLeagues.add(firstLeague.id);
-				updateCombinedDisplay();
-				renderLeagues(currentFilteredLeagues);
+	// Handle arrow keys and Enter for keyboard navigation
+	function highlightLeagueItem(index) {
+		const items = leagueList.querySelectorAll('li');
+		items.forEach((item, i) => {
+			if (i === index) {
+				item.querySelector('label').style.backgroundColor = 'oklch(var(--b3))';
+			} else {
+				item.querySelector('label').style.backgroundColor = '';
 			}
-			searchInput.value = '';
-			currentFilteredLeagues = allLeagues;
-			renderLeagues(allLeagues);
+		});
+	}
+
+	searchInput.addEventListener('keydown', (e) => {
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			const items = leagueList.querySelectorAll('li');
+			if (items.length > 0) {
+				highlightedLeagueIndex = highlightedLeagueIndex + 1;
+				if (highlightedLeagueIndex >= items.length) {
+					highlightedLeagueIndex = 0;
+				}
+				highlightLeagueItem(highlightedLeagueIndex);
+				items[highlightedLeagueIndex].scrollIntoView({ block: 'nearest' });
+			}
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			const items = leagueList.querySelectorAll('li');
+			if (items.length > 0) {
+				highlightedLeagueIndex = highlightedLeagueIndex - 1;
+				if (highlightedLeagueIndex < 0) {
+					highlightedLeagueIndex = items.length - 1;
+				}
+				highlightLeagueItem(highlightedLeagueIndex);
+				items[highlightedLeagueIndex].scrollIntoView({ block: 'nearest' });
+			}
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			if (highlightedLeagueIndex >= 0 && highlightedLeagueIndex < currentFilteredLeagues.length) {
+				const league = currentFilteredLeagues[highlightedLeagueIndex];
+				toggleLeague(league);
+				renderLeagues(currentFilteredLeagues);
+				highlightLeagueItem(highlightedLeagueIndex);
+			}
 		}
 	});
 
@@ -184,6 +219,7 @@ function initGameSelection(gameId) {
 
 	let allTeams = [];
 	let selectedTeams = new Set();
+	let currentFilteredTeams = [];
 
 	// Fetch teams from API
 	const teamApiUrl = '/api/team-options/' + gameId;
@@ -198,6 +234,7 @@ function initGameSelection(gameId) {
 				noTeamsResults.classList.remove('hidden');
 			} else if (data.teams && data.teams.length > 0) {
 				allTeams = data.teams;
+				currentFilteredTeams = data.teams;
 				renderTeams(allTeams);
 				updateCombinedDisplay();
 				teamList.classList.remove('hidden');
@@ -214,10 +251,13 @@ function initGameSelection(gameId) {
 		});
 
 	// Render teams list
+	let highlightedTeamIndex = -1;
 	function renderTeams(teams) {
 		teamList.innerHTML = '';
-		teams.forEach(team => {
+		highlightedTeamIndex = -1;
+		teams.forEach((team, index) => {
 			const li = document.createElement('li');
+			li.setAttribute('data-index', index);
 			const label = document.createElement('label');
 			label.className = 'label cursor-pointer justify-start gap-2 p-2';
 
@@ -350,10 +390,10 @@ function initGameSelection(gameId) {
 	}
 
 	// Search input event for teams
-	let currentFilteredTeams = [];
 	searchTeamsInput.addEventListener('input', (e) => {
 		const filtered = filterTeams(e.target.value);
 		currentFilteredTeams = filtered;
+		highlightedTeamIndex = -1;
 		if (filtered.length > 0) {
 			renderTeams(filtered);
 			teamList.classList.remove('hidden');
@@ -364,19 +404,49 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Handle Enter key to select first result for teams
-	searchTeamsInput.addEventListener('keydown', (e) => {
-		if (e.key === 'Enter' && currentFilteredTeams.length > 0) {
-			e.preventDefault();
-			const firstTeam = currentFilteredTeams[0];
-			if (!selectedTeams.has(firstTeam.id)) {
-				selectedTeams.add(firstTeam.id);
-				updateCombinedDisplay();
-				renderTeams(currentFilteredTeams);
+	// Handle arrow keys and Enter for keyboard navigation in teams
+	function highlightTeamItem(index) {
+		const items = teamList.querySelectorAll('li');
+		items.forEach((item, i) => {
+			if (i === index) {
+				item.querySelector('label').style.backgroundColor = 'oklch(var(--b3))';
+			} else {
+				item.querySelector('label').style.backgroundColor = '';
 			}
-			searchTeamsInput.value = '';
-			currentFilteredTeams = allTeams;
-			renderTeams(allTeams);
+		});
+	}
+
+	searchTeamsInput.addEventListener('keydown', (e) => {
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			const items = teamList.querySelectorAll('li');
+			if (items.length > 0) {
+				highlightedTeamIndex = highlightedTeamIndex + 1;
+				if (highlightedTeamIndex >= items.length) {
+					highlightedTeamIndex = 0;
+				}
+				highlightTeamItem(highlightedTeamIndex);
+				items[highlightedTeamIndex].scrollIntoView({ block: 'nearest' });
+			}
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			const items = teamList.querySelectorAll('li');
+			if (items.length > 0) {
+				highlightedTeamIndex = highlightedTeamIndex - 1;
+				if (highlightedTeamIndex < 0) {
+					highlightedTeamIndex = items.length - 1;
+				}
+				highlightTeamItem(highlightedTeamIndex);
+				items[highlightedTeamIndex].scrollIntoView({ block: 'nearest' });
+			}
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			if (highlightedTeamIndex >= 0 && highlightedTeamIndex < currentFilteredTeams.length) {
+				const team = currentFilteredTeams[highlightedTeamIndex];
+				toggleTeam(team);
+				renderTeams(currentFilteredTeams);
+				highlightTeamItem(highlightedTeamIndex);
+			}
 		}
 	});
 

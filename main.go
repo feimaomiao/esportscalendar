@@ -21,7 +21,7 @@ func main() {
 
 	// Routes
 	mux.HandleFunc("/", mw.IndexHandler)
-	mux.HandleFunc("/second", mw.SecondPageHandler)
+	mux.HandleFunc("/lts", mw.SecondPageHandler)
 	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
 	mux.HandleFunc("/api/team-options/", mw.TeamOptionsHandler)
 

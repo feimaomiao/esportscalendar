@@ -1,9 +1,8 @@
 package components
 
-import "fmt"
 
 templ SecondPage(selectedOptions []Option) {
-	@BaseLayout("Second Page - Results") {
+	@BaseLayout("Select Leagues & Teams") {
 		<div class="container mx-auto p-4">
 			<div class="max-w-5xl mx-auto">
 				@SecondPageContent(selectedOptions)
@@ -72,15 +71,6 @@ templ SecondPageContent(selectedOptions []Option) {
 					})();
 				</script>
 
-				<div class="divider"></div>
-
-				<div class="stats shadow">
-					<div class="stat">
-						<div class="stat-title">Total Selected</div>
-						<div class="stat-value text-primary">{ fmt.Sprintf("%d", len(selectedOptions)) }</div>
-						<div class="stat-desc">Options chosen</div>
-					</div>
-				</div>
 			} else {
 				<div class="alert alert-warning">
 					<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -97,6 +87,12 @@ templ SecondPageContent(selectedOptions []Option) {
 					</svg>
 					Back to Options
 				</a>
+				<button type="button" id="submit-selection-btn" class="btn btn-primary">
+					Submit Selection for Preview
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+					</svg>
+				</button>
 			</div>
 
 			<div id="result" class="mt-4">
