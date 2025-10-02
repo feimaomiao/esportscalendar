@@ -213,7 +213,7 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(selectedOptions) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"space-y-4\"><h3 class=\"font-semibold text-lg\">Your selections:</h3><div class=\"grid gap-4\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"space-y-4\"><h3 class=\"font-semibold text-lg\">Your selections:</h3><div class=\"flex flex-col gap-4\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -231,156 +231,286 @@ func SecondPageContent(selectedOptions []string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</h4><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-medium\">Select leagues for this game:</span></label><div class=\"relative\"><select id=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</h4><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-medium\">Select leagues for this game:</span></label><div class=\"relative\"><!-- Selected leagues display --><div id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("select-" + option)
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("selected-" + option)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 89, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 89, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" name=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"flex flex-wrap gap-2 mb-2 min-h-[2rem]\"></div><!-- Searchable dropdown --><div class=\"dropdown dropdown-open w-full\" id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("league-" + option)
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-container-" + option)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 90, Col: 37}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 92, Col: 89}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"select select-bordered w-full focus:select-primary\" multiple size=\"4\"><option disabled selected>Loading leagues...</option></select><div id=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><input type=\"text\" id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("loading-" + option)
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("search-" + option)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 96, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 95, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"loading-indicator absolute top-2 right-2\"><span class=\"loading loading-spinner loading-sm\"></span></div></div><label class=\"label\"><span class=\"label-text-alt text-xs opacity-70\">Hold Ctrl/Cmd to select multiple leagues</span></label></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" placeholder=\"Type to search leagues...\" class=\"input input-bordered w-full\" autocomplete=\"off\"><div class=\"absolute z-[1] w-full bg-base-100 rounded-box shadow-lg mt-1 hidden max-h-64 overflow-y-auto\" id=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-menu-" + option)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 99, Col: 148}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"><div id=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var15 string
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("loading-" + option)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 100, Col: 42}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"p-4 text-center\"><span class=\"loading loading-spinner loading-sm\"></span> <span class=\"ml-2\">Loading leagues...</span></div><ul class=\"menu p-2 w-full hidden\" id=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var16 string
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs("league-list-" + option)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 104, Col: 76}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"></ul><div class=\"p-4 text-center text-sm opacity-70 hidden\" id=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var17 string
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs("no-results-" + option)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 105, Col: 95}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\">No leagues found</div></div></div></div><label class=\"label\"><span class=\"label-text-alt text-xs opacity-70\">Click to select/deselect leagues</span></label></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				templ_7745c5c3_Err = templ.Raw(fmt.Sprintf(`<script type="text/javascript">
 										(function() {
 											const gameId = %q;
-											const selectElement = document.getElementById('select-' + gameId);
+											const searchInput = document.getElementById('search-' + gameId);
+											const dropdownMenu = document.getElementById('dropdown-menu-' + gameId);
 											const loadingElement = document.getElementById('loading-' + gameId);
-											
-											// Show loading indicator
-											loadingElement.style.display = 'block';
-											
+											const leagueList = document.getElementById('league-list-' + gameId);
+											const noResults = document.getElementById('no-results-' + gameId);
+											const selectedContainer = document.getElementById('selected-' + gameId);
+
+											let allLeagues = [];
+											let selectedLeagues = new Set();
+
+											// Fetch leagues from API
 											fetch('/api/league-options/' + gameId)
 												.then(response => response.json())
 												.then(data => {
-													// Clear existing options
-													selectElement.innerHTML = '';
-													
+													loadingElement.classList.add('hidden');
+
 													if (data.error) {
-														// Handle error
-														const errorOption = document.createElement('option');
-														errorOption.disabled = true;
-														errorOption.textContent = data.message;
-														selectElement.appendChild(errorOption);
+														noResults.textContent = data.message;
+														noResults.classList.remove('hidden');
 													} else if (data.leagues && data.leagues.length > 0) {
-														// Add leagues as options
-														data.leagues.forEach(league => {
-															const option = document.createElement('option');
-															option.value = league.id;
-															option.textContent = league.name;
-															selectElement.appendChild(option);
-														});
+														allLeagues = data.leagues;
+														renderLeagues(allLeagues);
+														leagueList.classList.remove('hidden');
 													} else {
-														// No leagues available
-														const noLeaguesOption = document.createElement('option');
-														noLeaguesOption.disabled = true;
-														noLeaguesOption.textContent = 'No leagues available for this game';
-														selectElement.appendChild(noLeaguesOption);
+														noResults.textContent = 'No leagues available for this game';
+														noResults.classList.remove('hidden');
 													}
 												})
 												.catch(error => {
-													// Handle fetch error
-													selectElement.innerHTML = '';
-													const errorOption = document.createElement('option');
-													errorOption.disabled = true;
-													errorOption.textContent = 'Failed to load leagues. Please try again.';
-													selectElement.appendChild(errorOption);
+													loadingElement.classList.add('hidden');
+													noResults.textContent = 'Failed to load leagues. Please try again.';
+													noResults.classList.remove('hidden');
 													console.error('Error fetching leagues:', error);
-												})
-												.finally(() => {
-													// Hide loading indicator
-													loadingElement.style.display = 'none';
 												});
+
+											// Render leagues list
+											function renderLeagues(leagues) {
+												leagueList.innerHTML = '';
+												leagues.forEach(league => {
+													const li = document.createElement('li');
+													const label = document.createElement('label');
+													label.className = 'label cursor-pointer justify-start gap-2 p-2';
+
+													const checkbox = document.createElement('input');
+													checkbox.type = 'checkbox';
+													checkbox.className = 'checkbox checkbox-sm checkbox-primary';
+													checkbox.checked = selectedLeagues.has(league.id);
+													checkbox.addEventListener('change', () => toggleLeague(league));
+
+													const span = document.createElement('span');
+													span.textContent = league.name;
+													span.className = 'text-sm';
+
+													label.appendChild(checkbox);
+													label.appendChild(span);
+													li.appendChild(label);
+													leagueList.appendChild(li);
+												});
+											}
+
+											// Toggle league selection
+											function toggleLeague(league) {
+												if (selectedLeagues.has(league.id)) {
+													selectedLeagues.delete(league.id);
+												} else {
+													selectedLeagues.add(league.id);
+												}
+												updateSelectedDisplay();
+											}
+
+											// Update selected leagues display
+											function updateSelectedDisplay() {
+												selectedContainer.innerHTML = '';
+												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
+													const badge = document.createElement('div');
+													badge.className = 'badge badge-primary gap-2';
+													badge.innerHTML = '<span>' + league.name + '</span>';
+
+													const removeBtn = document.createElement('button');
+													removeBtn.className = 'btn btn-ghost btn-xs btn-circle';
+													removeBtn.innerHTML = '✕';
+													removeBtn.addEventListener('click', () => {
+														selectedLeagues.delete(league.id);
+														updateSelectedDisplay();
+														const filtered = filterLeagues(searchInput.value);
+														renderLeagues(filtered);
+													});
+
+													badge.appendChild(removeBtn);
+													selectedContainer.appendChild(badge);
+												});
+											}
+
+											// Filter leagues based on search input
+											function filterLeagues(query) {
+												const lowerQuery = query.toLowerCase();
+												return allLeagues.filter(league =>
+													league.name.toLowerCase().includes(lowerQuery)
+												);
+											}
+
+											// Search input event
+											searchInput.addEventListener('input', (e) => {
+												const filtered = filterLeagues(e.target.value);
+												if (filtered.length > 0) {
+													renderLeagues(filtered);
+													leagueList.classList.remove('hidden');
+													noResults.classList.add('hidden');
+												} else {
+													leagueList.classList.add('hidden');
+													noResults.classList.remove('hidden');
+												}
+											});
+
+											// Show dropdown on focus
+											searchInput.addEventListener('focus', () => {
+												dropdownMenu.classList.remove('hidden');
+											});
+
+											// Hide dropdown when clicking outside
+											document.addEventListener('click', (e) => {
+												if (!searchInput.contains(e.target) && !dropdownMenu.contains(e.target)) {
+													dropdownMenu.classList.add('hidden');
+												}
+											});
 										})();
 									</script>`, option)).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div></div><div class=\"divider\"></div><div class=\"stats shadow\"><div class=\"stat\"><div class=\"stat-title\">Total Selected</div><div class=\"stat-value text-primary\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div><div class=\"divider\"></div><div class=\"stats shadow\"><div class=\"stat\"><div class=\"stat-title\">Total Selected</div><div class=\"stat-value text-primary\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var14 string
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(len(selectedOptions))
+			var templ_7745c5c3_Var18 string
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(len(selectedOptions))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 167, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 256, Col: 65}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div><div class=\"stat-desc\">Options chosen</div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div><div class=\"stat-desc\">Options chosen</div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"alert alert-warning\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"></path></svg> <span>No options were selected. Please go back and select at least one option.</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"alert alert-warning\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"></path></svg> <span>No options were selected. Please go back and select at least one option.</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"card-actions justify-between mt-6\"><a href=\"/\" class=\"btn btn-outline\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18\"></path></svg> Back to Options</a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"card-actions justify-between mt-6\"><a href=\"/\" class=\"btn btn-outline\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18\"></path></svg> Back to Options</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(selectedOptions) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<button class=\"btn btn-success\" hx-post=\"/process\" hx-vals=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<button class=\"btn btn-success\" hx-post=\"/process\" hx-vals=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var15 string
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"options": "%s"}`, strings.Join(selectedOptions, ",")))
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"options": "%s"}`, strings.Join(selectedOptions, ",")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 191, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 280, Col: 85}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" hx-target=\"#result\">Process Selection</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" hx-target=\"#result\">Process Selection</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div><div id=\"result\" class=\"mt-4\"><!-- Processing results would appear here --></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div><div id=\"result\" class=\"mt-4\"><!-- Processing results would appear here --></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -75,7 +75,7 @@ templ SecondPageContent(selectedOptions []string) {
 
 				<div class="space-y-4">
 					<h3 class="font-semibold text-lg">Your selections:</h3>
-					<div class="grid gap-4">
+					<div class="flex flex-col gap-4">
 						for _, option := range selectedOptions {
 							<div class="card bg-base-200 shadow-md">
 								<div class="card-body p-4">
@@ -85,72 +85,161 @@ templ SecondPageContent(selectedOptions []string) {
 											<span class="label-text font-medium">Select leagues for this game:</span>
 										</label>
 										<div class="relative">
-											<select 
-												id={ "select-" + option }
-												name={ "league-" + option }
-												class="select select-bordered w-full focus:select-primary" 
-												multiple
-												size="4">
-												<option disabled selected>Loading leagues...</option>
-											</select>
-											<div id={ "loading-" + option } class="loading-indicator absolute top-2 right-2">
-												<span class="loading loading-spinner loading-sm"></span>
+											<!-- Selected leagues display -->
+											<div id={ "selected-" + option } class="flex flex-wrap gap-2 mb-2 min-h-[2rem]"></div>
+
+											<!-- Searchable dropdown -->
+											<div class="dropdown dropdown-open w-full" id={ "dropdown-container-" + option }>
+												<input
+													type="text"
+													id={ "search-" + option }
+													placeholder="Type to search leagues..."
+													class="input input-bordered w-full"
+													autocomplete="off"/>
+												<div class="absolute z-[1] w-full bg-base-100 rounded-box shadow-lg mt-1 hidden max-h-64 overflow-y-auto" id={ "dropdown-menu-" + option }>
+													<div id={ "loading-" + option } class="p-4 text-center">
+														<span class="loading loading-spinner loading-sm"></span>
+														<span class="ml-2">Loading leagues...</span>
+													</div>
+													<ul class="menu p-2 w-full hidden" id={ "league-list-" + option }></ul>
+													<div class="p-4 text-center text-sm opacity-70 hidden" id={ "no-results-" + option }>
+														No leagues found
+													</div>
+												</div>
 											</div>
 										</div>
 										<label class="label">
-											<span class="label-text-alt text-xs opacity-70">Hold Ctrl/Cmd to select multiple leagues</span>
+											<span class="label-text-alt text-xs opacity-70">Click to select/deselect leagues</span>
 										</label>
 									</div>
 									@templ.Raw(fmt.Sprintf(`<script type="text/javascript">
 										(function() {
 											const gameId = %q;
-											const selectElement = document.getElementById('select-' + gameId);
+											const searchInput = document.getElementById('search-' + gameId);
+											const dropdownMenu = document.getElementById('dropdown-menu-' + gameId);
 											const loadingElement = document.getElementById('loading-' + gameId);
-											
-											// Show loading indicator
-											loadingElement.style.display = 'block';
-											
+											const leagueList = document.getElementById('league-list-' + gameId);
+											const noResults = document.getElementById('no-results-' + gameId);
+											const selectedContainer = document.getElementById('selected-' + gameId);
+
+											let allLeagues = [];
+											let selectedLeagues = new Set();
+
+											// Fetch leagues from API
 											fetch('/api/league-options/' + gameId)
 												.then(response => response.json())
 												.then(data => {
-													// Clear existing options
-													selectElement.innerHTML = '';
-													
+													loadingElement.classList.add('hidden');
+
 													if (data.error) {
-														// Handle error
-														const errorOption = document.createElement('option');
-														errorOption.disabled = true;
-														errorOption.textContent = data.message;
-														selectElement.appendChild(errorOption);
+														noResults.textContent = data.message;
+														noResults.classList.remove('hidden');
 													} else if (data.leagues && data.leagues.length > 0) {
-														// Add leagues as options
-														data.leagues.forEach(league => {
-															const option = document.createElement('option');
-															option.value = league.id;
-															option.textContent = league.name;
-															selectElement.appendChild(option);
-														});
+														allLeagues = data.leagues;
+														renderLeagues(allLeagues);
+														leagueList.classList.remove('hidden');
 													} else {
-														// No leagues available
-														const noLeaguesOption = document.createElement('option');
-														noLeaguesOption.disabled = true;
-														noLeaguesOption.textContent = 'No leagues available for this game';
-														selectElement.appendChild(noLeaguesOption);
+														noResults.textContent = 'No leagues available for this game';
+														noResults.classList.remove('hidden');
 													}
 												})
 												.catch(error => {
-													// Handle fetch error
-													selectElement.innerHTML = '';
-													const errorOption = document.createElement('option');
-													errorOption.disabled = true;
-													errorOption.textContent = 'Failed to load leagues. Please try again.';
-													selectElement.appendChild(errorOption);
+													loadingElement.classList.add('hidden');
+													noResults.textContent = 'Failed to load leagues. Please try again.';
+													noResults.classList.remove('hidden');
 													console.error('Error fetching leagues:', error);
-												})
-												.finally(() => {
-													// Hide loading indicator
-													loadingElement.style.display = 'none';
 												});
+
+											// Render leagues list
+											function renderLeagues(leagues) {
+												leagueList.innerHTML = '';
+												leagues.forEach(league => {
+													const li = document.createElement('li');
+													const label = document.createElement('label');
+													label.className = 'label cursor-pointer justify-start gap-2 p-2';
+
+													const checkbox = document.createElement('input');
+													checkbox.type = 'checkbox';
+													checkbox.className = 'checkbox checkbox-sm checkbox-primary';
+													checkbox.checked = selectedLeagues.has(league.id);
+													checkbox.addEventListener('change', () => toggleLeague(league));
+
+													const span = document.createElement('span');
+													span.textContent = league.name;
+													span.className = 'text-sm';
+
+													label.appendChild(checkbox);
+													label.appendChild(span);
+													li.appendChild(label);
+													leagueList.appendChild(li);
+												});
+											}
+
+											// Toggle league selection
+											function toggleLeague(league) {
+												if (selectedLeagues.has(league.id)) {
+													selectedLeagues.delete(league.id);
+												} else {
+													selectedLeagues.add(league.id);
+												}
+												updateSelectedDisplay();
+											}
+
+											// Update selected leagues display
+											function updateSelectedDisplay() {
+												selectedContainer.innerHTML = '';
+												allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
+													const badge = document.createElement('div');
+													badge.className = 'badge badge-primary gap-2';
+													badge.innerHTML = '<span>' + league.name + '</span>';
+
+													const removeBtn = document.createElement('button');
+													removeBtn.className = 'btn btn-ghost btn-xs btn-circle';
+													removeBtn.innerHTML = '✕';
+													removeBtn.addEventListener('click', () => {
+														selectedLeagues.delete(league.id);
+														updateSelectedDisplay();
+														const filtered = filterLeagues(searchInput.value);
+														renderLeagues(filtered);
+													});
+
+													badge.appendChild(removeBtn);
+													selectedContainer.appendChild(badge);
+												});
+											}
+
+											// Filter leagues based on search input
+											function filterLeagues(query) {
+												const lowerQuery = query.toLowerCase();
+												return allLeagues.filter(league =>
+													league.name.toLowerCase().includes(lowerQuery)
+												);
+											}
+
+											// Search input event
+											searchInput.addEventListener('input', (e) => {
+												const filtered = filterLeagues(e.target.value);
+												if (filtered.length > 0) {
+													renderLeagues(filtered);
+													leagueList.classList.remove('hidden');
+													noResults.classList.add('hidden');
+												} else {
+													leagueList.classList.add('hidden');
+													noResults.classList.remove('hidden');
+												}
+											});
+
+											// Show dropdown on focus
+											searchInput.addEventListener('focus', () => {
+												dropdownMenu.classList.remove('hidden');
+											});
+
+											// Hide dropdown when clicking outside
+											document.addEventListener('click', (e) => {
+												if (!searchInput.contains(e.target) && !dropdownMenu.contains(e.target)) {
+													dropdownMenu.classList.add('hidden');
+												}
+											});
 										})();
 									</script>`, option))
 								</div>
