@@ -39,12 +39,12 @@
 
 				badges.forEach(badge => {
 					// Check if it's a league (badge-primary) or team (badge-secondary)
-					if (badge.classList.contains('badge-primary')) {
-						const text = badge.textContent.replace('✕', '').trim();
-						leagues.push(text);
-					} else if (badge.classList.contains('badge-secondary')) {
-						const text = badge.textContent.replace('✕', '').trim();
-						teams.push(text);
+					if (badge.classList.contains('badge-primary') && badge.hasAttribute('data-league-id')) {
+						const leagueId = parseInt(badge.getAttribute('data-league-id'));
+						leagues.push(leagueId);
+					} else if (badge.classList.contains('badge-secondary') && badge.hasAttribute('data-team-id')) {
+						const teamId = parseInt(badge.getAttribute('data-team-id'));
+						teams.push(teamId);
 					}
 				});
 
@@ -64,6 +64,9 @@
 				return;
 			}
 
+			// Save selections to sessionStorage before navigating
+			sessionStorage.setItem('preview-selections', JSON.stringify(selections));
+
 			// Send POST request to /preview
 			try {
 				const response = await fetch('/preview', {
@@ -78,10 +81,22 @@
 
 				if (response.ok) {
 					const html = await response.text();
+
+					// Store current theme before replacing document
+					const currentTheme = localStorage.getItem('theme') || 'dark';
+
 					// Replace entire page content
 					document.open();
 					document.write(html);
 					document.close();
+
+					// Restore theme after document replacement
+					document.documentElement.setAttribute('data-theme', currentTheme);
+					const themeToggle = document.getElementById('theme-toggle');
+					if (themeToggle && currentTheme === 'light') {
+						themeToggle.checked = true;
+					}
+
 					window.history.pushState({}, '', '/preview');
 				} else {
 					console.error('Request failed:', response.statusText);

@@ -9,6 +9,17 @@
 		continueBtn.disabled = !anyChecked;
 	}
 
+	// Restore previously selected options from sessionStorage
+	const savedSelections = sessionStorage.getItem('selectedGameOptions');
+	if (savedSelections) {
+		const selectedIds = JSON.parse(savedSelections);
+		checkboxes.forEach(cb => {
+			if (selectedIds.includes(cb.value)) {
+				cb.checked = true;
+			}
+		});
+	}
+
 	// Update button state on checkbox change
 	checkboxes.forEach(cb => {
 		cb.addEventListener('change', updateButtonState);
@@ -33,6 +44,9 @@
 		const selectedOptions = Array.from(checkboxes)
 			.filter(cb => cb.checked)
 			.map(cb => cb.value);
+
+		// Save selections to sessionStorage
+		sessionStorage.setItem('selectedGameOptions', JSON.stringify(selectedOptions));
 
 		console.log('Submitting with options:', selectedOptions);
 

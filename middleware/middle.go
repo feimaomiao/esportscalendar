@@ -124,6 +124,43 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[DEBUG] Parsed options from form/query: %v", selectedOptionIDs)
 	}
 
+	// If GET request with no options, render a page that checks sessionStorage
+	if r.Method == "GET" && len(selectedOptionIDs) == 0 {
+		// Render a temporary page that will check sessionStorage and redirect
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`<!DOCTYPE html>
+<html>
+<head>
+	<title>Loading...</title>
+	<script>
+		const savedGameOptions = sessionStorage.getItem('selectedGameOptions');
+		if (savedGameOptions) {
+			const gameIds = JSON.parse(savedGameOptions);
+			fetch('/lts', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ options: gameIds })
+			}).then(response => response.text())
+			  .then(html => {
+				document.open();
+				document.write(html);
+				document.close();
+			  });
+		} else {
+			// No saved selections, redirect to home
+			window.location.href = '/';
+		}
+	</script>
+</head>
+<body>
+	<p>Loading...</p>
+</body>
+</html>`))
+		return
+	}
+
 	// Fetch all games (check cache first)
 	var games []dbtypes.Game
 	cacheKey := "all-games"

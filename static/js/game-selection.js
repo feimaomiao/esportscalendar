@@ -33,6 +33,23 @@ function initGameSelection(gameId) {
 	let selectedLeagues = new Set();
 	let currentFilteredLeagues = [];
 
+	// Restore saved selections from sessionStorage
+	const savedKey = 'lts-selections-' + gameId;
+	const savedData = sessionStorage.getItem(savedKey);
+	let hasSavedSelections = false;
+	if (savedData) {
+		try {
+			const parsed = JSON.parse(savedData);
+			console.log('Restoring saved selections for game', gameId, ':', parsed);
+			if (parsed.leagues && Array.isArray(parsed.leagues)) {
+				parsed.leagues.forEach(id => selectedLeagues.add(id));
+				hasSavedSelections = true;
+			}
+		} catch (e) {
+			console.error('Failed to parse saved selections:', e);
+		}
+	}
+
 	// Fetch leagues from API
 	const apiUrl = '/api/league-options/' + gameId;
 	console.log('Fetching leagues from:', apiUrl);
@@ -48,12 +65,18 @@ function initGameSelection(gameId) {
 				allLeagues = data.leagues;
 				currentFilteredLeagues = data.leagues;
 
-				// Auto-select tier 1 leagues
-				allLeagues.forEach(league => {
-					if (league.is_tier1) {
-						selectedLeagues.add(league.id);
+				// Auto-select tier 1 leagues only if no saved selections
+				if (!hasSavedSelections) {
+					allLeagues.forEach(league => {
+						if (league.is_tier1) {
+							selectedLeagues.add(league.id);
+						}
+					});
+					// Save the auto-selected tier 1 leagues
+					if (selectedLeagues.size > 0) {
+						saveSelections();
 					}
-				});
+				}
 
 				renderLeagues(allLeagues);
 				updateCombinedDisplay();
@@ -111,6 +134,16 @@ function initGameSelection(gameId) {
 		});
 	}
 
+	// Save selections to sessionStorage
+	function saveSelections() {
+		const data = {
+			leagues: Array.from(selectedLeagues),
+			teams: Array.from(selectedTeams)
+		};
+		console.log('Saving selections for game', gameId, ':', data);
+		sessionStorage.setItem(savedKey, JSON.stringify(data));
+	}
+
 	// Toggle league selection
 	function toggleLeague(league) {
 		if (selectedLeagues.has(league.id)) {
@@ -118,6 +151,7 @@ function initGameSelection(gameId) {
 		} else {
 			selectedLeagues.add(league.id);
 		}
+		saveSelections();
 		updateCombinedDisplay();
 	}
 
@@ -221,6 +255,18 @@ function initGameSelection(gameId) {
 	let selectedTeams = new Set();
 	let currentFilteredTeams = [];
 
+	// Restore saved team selections from sessionStorage
+	if (savedData) {
+		try {
+			const parsed = JSON.parse(savedData);
+			if (parsed.teams && Array.isArray(parsed.teams)) {
+				parsed.teams.forEach(id => selectedTeams.add(id));
+			}
+		} catch (e) {
+			console.error('Failed to parse saved team selections:', e);
+		}
+	}
+
 	// Fetch teams from API
 	const teamApiUrl = '/api/team-options/' + gameId;
 	console.log('Fetching teams from:', teamApiUrl);
@@ -298,6 +344,7 @@ function initGameSelection(gameId) {
 		} else {
 			selectedTeams.add(team.id);
 		}
+		saveSelections();
 		updateCombinedDisplay();
 	}
 
@@ -309,6 +356,7 @@ function initGameSelection(gameId) {
 		allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
 			const badge = document.createElement('div');
 			badge.className = 'badge badge-primary badge-lg gap-2 rounded-md py-3';
+			badge.setAttribute('data-league-id', league.id);
 
 			// Add league image with white background
 			const imgContainer = document.createElement('div');
@@ -333,6 +381,7 @@ function initGameSelection(gameId) {
 			removeBtn.innerHTML = '✕';
 			removeBtn.addEventListener('click', () => {
 				selectedLeagues.delete(league.id);
+				saveSelections();
 				updateCombinedDisplay();
 				const filtered = filterLeagues(searchInput.value);
 				renderLeagues(filtered);
@@ -346,6 +395,7 @@ function initGameSelection(gameId) {
 		allTeams.filter(t => selectedTeams.has(t.id)).forEach(team => {
 			const badge = document.createElement('div');
 			badge.className = 'badge badge-secondary badge-lg gap-2 rounded-md py-3';
+			badge.setAttribute('data-team-id', team.id);
 
 			// Add team image with white background
 			const imgContainer = document.createElement('div');
@@ -370,6 +420,7 @@ function initGameSelection(gameId) {
 			removeBtn.innerHTML = '✕';
 			removeBtn.addEventListener('click', () => {
 				selectedTeams.delete(team.id);
+				saveSelections();
 				updateCombinedDisplay();
 				const filtered = filterTeams(searchTeamsInput.value);
 				renderTeams(filtered);
@@ -475,6 +526,7 @@ function initGameSelection(gameId) {
 
 				console.log('After clear - Leagues:', selectedLeagues.size, 'Teams:', selectedTeams.size);
 
+				saveSelections();
 				updateCombinedDisplay();
 
 				// Re-render both lists to update checkboxes

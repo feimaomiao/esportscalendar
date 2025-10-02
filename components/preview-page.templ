@@ -27,7 +27,7 @@ templ PreviewPageContent(selections interface{}) {
 			</div>
 
 			<div class="card-actions justify-between mt-6">
-				<a href="/lts" class="btn btn-outline">
+				<a href="/lts" id="back-to-selection-btn" class="btn btn-outline">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
 					</svg>
@@ -40,6 +40,51 @@ templ PreviewPageContent(selections interface{}) {
 					</svg>
 				</button>
 			</div>
+			<script>
+				// Handle back to selection with saved game options
+				document.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {
+					e.preventDefault();
+
+					const savedGameOptions = sessionStorage.getItem('selectedGameOptions');
+					if (savedGameOptions) {
+						const gameIds = JSON.parse(savedGameOptions);
+
+						const response = await fetch('/lts', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'HX-Request': 'true'
+							},
+							body: JSON.stringify({ options: gameIds })
+						});
+
+						if (response.ok) {
+							const html = await response.text();
+							const container = document.querySelector('.container');
+							if (container) {
+								container.innerHTML = html;
+
+								// Execute scripts in the newly inserted HTML
+								const scripts = container.querySelectorAll('script');
+								scripts.forEach(oldScript => {
+									const newScript = document.createElement('script');
+									if (oldScript.src) {
+										newScript.src = oldScript.src;
+									} else {
+										newScript.textContent = oldScript.textContent;
+									}
+									oldScript.parentNode.replaceChild(newScript, oldScript);
+								});
+
+								window.history.pushState({}, '', '/lts');
+							}
+						}
+					} else {
+						// No saved selections, just navigate normally
+						window.location.href = '/lts';
+					}
+				});
+			</script>
 		</div>
 	</div>
 }
