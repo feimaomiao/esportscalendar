@@ -101,9 +101,28 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[ENTRY] SecondPageHandler() - Processing request from %s %s", r.Method, r.URL.Path)
-	// Parse selected options from query params or form data
-	r.ParseForm()
-	selectedOptionIDs := r.Form["options"]
+
+	var selectedOptionIDs []string
+
+	// Try to parse JSON body first
+	if r.Header.Get("Content-Type") == "application/json" {
+		var requestBody struct {
+			Options []string `json:"options"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err == nil {
+			selectedOptionIDs = requestBody.Options
+			log.Printf("[DEBUG] Parsed options from JSON body: %v", selectedOptionIDs)
+		} else {
+			log.Printf("[ERROR] Failed to parse JSON body: %v", err)
+		}
+	}
+
+	// Fallback to query params or form data if no JSON body
+	if len(selectedOptionIDs) == 0 {
+		r.ParseForm()
+		selectedOptionIDs = r.Form["options"]
+		log.Printf("[DEBUG] Parsed options from form/query: %v", selectedOptionIDs)
+	}
 
 	// Fetch all games (check cache first)
 	var games []dbtypes.Game

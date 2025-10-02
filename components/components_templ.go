@@ -46,7 +46,7 @@ func Index(options []Option) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"select\" class=\"container mx-auto p-4\"><div class=\"max-w-2xl mx-auto\"><div class=\"card bg-base-100 shadow-xl\"><div class=\"card-body\"><h1 class=\"card-title text-3xl mb-6\">Select games to track</h1><form hx-get=\"/second\" hx-target=\"#select\" hx-swap=\"innerHTML\" hx-push-url=\"true\"><div class=\"space-y-4\" id=\"game-options\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"select\" class=\"container mx-auto p-4\"><div class=\"max-w-2xl mx-auto\"><div class=\"card bg-base-100 shadow-xl\"><div class=\"card-body\"><h1 class=\"card-title text-3xl mb-6\">Select games to track</h1><form id=\"game-form\"><div class=\"space-y-4\" id=\"game-options\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -58,7 +58,7 @@ func Index(options []Option) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Logo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 29, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 26, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -71,7 +71,7 @@ func Index(options []Option) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 29, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 26, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -84,7 +84,7 @@ func Index(options []Option) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(opt.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 31, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 28, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -97,7 +97,7 @@ func Index(options []Option) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(opt.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 35, Col: 29}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 32, Col: 29}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -118,7 +118,7 @@ func Index(options []Option) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"card-actions justify-end mt-6\"><button type=\"submit\" id=\"continue-btn\" class=\"btn btn-primary\" disabled>Continue to Next Page <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3\"></path></svg></button></div></form><script>\n\t\t\t\t\t\t\t(function() {\n\t\t\t\t\t\t\t\tconst continueBtn = document.getElementById('continue-btn');\n\t\t\t\t\t\t\t\tconst checkboxes = document.querySelectorAll('.game-checkbox');\n\n\t\t\t\t\t\t\t\tfunction updateButtonState() {\n\t\t\t\t\t\t\t\t\tconst anyChecked = Array.from(checkboxes).some(cb => cb.checked);\n\t\t\t\t\t\t\t\t\tcontinueBtn.disabled = !anyChecked;\n\t\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\t\t// Update button state on checkbox change\n\t\t\t\t\t\t\t\tcheckboxes.forEach(cb => {\n\t\t\t\t\t\t\t\t\tcb.addEventListener('change', updateButtonState);\n\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\t// Initial check\n\t\t\t\t\t\t\t\tupdateButtonState();\n\t\t\t\t\t\t\t})();\n\t\t\t\t\t\t</script></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"card-actions justify-end mt-6\"><button type=\"submit\" id=\"continue-btn\" class=\"btn btn-primary\" disabled>Continue to Next Page <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3\"></path></svg></button></div></form><script>\n\t\t\t\t\t\t\t(function() {\n\t\t\t\t\t\t\t\tconst continueBtn = document.getElementById('continue-btn');\n\t\t\t\t\t\t\t\tconst checkboxes = document.querySelectorAll('.game-checkbox');\n\t\t\t\t\t\t\t\tconst form = document.getElementById('game-form');\n\n\t\t\t\t\t\t\t\tfunction updateButtonState() {\n\t\t\t\t\t\t\t\t\tconst anyChecked = Array.from(checkboxes).some(cb => cb.checked);\n\t\t\t\t\t\t\t\t\tcontinueBtn.disabled = !anyChecked;\n\t\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\t\t// Update button state on checkbox change\n\t\t\t\t\t\t\t\tcheckboxes.forEach(cb => {\n\t\t\t\t\t\t\t\t\tcb.addEventListener('change', updateButtonState);\n\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\t// Initial check\n\t\t\t\t\t\t\t\tupdateButtonState();\n\n\t\t\t\t\t\t\t\t// Handle form submission\n\t\t\t\t\t\t\t\tform.addEventListener('submit', async (e) => {\n\t\t\t\t\t\t\t\t\te.preventDefault();\n\n\t\t\t\t\t\t\t\t\t// Get selected options\n\t\t\t\t\t\t\t\t\tconst selectedOptions = Array.from(checkboxes)\n\t\t\t\t\t\t\t\t\t\t.filter(cb => cb.checked)\n\t\t\t\t\t\t\t\t\t\t.map(cb => cb.value);\n\n\t\t\t\t\t\t\t\t\tconsole.log('Submitting with options:', selectedOptions);\n\n\t\t\t\t\t\t\t\t\t// Send POST request with JSON body\n\t\t\t\t\t\t\t\t\ttry {\n\t\t\t\t\t\t\t\t\t\tconst response = await fetch('/second', {\n\t\t\t\t\t\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\t\t\t\t\t\theaders: {\n\t\t\t\t\t\t\t\t\t\t\t\t'Content-Type': 'application/json',\n\t\t\t\t\t\t\t\t\t\t\t\t'HX-Request': 'true'\n\t\t\t\t\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\t\t\t\t\tbody: JSON.stringify({ options: selectedOptions })\n\t\t\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\t\t\tconsole.log('Response status:', response.status);\n\n\t\t\t\t\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\t\t\t\t\tconst html = await response.text();\n\t\t\t\t\t\t\t\t\t\t\tconst container = document.getElementById('select');\n\t\t\t\t\t\t\t\t\t\t\tcontainer.innerHTML = html;\n\n\t\t\t\t\t\t\t\t\t\t\t// Execute scripts in the newly inserted HTML\n\t\t\t\t\t\t\t\t\t\t\tconst scripts = container.querySelectorAll('script');\n\t\t\t\t\t\t\t\t\t\t\tscripts.forEach(oldScript => {\n\t\t\t\t\t\t\t\t\t\t\t\tconst newScript = document.createElement('script');\n\t\t\t\t\t\t\t\t\t\t\t\tnewScript.textContent = oldScript.textContent;\n\t\t\t\t\t\t\t\t\t\t\t\toldScript.parentNode.replaceChild(newScript, oldScript);\n\t\t\t\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\t\t\t\twindow.history.pushState({}, '', '/second');\n\t\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\t\tconsole.error('Request failed:', response.statusText);\n\t\t\t\t\t\t\t\t\t\t\talert('Request failed: ' + response.statusText);\n\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\t\t\t\t\tconsole.error('Error:', error);\n\t\t\t\t\t\t\t\t\t\talert('Error: ' + error.message);\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t})();\n\t\t\t\t\t\t</script></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -218,14 +218,14 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, option := range selectedOptions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"card bg-base-200 shadow-md\"><div class=\"card-body p-4\"><div class=\"flex items-center gap-2 mb-3\"><div class=\"bg-white rounded p-1 flex items-center justify-center\"><img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"card bg-base-200 shadow-md\"><div class=\"card-body p-4\"><div class=\"flex flex-col items-center gap-3 mb-4\"><div class=\"bg-white rounded p-2 flex items-center justify-center\"><img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(option.Logo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 106, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 152, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -238,20 +238,20 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 106, Col: 54}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 152, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"w-6 h-6 object-contain\"></div><h4 class=\"card-title text-base\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"w-16 h-16 object-contain\"></div><h4 class=\"card-title text-lg\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 108, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 154, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -264,7 +264,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("selected-combined-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 116, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 162, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -277,7 +277,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-container-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 128, Col: 93}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 174, Col: 93}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -290,7 +290,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("search-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 131, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 177, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -303,7 +303,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-menu-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 135, Col: 152}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 181, Col: 152}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -316,7 +316,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs("loading-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 136, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 182, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -329,7 +329,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs("league-list-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 140, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 186, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -342,7 +342,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs("no-results-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 141, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 187, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -355,7 +355,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-teams-container-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 159, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 205, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -368,7 +368,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs("search-teams-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 162, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 208, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -381,7 +381,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-teams-menu-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 166, Col: 158}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 212, Col: 158}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -394,7 +394,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs("loading-teams-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 167, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 213, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
@@ -407,7 +407,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs("team-list-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 171, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 217, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
@@ -420,7 +420,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs("no-teams-results-" + option.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 172, Col: 105}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 218, Col: 105}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -534,8 +534,10 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 											}
 
 											// Search input event
+											let currentFilteredLeagues = [];
 											searchInput.addEventListener('input', (e) => {
 												const filtered = filterLeagues(e.target.value);
+												currentFilteredLeagues = filtered;
 												if (filtered.length > 0) {
 													renderLeagues(filtered);
 													leagueList.classList.remove('hidden');
@@ -543,6 +545,22 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 												} else {
 													leagueList.classList.add('hidden');
 													noResults.classList.remove('hidden');
+												}
+											});
+
+											// Handle Enter key to select first result
+											searchInput.addEventListener('keydown', (e) => {
+												if (e.key === 'Enter' && currentFilteredLeagues.length > 0) {
+													e.preventDefault();
+													const firstLeague = currentFilteredLeagues[0];
+													if (!selectedLeagues.has(firstLeague.id)) {
+														selectedLeagues.add(firstLeague.id);
+														updateCombinedDisplay();
+														renderLeagues(currentFilteredLeagues);
+													}
+													searchInput.value = '';
+													currentFilteredLeagues = allLeagues;
+													renderLeagues(allLeagues);
 												}
 											});
 
@@ -731,8 +749,10 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 											}
 
 											// Search input event for teams
+											let currentFilteredTeams = [];
 											searchTeamsInput.addEventListener('input', (e) => {
 												const filtered = filterTeams(e.target.value);
+												currentFilteredTeams = filtered;
 												if (filtered.length > 0) {
 													renderTeams(filtered);
 													teamList.classList.remove('hidden');
@@ -740,6 +760,22 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 												} else {
 													teamList.classList.add('hidden');
 													noTeamsResults.classList.remove('hidden');
+												}
+											});
+
+											// Handle Enter key to select first result for teams
+											searchTeamsInput.addEventListener('keydown', (e) => {
+												if (e.key === 'Enter' && currentFilteredTeams.length > 0) {
+													e.preventDefault();
+													const firstTeam = currentFilteredTeams[0];
+													if (!selectedTeams.has(firstTeam.id)) {
+														selectedTeams.add(firstTeam.id);
+														updateCombinedDisplay();
+														renderTeams(currentFilteredTeams);
+													}
+													searchTeamsInput.value = '';
+													currentFilteredTeams = allTeams;
+													renderTeams(allTeams);
 												}
 											});
 
@@ -771,7 +807,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(len(selectedOptions))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 520, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 602, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -805,7 +841,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				return fmt.Sprintf(`{"options": "%s"}`, strings.Join(ids, ","))
 			}())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 550, Col: 10}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/components.templ`, Line: 632, Col: 10}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {

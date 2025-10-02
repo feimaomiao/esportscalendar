@@ -14,12 +14,9 @@ templ Index(options []Option) {
 				<div class="card bg-base-100 shadow-xl">
 					<div class="card-body">
 						<h1 class="card-title text-3xl mb-6">Select games to track</h1>
-						
-						<form hx-get="/second" 
-							  hx-target="#select" 
-							  hx-swap="innerHTML"
-							  hx-push-url="true">
-							
+
+						<form id="game-form">
+
 							<div class="space-y-4" id="game-options">
 								for _, opt := range options {
 									<div class="form-control">
@@ -56,6 +53,7 @@ templ Index(options []Option) {
 							(function() {
 								const continueBtn = document.getElementById('continue-btn');
 								const checkboxes = document.querySelectorAll('.game-checkbox');
+								const form = document.getElementById('game-form');
 
 								function updateButtonState() {
 									const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
@@ -69,6 +67,54 @@ templ Index(options []Option) {
 
 								// Initial check
 								updateButtonState();
+
+								// Handle form submission
+								form.addEventListener('submit', async (e) => {
+									e.preventDefault();
+
+									// Get selected options
+									const selectedOptions = Array.from(checkboxes)
+										.filter(cb => cb.checked)
+										.map(cb => cb.value);
+
+									console.log('Submitting with options:', selectedOptions);
+
+									// Send POST request with JSON body
+									try {
+										const response = await fetch('/second', {
+											method: 'POST',
+											headers: {
+												'Content-Type': 'application/json',
+												'HX-Request': 'true'
+											},
+											body: JSON.stringify({ options: selectedOptions })
+										});
+
+										console.log('Response status:', response.status);
+
+										if (response.ok) {
+											const html = await response.text();
+											const container = document.getElementById('select');
+											container.innerHTML = html;
+
+											// Execute scripts in the newly inserted HTML
+											const scripts = container.querySelectorAll('script');
+											scripts.forEach(oldScript => {
+												const newScript = document.createElement('script');
+												newScript.textContent = oldScript.textContent;
+												oldScript.parentNode.replaceChild(newScript, oldScript);
+											});
+
+											window.history.pushState({}, '', '/second');
+										} else {
+											console.error('Request failed:', response.statusText);
+											alert('Request failed: ' + response.statusText);
+										}
+									} catch (error) {
+										console.error('Error:', error);
+										alert('Error: ' + error.message);
+									}
+								});
 							})();
 						</script>
 					</div>
@@ -101,11 +147,11 @@ templ SecondPageContent(selectedOptions []Option) {
 						for _, option := range selectedOptions {
 							<div class="card bg-base-200 shadow-md">
 								<div class="card-body p-4">
-									<div class="flex items-center gap-2 mb-3">
-										<div class="bg-white rounded p-1 flex items-center justify-center">
-											<img src={ option.Logo } alt={ option.Label } class="w-6 h-6 object-contain"/>
+									<div class="flex flex-col items-center gap-3 mb-4">
+										<div class="bg-white rounded p-2 flex items-center justify-center">
+											<img src={ option.Logo } alt={ option.Label } class="w-16 h-16 object-contain"/>
 										</div>
-										<h4 class="card-title text-base">{ option.Label }</h4>
+										<h4 class="card-title text-lg">{ option.Label }</h4>
 									</div>
 
 									<!-- Combined selected items display -->
@@ -284,8 +330,10 @@ templ SecondPageContent(selectedOptions []Option) {
 											}
 
 											// Search input event
+											let currentFilteredLeagues = [];
 											searchInput.addEventListener('input', (e) => {
 												const filtered = filterLeagues(e.target.value);
+												currentFilteredLeagues = filtered;
 												if (filtered.length > 0) {
 													renderLeagues(filtered);
 													leagueList.classList.remove('hidden');
@@ -293,6 +341,22 @@ templ SecondPageContent(selectedOptions []Option) {
 												} else {
 													leagueList.classList.add('hidden');
 													noResults.classList.remove('hidden');
+												}
+											});
+
+											// Handle Enter key to select first result
+											searchInput.addEventListener('keydown', (e) => {
+												if (e.key === 'Enter' && currentFilteredLeagues.length > 0) {
+													e.preventDefault();
+													const firstLeague = currentFilteredLeagues[0];
+													if (!selectedLeagues.has(firstLeague.id)) {
+														selectedLeagues.add(firstLeague.id);
+														updateCombinedDisplay();
+														renderLeagues(currentFilteredLeagues);
+													}
+													searchInput.value = '';
+													currentFilteredLeagues = allLeagues;
+													renderLeagues(allLeagues);
 												}
 											});
 
@@ -481,8 +545,10 @@ templ SecondPageContent(selectedOptions []Option) {
 											}
 
 											// Search input event for teams
+											let currentFilteredTeams = [];
 											searchTeamsInput.addEventListener('input', (e) => {
 												const filtered = filterTeams(e.target.value);
+												currentFilteredTeams = filtered;
 												if (filtered.length > 0) {
 													renderTeams(filtered);
 													teamList.classList.remove('hidden');
@@ -490,6 +556,22 @@ templ SecondPageContent(selectedOptions []Option) {
 												} else {
 													teamList.classList.add('hidden');
 													noTeamsResults.classList.remove('hidden');
+												}
+											});
+
+											// Handle Enter key to select first result for teams
+											searchTeamsInput.addEventListener('keydown', (e) => {
+												if (e.key === 'Enter' && currentFilteredTeams.length > 0) {
+													e.preventDefault();
+													const firstTeam = currentFilteredTeams[0];
+													if (!selectedTeams.has(firstTeam.id)) {
+														selectedTeams.add(firstTeam.id);
+														updateCombinedDisplay();
+														renderTeams(currentFilteredTeams);
+													}
+													searchTeamsInput.value = '';
+													currentFilteredTeams = allTeams;
+													renderTeams(allTeams);
 												}
 											});
 
