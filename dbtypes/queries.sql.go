@@ -79,7 +79,7 @@ INNER JOIN tournaments tour ON m.tournament_id = tour.id
 INNER JOIN teams t1 ON m.team1_id = t1.id
 INNER JOIN teams t2 ON m.team2_id = t2.id
 WHERE
-    m.expected_start_time >= NOW() - INTERVAL '7 days'
+    m.expected_start_time >= NOW() - INTERVAL '14 days'
     AND m.game_id = ANY($1::int[])
     AND (tour.tier IS NULL OR tour.tier <= $2::int)
     AND (

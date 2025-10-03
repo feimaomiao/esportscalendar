@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
@@ -40,7 +41,8 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 
 	// Initialize LRU cache with 32 entries
 	// technically we should be able to cache the entire games, leagues and teams list?
-	cache, err := lru.New[string, any](32)
+	lruSize := 32
+	cache, err := lru.New[string, any](lruSize)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +63,7 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	// Check cache first
 	cacheKey := "all-games"
 	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if cachedGames, ok := cachedData.([]dbtypes.Game); ok {
+		if cachedGames, cacheOk := cachedData.([]dbtypes.Game); cacheOk {
 			m.Logger.Debug("Serving cached games list")
 			games = cachedGames
 		}
@@ -92,7 +94,7 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			logo = components.LogoPath(game.Slug.String) + ".png"
 		}
 		options = append(options, components.Option{
-			ID:      fmt.Sprintf("%d", game.ID),
+			ID:      strconv.Itoa(int(game.ID)),
 			Label:   game.Name,
 			Logo:    logo,
 			Checked: false,
@@ -100,11 +102,17 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	component := components.Index(options)
-	component.Render(m.Context, w)
+	if err := component.Render(m.Context, w); err != nil {
+		m.Logger.Error("Failed to render index", zap.Error(err))
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
 }
 
 func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "SecondPageHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "SecondPageHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 
 	var selectedOptionIDs []string
 
@@ -123,16 +131,20 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fallback to query params or form data if no JSON body
 	if len(selectedOptionIDs) == 0 {
-		r.ParseForm()
+		if err := r.ParseForm(); err != nil {
+			m.Logger.Error("Failed to parse form", zap.Error(err))
+			http.Error(w, "Invalid form data", http.StatusBadRequest)
+			return
+		}
 		selectedOptionIDs = r.Form["options"]
 		m.Logger.Debug("Parsed options from form/query", zap.Strings("options", selectedOptionIDs))
 	}
 
 	// If GET request with no options, render a page that checks sessionStorage
-	if r.Method == "GET" && len(selectedOptionIDs) == 0 {
+	if r.Method == http.MethodGet && len(selectedOptionIDs) == 0 {
 		// Render a temporary page that will check sessionStorage and redirect
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(`<!DOCTYPE html>
+		if _, err := w.Write([]byte(`<!DOCTYPE html>
 <html>
 <head>
 	<title>Loading...</title>
@@ -161,7 +173,9 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 <body>
 	<p>Loading...</p>
 </body>
-</html>`))
+</html>`)); err != nil {
+			m.Logger.Error("Failed to write response", zap.Error(err))
+		}
 		return
 	}
 
@@ -169,7 +183,7 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	var games []dbtypes.Game
 	cacheKey := "all-games"
 	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if cachedGames, ok := cachedData.([]dbtypes.Game); ok {
+		if cachedGames, cacheOk := cachedData.([]dbtypes.Game); cacheOk {
 			games = cachedGames
 		}
 	}
@@ -188,15 +202,16 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	var selectedOptions []components.Option
 	for _, selectedID := range selectedOptionIDs {
 		for _, game := range games {
-			if fmt.Sprintf("%d", game.ID) == selectedID {
+			if strconv.Itoa(int(game.ID)) == selectedID {
 				logo := components.DefaultLogo()
 				if game.Slug.Valid {
 					logo = components.LogoPath(game.Slug.String) + ".png"
 				}
 				selectedOptions = append(selectedOptions, components.Option{
-					ID:    selectedID,
-					Label: game.Name,
-					Logo:  logo,
+					ID:      selectedID,
+					Label:   game.Name,
+					Logo:    logo,
+					Checked: false,
 				})
 				break
 			}
@@ -204,45 +219,60 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// For HTMX partial updates
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		component := components.SecondPageContent(selectedOptions)
-		component.Render(m.Context, w)
+		if err := component.Render(m.Context, w); err != nil {
+			m.Logger.Error("Failed to render second page content", zap.Error(err))
+			http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	// Full page load
 	component := components.SecondPage(selectedOptions)
-	component.Render(m.Context, w)
+	if err := component.Render(m.Context, w); err != nil {
+		m.Logger.Error("Failed to render second page", zap.Error(err))
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
 }
 func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "LeagueOptionsHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "LeagueOptionsHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 	// Extract game ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/league-options/")
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		response := map[string]interface{}{
+		response := map[string]any{
 			"error":   true,
 			"message": "Invalid game ID",
-			"leagues": []interface{}{},
+			"leagues": []any{},
 		}
-		json.NewEncoder(w).Encode(response)
+		writeJSON(w, response, m.Logger)
 		return
 	}
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("league-options:%d", gameID)
 	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if jsonBytes, ok := cachedData.([]byte); ok {
-			m.Logger.Debug("Cache hit - serving cached data", zap.String("cache_key", cacheKey), zap.Int64("game_id", gameID))
+		if jsonBytes, cacheOk := cachedData.([]byte); cacheOk {
+			m.Logger.Debug("Cache hit - serving cached data",
+				zap.String("cache_key", cacheKey),
+				zap.Int64("game_id", gameID))
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("X-Cache", "HIT")
-			w.Write(jsonBytes)
+			if _, writeErr := w.Write(jsonBytes); writeErr != nil {
+				m.Logger.Error("Failed to write cached response", zap.Error(writeErr))
+			}
 			return
 		}
 	}
 
-	m.Logger.Debug("Cache miss - fetching from database", zap.String("cache_key", cacheKey), zap.Int64("game_id", gameID))
+	m.Logger.Debug("Cache miss - fetching from database",
+		zap.String("cache_key", cacheKey),
+		zap.Int64("game_id", gameID))
 
 	// Fetch leagues from database
 	leagues, err := m.DBConn.GetLeaguesByGameID(m.Context, int32(gameID))
@@ -255,12 +285,12 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 		} else {
 			message = "Unable to load leagues. Please refresh the page: " + err.Error()
 		}
-		response := map[string]interface{}{
+		response := map[string]any{
 			"error":   true,
 			"message": message,
-			"leagues": []interface{}{},
+			"leagues": []any{},
 		}
-		json.NewEncoder(w).Encode(response)
+		writeJSON(w, response, m.Logger)
 		return
 	}
 
@@ -284,7 +314,7 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 		if league.MinTier != nil {
 			if tier, ok := league.MinTier.(int32); ok && tier == 1 {
 				isTier1 = true
-			} else if tier, ok := league.MinTier.(int64); ok && tier == 1 {
+			} else if tier64, ok64 := league.MinTier.(int64); ok64 && tier64 == 1 {
 				isTier1 = true
 			}
 		}
@@ -298,7 +328,7 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Build JSON response
-	response := map[string]interface{}{
+	response := map[string]any{
 		"error":   false,
 		"message": "",
 		"leagues": leagueList,
@@ -318,11 +348,16 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Cache", "MISS")
-	w.Write(responseBytes)
+	if _, writeErr := w.Write(responseBytes); writeErr != nil {
+		m.Logger.Error("Failed to write response", zap.Error(writeErr))
+	}
 }
 
 func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "TeamOptionsHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "TeamOptionsHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 	// Extract game ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/team-options/")
 	gameID, err := strconv.ParseInt(path, 10, 32)
@@ -333,23 +368,29 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 			"message": "Invalid game ID",
 			"teams":   []any{},
 		}
-		json.NewEncoder(w).Encode(response)
+		writeJSON(w, response, m.Logger)
 		return
 	}
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("team-options:%d", gameID)
 	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if jsonBytes, ok := cachedData.([]byte); ok {
-			m.Logger.Debug("Cache hit - serving cached data", zap.String("cache_key", cacheKey), zap.Int64("game_id", gameID))
+		if jsonBytes, cacheOk := cachedData.([]byte); cacheOk {
+			m.Logger.Debug("Cache hit - serving cached data",
+				zap.String("cache_key", cacheKey),
+				zap.Int64("game_id", gameID))
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("X-Cache", "HIT")
-			w.Write(jsonBytes)
+			if _, writeErr := w.Write(jsonBytes); writeErr != nil {
+				m.Logger.Error("Failed to write cached response", zap.Error(writeErr))
+			}
 			return
 		}
 	}
 
-	m.Logger.Debug("Cache miss - fetching teams from database", zap.String("cache_key", cacheKey), zap.Int64("game_id", gameID))
+	m.Logger.Debug("Cache miss - fetching teams from database",
+		zap.String("cache_key", cacheKey),
+		zap.Int64("game_id", gameID))
 
 	// Fetch teams from database
 	teams, err := m.DBConn.GetTeamsByGameID(m.Context, int32(gameID))
@@ -367,7 +408,7 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 			"message": message,
 			"teams":   []any{},
 		}
-		json.NewEncoder(w).Encode(response)
+		writeJSON(w, response, m.Logger)
 		return
 	}
 
@@ -420,13 +461,19 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Cache", "MISS")
-	w.Write(responseBytes)
+	if _, writeErr := w.Write(responseBytes); writeErr != nil {
+		m.Logger.Error("Failed to write response", zap.Error(writeErr))
+	}
 }
+
 func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "PreviewHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "PreviewHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 
 	// Parse JSON body with selections
-	var requestBody map[string]interface{}
+	var requestBody map[string]any
 	if r.Header.Get("Content-Type") == "application/json" {
 		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 			m.Logger.Error("Failed to parse JSON body", zap.Error(err))
@@ -437,133 +484,176 @@ func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract game IDs, league IDs, team IDs, and max tier from selections
-	var gameIDs []int32
-	var leagueIDs []int32
-	var teamIDs []int32
-	maxTier := int32(1) // Default to tier 1
-
-	for gameIDStr, selectionData := range requestBody {
-		gameID, err := strconv.ParseInt(gameIDStr, 10, 32)
-		if err != nil {
-			m.Logger.Warn("Invalid game ID", zap.String("game_id_str", gameIDStr), zap.Error(err))
-			continue
-		}
-		gameIDs = append(gameIDs, int32(gameID))
-
-		if selectionMap, ok := selectionData.(map[string]interface{}); ok {
-			// Extract league IDs
-			if leagues, ok := selectionMap["leagues"].([]interface{}); ok {
-				for _, league := range leagues {
-					if leagueID, ok := league.(float64); ok {
-						leagueIDs = append(leagueIDs, int32(leagueID))
-					}
-				}
-			}
-
-			// Extract team IDs
-			if teams, ok := selectionMap["teams"].([]interface{}); ok {
-				for _, team := range teams {
-					if teamID, ok := team.(float64); ok {
-						teamIDs = append(teamIDs, int32(teamID))
-					}
-				}
-			}
-
-			// Extract max tier (use the minimum across all games to be most restrictive)
-			if tierValue, ok := selectionMap["maxTier"].(float64); ok {
-				tier := int32(tierValue)
-				if tier < maxTier {
-					maxTier = tier
-				}
-			}
-		}
-	}
-
-	m.Logger.Debug("Parsed IDs from selections", zap.Any("game_ids", gameIDs), zap.Any("league_ids", leagueIDs), zap.Any("team_ids", teamIDs), zap.Int32("max_tier", maxTier))
+	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(requestBody, m.Logger)
+	m.Logger.Debug("Parsed IDs from selections",
+		zap.Any("game_ids", gameIDs),
+		zap.Any("league_ids", leagueIDs),
+		zap.Any("team_ids", teamIDs),
+		zap.Int32("max_tier", maxTier))
 
 	// Fetch matches from database - show minimum of 10 matches
-	const minMatches = 10
-	var matches []dbtypes.GetFutureMatchesBySelectionsRow
-	var showingPast bool
-	if len(gameIDs) > 0 {
-		var err error
-		// Try to get future matches first
-		futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
-			GameIds:   gameIDs,
-			LeagueIds: leagueIDs,
-			TeamIds:   teamIDs,
-			MaxTier:   maxTier,
-		})
-		if err != nil {
-			m.Logger.Error("Failed to fetch future matches", zap.Error(err))
-			http.Error(w, "Failed to fetch matches", http.StatusInternalServerError)
-			return
-		}
-
-		matches = futureMatches
-		m.Logger.Debug("Found future matches", zap.Int("count", len(futureMatches)))
-
-		// If we have fewer than 10 matches, backfill with past matches
-		if len(matches) < minMatches {
-			numNeeded := minMatches - len(matches)
-			m.Logger.Debug("Need more matches - fetching past matches", zap.Int("num_needed", numNeeded), zap.Int("min_matches", minMatches))
-
-			pastMatches, err := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
-				GameIds:   gameIDs,
-				LeagueIds: leagueIDs,
-				TeamIds:   teamIDs,
-				MaxTier:   maxTier,
-			})
-			if err != nil {
-				m.Logger.Error("Failed to fetch past matches", zap.Error(err))
-				http.Error(w, "Failed to fetch matches", http.StatusInternalServerError)
-				return
-			}
-
-			// Convert and prepend past matches (they're already in ASC order from SQL)
-			// We need to prepend them since they come before future matches chronologically
-			pastMatchesConverted := make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches))
-			for _, pm := range pastMatches {
-				pastMatchesConverted = append(pastMatchesConverted, dbtypes.GetFutureMatchesBySelectionsRow(pm))
-				if len(pastMatchesConverted) >= minMatches-len(futureMatches) {
-					break
-				}
-			}
-
-			// Prepend past matches to future matches (both in ASC order, so chronological)
-			matches = append(pastMatchesConverted, matches...)
-
-			if len(futureMatches) == 0 {
-				showingPast = true
-			}
-			m.Logger.Debug("Added past matches", zap.Int("past_matches_added", len(pastMatchesConverted)), zap.Int("total_matches", len(matches)))
-		}
-
-		m.Logger.Debug("Final match count", zap.Int("count", len(matches)), zap.Bool("showing_past", showingPast))
+	matches, showingPast, err := m.fetchMatches(gameIDs, leagueIDs, teamIDs, maxTier)
+	if err != nil {
+		m.Logger.Error("Failed to fetch matches", zap.Error(err))
+		http.Error(w, "Failed to fetch matches", http.StatusInternalServerError)
+		return
 	}
 
 	// Render the preview page with matches
 	component := components.PreviewPage(matches, showingPast)
-	component.Render(m.Context, w)
+	if renderErr := component.Render(m.Context, w); renderErr != nil {
+		m.Logger.Error("Failed to render preview page", zap.Error(renderErr))
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
 }
 
-// generateHash creates a consistent hash from the selections JSON
+// generateHash creates a consistent hash from the selections JSON.
 func generateHash(data []byte) string {
 	hash := sha256.Sum256(data)
 	// Return first 16 characters for a shorter URL
 	return hex.EncodeToString(hash[:])[:16]
 }
 
+// writeJSON writes a JSON response and logs errors.
+func writeJSON(w http.ResponseWriter, data any, logger *zap.Logger) {
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		logger.Error("Failed to encode JSON response", zap.Error(err))
+	}
+}
+
+// fetchMatches retrieves matches based on selections, backfilling with past matches if needed.
+func (m *Middleware) fetchMatches(
+	gameIDs, leagueIDs, teamIDs []int32,
+	maxTier int32,
+) ([]dbtypes.GetFutureMatchesBySelectionsRow, bool, error) {
+	const minMatches = 10
+	var matches []dbtypes.GetFutureMatchesBySelectionsRow
+	var showingPast bool
+
+	if len(gameIDs) == 0 {
+		return matches, showingPast, nil
+	}
+
+	// Try to get future matches first
+	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
+		GameIds:   gameIDs,
+		LeagueIds: leagueIDs,
+		TeamIds:   teamIDs,
+		MaxTier:   maxTier,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	matches = futureMatches
+	m.Logger.Debug("Found future matches", zap.Int("count", len(futureMatches)))
+
+	// If we have fewer than 10 matches, backfill with past matches
+	if len(matches) < minMatches {
+		numNeeded := minMatches - len(matches)
+		m.Logger.Debug("Need more matches - fetching past matches",
+			zap.Int("num_needed", numNeeded),
+			zap.Int("min_matches", minMatches))
+
+		pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+			GameIds:   gameIDs,
+			LeagueIds: leagueIDs,
+			TeamIds:   teamIDs,
+			MaxTier:   maxTier,
+		})
+		if pastErr != nil {
+			return nil, false, pastErr
+		}
+
+		// Convert and prepend past matches (they're already in ASC order from SQL)
+		// We need to prepend them since they come before future matches chronologically
+		pastMatchesConverted := make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches))
+		for _, pm := range pastMatches {
+			pastMatchesConverted = append(pastMatchesConverted, dbtypes.GetFutureMatchesBySelectionsRow(pm))
+			if len(pastMatchesConverted) >= minMatches-len(futureMatches) {
+				break
+			}
+		}
+
+		// Prepend past matches to future matches (both in ASC order, so chronological)
+		matches = append(pastMatchesConverted, matches...)
+
+		if len(futureMatches) == 0 {
+			showingPast = true
+		}
+		m.Logger.Debug("Added past matches",
+			zap.Int("past_matches_added", len(pastMatchesConverted)),
+			zap.Int("total_matches", len(matches)))
+	}
+
+	m.Logger.Debug("Final match count", zap.Int("count", len(matches)), zap.Bool("showing_past", showingPast))
+	return matches, showingPast, nil
+}
+
+// parseSelections extracts game IDs, league IDs, team IDs, and max tier from selections JSON.
+func parseSelections(
+	selections map[string]any,
+	logger *zap.Logger,
+) ([]int32, []int32, []int32, int32) {
+	var gameIDs, leagueIDs, teamIDs []int32
+	maxTier := int32(1) // Default to tier 1
+
+	for gameIDStr, selectionData := range selections {
+		gameID, parseErr := strconv.ParseInt(gameIDStr, 10, 32)
+		if parseErr != nil {
+			logger.Warn("Invalid game ID", zap.String("game_id_str", gameIDStr), zap.Error(parseErr))
+			continue
+		}
+		gameIDs = append(gameIDs, int32(gameID))
+
+		selectionMap, ok := selectionData.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		// Extract league IDs
+		if leagues, leaguesOk := selectionMap["leagues"].([]any); leaguesOk {
+			for _, league := range leagues {
+				if leagueID, leagueOk := league.(float64); leagueOk {
+					leagueIDs = append(leagueIDs, int32(leagueID))
+				}
+			}
+		}
+
+		// Extract team IDs
+		if teams, teamsOk := selectionMap["teams"].([]any); teamsOk {
+			for _, team := range teams {
+				if teamID, teamOk := team.(float64); teamOk {
+					teamIDs = append(teamIDs, int32(teamID))
+				}
+			}
+		}
+
+		// Extract max tier (use the minimum across all games to be most restrictive)
+		if tierValue, tierOk := selectionMap["maxTier"].(float64); tierOk {
+			tier := int32(tierValue)
+			if tier < maxTier {
+				maxTier = tier
+			}
+		}
+	}
+
+	return gameIDs, leagueIDs, teamIDs, maxTier
+}
+
 func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "ExportHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "ExportHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 
 	// Parse JSON body with selections
-	var requestBody map[string]interface{}
+	var requestBody map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		m.Logger.Error("Failed to parse JSON body", zap.Error(err))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+		writeJSON(w, map[string]string{"error": "Invalid request body"}, m.Logger)
 		return
 	}
 	m.Logger.Debug("Received selections for export", zap.Any("selections", requestBody))
@@ -574,7 +664,7 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to process selections"})
+		writeJSON(w, map[string]string{"error": "Failed to process selections"}, m.Logger)
 		return
 	}
 
@@ -591,7 +681,7 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 		m.Logger.Error("Failed to store URL mapping", zap.Error(err), zap.String("hash", hash))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create calendar link"})
+		writeJSON(w, map[string]string{"error": "Failed to create calendar link"}, m.Logger)
 		return
 	}
 
@@ -601,11 +691,14 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 		"url":  fmt.Sprintf("http://localhost:8080//%s.ics", hash),
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	writeJSON(w, response, m.Logger)
 }
 
 func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("Handler", zap.String("handler", "CalendarHandler"), zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	m.Logger.Info("Handler",
+		zap.String("handler", "CalendarHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
 
 	// Extract hash from URL path (format: /:hash.ics)
 	path := strings.TrimPrefix(r.URL.Path, "/")
@@ -633,59 +726,22 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse selections from stored JSON
-	var selections map[string]interface{}
-	if err := json.Unmarshal(mapping.ValueList, &selections); err != nil {
-		m.Logger.Error("Failed to parse stored selections", zap.Error(err))
+	var selections map[string]any
+	if unmarshalErr := json.Unmarshal(mapping.ValueList, &selections); unmarshalErr != nil {
+		m.Logger.Error("Failed to parse stored selections", zap.Error(unmarshalErr))
 		http.Error(w, "Invalid calendar data", http.StatusInternalServerError)
 		return
 	}
 
 	// Extract game IDs, league IDs, team IDs, and max tier from selections
-	var gameIDs []int32
-	var leagueIDs []int32
-	var teamIDs []int32
-	maxTier := int32(1) // Default to tier 1
+	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	m.Logger.Debug("Parsed IDs from selections",
+		zap.Any("game_ids", gameIDs),
+		zap.Any("league_ids", leagueIDs),
+		zap.Any("team_ids", teamIDs),
+		zap.Int32("max_tier", maxTier))
 
-	for gameIDStr, selectionData := range selections {
-		gameID, err := strconv.ParseInt(gameIDStr, 10, 32)
-		if err != nil {
-			m.Logger.Warn("Invalid game ID", zap.String("game_id_str", gameIDStr), zap.Error(err))
-			continue
-		}
-		gameIDs = append(gameIDs, int32(gameID))
-
-		if selectionMap, ok := selectionData.(map[string]interface{}); ok {
-			// Extract league IDs
-			if leagues, ok := selectionMap["leagues"].([]interface{}); ok {
-				for _, league := range leagues {
-					if leagueID, ok := league.(float64); ok {
-						leagueIDs = append(leagueIDs, int32(leagueID))
-					}
-				}
-			}
-
-			// Extract team IDs
-			if teams, ok := selectionMap["teams"].([]interface{}); ok {
-				for _, team := range teams {
-					if teamID, ok := team.(float64); ok {
-						teamIDs = append(teamIDs, int32(teamID))
-					}
-				}
-			}
-
-			// Extract max tier (use the minimum across all games to be most restrictive)
-			if tierValue, ok := selectionMap["maxTier"].(float64); ok {
-				tier := int32(tierValue)
-				if tier < maxTier {
-					maxTier = tier
-				}
-			}
-		}
-	}
-
-	m.Logger.Debug("Parsed IDs from selections", zap.Any("game_ids", gameIDs), zap.Any("league_ids", leagueIDs), zap.Any("team_ids", teamIDs), zap.Int32("max_tier", maxTier))
-
-	// Fetch matches from database (7 days old and future, filtered by tier)
+	// Fetch matches from database (14 days old and future, filtered by tier)
 	var matches []dbtypes.GetCalendarMatchesBySelectionsRow
 	if len(gameIDs) > 0 {
 		matches, err = m.DBConn.GetCalendarMatchesBySelections(m.Context, dbtypes.GetCalendarMatchesBySelectionsParams{
@@ -707,7 +763,10 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	// Set headers for iCalendar file download
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
-	w.Write([]byte(icsContent))
+	if _, writeErr := w.Write([]byte(icsContent)); writeErr != nil {
+		m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
+		return
+	}
 
 	m.Logger.Debug("Served calendar", zap.Int("match_count", len(matches)), zap.String("hash", hash))
 }
@@ -728,8 +787,9 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 		}
 
 		startTime := match.ExpectedStartTime.Time
-		// Assume 2 hour duration for matches
-		endTime := startTime.Add(2 * 60 * 60 * 1000000000) // 2 hours in nanoseconds
+		// Calculate duration: 1 hour per game
+		duration := time.Duration(match.AmountOfGames) * time.Hour
+		endTime := startTime.Add(duration)
 
 		ics.WriteString("BEGIN:VEVENT\r\n")
 		ics.WriteString(fmt.Sprintf("UID:%d@localhost:8080/\r\n", match.ID))
@@ -767,12 +827,8 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 		location := fmt.Sprintf("%s (%s)", match.TournamentName, match.GameName)
 		ics.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICS(location)))
 
-		// Mark finished matches differently
-		if match.Finished {
-			ics.WriteString("STATUS:CONFIRMED\r\n")
-		} else {
-			ics.WriteString("STATUS:CONFIRMED\r\n")
-		}
+		// All matches are confirmed
+		ics.WriteString("STATUS:CONFIRMED\r\n")
 		ics.WriteString("END:VEVENT\r\n")
 	}
 

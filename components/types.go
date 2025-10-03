@@ -12,12 +12,12 @@ type SeriesOption struct {
 	Name string `json:"name"`
 }
 
-// LogoPath returns a formatted path for local logo files
+// LogoPath returns a formatted path for local logo files.
 func LogoPath(filename string) string {
 	return "/static/images/" + filename
 }
 
-// DefaultLogo returns the path to a default logo
+// DefaultLogo returns the path to a default logo.
 func DefaultLogo() string {
 	return "/static/images/default-logo.png"
 }

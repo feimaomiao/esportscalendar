@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/feimaomiao/esportscalendar/middleware"
 	"go.uber.org/zap"
@@ -12,8 +13,13 @@ import (
 )
 
 func main() {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = logger.Sync() // Ignore error on shutdown
+	}()
 
 	logger.Info("Starting application")
 	mux := http.NewServeMux()
@@ -49,7 +55,19 @@ func main() {
 	})
 
 	logger.Info("Server starting", zap.String("port", "8080"))
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		logger.Fatal("Server failed to start", zap.Error(err))
+	secsInMin := 60
+	minute := time.Duration(secsInMin) * time.Second
+	// Create server with timeouts for security
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadTimeout:       minute,
+		ReadHeaderTimeout: minute,
+		WriteTimeout:      minute,
+		IdleTimeout:       minute,
+	}
+
+	if serverErr := server.ListenAndServe(); serverErr != nil {
+		logger.Fatal("Server failed to start", zap.Error(serverErr))
 	}
 }
