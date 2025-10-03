@@ -1,17 +1,21 @@
 package main
 
 import (
-	"log"
 	"net/http"
+	"strings"
 
 	"github.com/feimaomiao/esportscalendar/middleware"
+	"go.uber.org/zap"
 
 	// loads .env file automatically.
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	log.Println("[ENTRY] main() - Starting application")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	logger.Info("Starting application")
 	mux := http.NewServeMux()
 
 	// Serve static files for CSS and JS with proper MIME types
@@ -26,15 +30,26 @@ func main() {
 		fileServer.ServeHTTP(w, r)
 	})))
 
-	mw := middleware.InitMiddleHandler()
+	mw := middleware.InitMiddleHandler(logger)
 
 	// Routes
-	mux.HandleFunc("/", mw.IndexHandler)
 	mux.HandleFunc("/lts", mw.SecondPageHandler)
 	mux.HandleFunc("/preview", mw.PreviewHandler)
+	mux.HandleFunc("/export", mw.ExportHandler)
 	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
 	mux.HandleFunc("/api/team-options/", mw.TeamOptionsHandler)
 
-	log.Println("Server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	// Calendar handler and index - handles both /:hash.ics and /
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, ".ics") {
+			mw.CalendarHandler(w, r)
+		} else {
+			mw.IndexHandler(w, r)
+		}
+	})
+
+	logger.Info("Server starting", zap.String("port", "8080"))
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		logger.Fatal("Server failed to start", zap.Error(err))
+	}
 }

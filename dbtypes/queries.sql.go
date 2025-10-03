@@ -46,6 +46,254 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 	return items, nil
 }
 
+const getCalendarMatchesBySelections = `-- name: GetCalendarMatchesBySelections :many
+SELECT
+    m.id,
+    m.name,
+    m.slug,
+    m.expected_start_time,
+    m.finished,
+    m.team1_id,
+    m.team2_id,
+    m.team1_score,
+    m.team2_score,
+    m.amount_of_games,
+    m.game_id,
+    m.league_id,
+    m.series_id,
+    m.tournament_id,
+    g.name as game_name,
+    l.name as league_name,
+    tour.name as tournament_name,
+    tour.tier as tournament_tier,
+    t1.name as team1_name,
+    t1.acronym as team1_acronym,
+    t1.image_link as team1_image,
+    t2.name as team2_name,
+    t2.acronym as team2_acronym,
+    t2.image_link as team2_image
+FROM matches m
+INNER JOIN games g ON m.game_id = g.id
+INNER JOIN leagues l ON m.league_id = l.id
+INNER JOIN tournaments tour ON m.tournament_id = tour.id
+INNER JOIN teams t1 ON m.team1_id = t1.id
+INNER JOIN teams t2 ON m.team2_id = t2.id
+WHERE
+    m.expected_start_time >= NOW() - INTERVAL '7 days'
+    AND m.game_id = ANY($1::int[])
+    AND (tour.tier IS NULL OR tour.tier <= $2::int)
+    AND (
+        (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
+        OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+    )
+ORDER BY m.expected_start_time ASC
+`
+
+type GetCalendarMatchesBySelectionsParams struct {
+	GameIds   []int32
+	MaxTier   int32
+	LeagueIds []int32
+	TeamIds   []int32
+}
+
+type GetCalendarMatchesBySelectionsRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	ExpectedStartTime pgtype.Timestamp
+	Finished          bool
+	Team1ID           int32
+	Team2ID           int32
+	Team1Score        int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+	GameName          string
+	LeagueName        string
+	TournamentName    string
+	TournamentTier    pgtype.Int4
+	Team1Name         string
+	Team1Acronym      pgtype.Text
+	Team1Image        pgtype.Text
+	Team2Name         string
+	Team2Acronym      pgtype.Text
+	Team2Image        pgtype.Text
+}
+
+func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCalendarMatchesBySelectionsParams) ([]GetCalendarMatchesBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getCalendarMatchesBySelections,
+		arg.GameIds,
+		arg.MaxTier,
+		arg.LeagueIds,
+		arg.TeamIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCalendarMatchesBySelectionsRow
+	for rows.Next() {
+		var i GetCalendarMatchesBySelectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.ExpectedStartTime,
+			&i.Finished,
+			&i.Team1ID,
+			&i.Team2ID,
+			&i.Team1Score,
+			&i.Team2Score,
+			&i.AmountOfGames,
+			&i.GameID,
+			&i.LeagueID,
+			&i.SeriesID,
+			&i.TournamentID,
+			&i.GameName,
+			&i.LeagueName,
+			&i.TournamentName,
+			&i.TournamentTier,
+			&i.Team1Name,
+			&i.Team1Acronym,
+			&i.Team1Image,
+			&i.Team2Name,
+			&i.Team2Acronym,
+			&i.Team2Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFutureMatchesBySelections = `-- name: GetFutureMatchesBySelections :many
+SELECT
+    m.id,
+    m.name,
+    m.slug,
+    m.expected_start_time,
+    m.finished,
+    m.team1_id,
+    m.team2_id,
+    m.team1_score,
+    m.team2_score,
+    m.amount_of_games,
+    m.game_id,
+    m.league_id,
+    m.series_id,
+    m.tournament_id,
+    g.name as game_name,
+    l.name as league_name,
+    t1.name as team1_name,
+    t1.acronym as team1_acronym,
+    t1.image_link as team1_image,
+    t2.name as team2_name,
+    t2.acronym as team2_acronym,
+    t2.image_link as team2_image
+FROM matches m
+INNER JOIN games g ON m.game_id = g.id
+INNER JOIN leagues l ON m.league_id = l.id
+INNER JOIN tournaments tour ON m.tournament_id = tour.id
+INNER JOIN teams t1 ON m.team1_id = t1.id
+INNER JOIN teams t2 ON m.team2_id = t2.id
+WHERE
+    m.expected_start_time >= NOW()
+    AND m.game_id = ANY($1::int[])
+    AND (tour.tier IS NULL OR tour.tier <= $2::int)
+    AND (
+        (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
+        OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+    )
+ORDER BY m.expected_start_time ASC
+`
+
+type GetFutureMatchesBySelectionsParams struct {
+	GameIds   []int32
+	MaxTier   int32
+	LeagueIds []int32
+	TeamIds   []int32
+}
+
+type GetFutureMatchesBySelectionsRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	ExpectedStartTime pgtype.Timestamp
+	Finished          bool
+	Team1ID           int32
+	Team2ID           int32
+	Team1Score        int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+	GameName          string
+	LeagueName        string
+	Team1Name         string
+	Team1Acronym      pgtype.Text
+	Team1Image        pgtype.Text
+	Team2Name         string
+	Team2Acronym      pgtype.Text
+	Team2Image        pgtype.Text
+}
+
+func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getFutureMatchesBySelections,
+		arg.GameIds,
+		arg.MaxTier,
+		arg.LeagueIds,
+		arg.TeamIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFutureMatchesBySelectionsRow
+	for rows.Next() {
+		var i GetFutureMatchesBySelectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.ExpectedStartTime,
+			&i.Finished,
+			&i.Team1ID,
+			&i.Team2ID,
+			&i.Team1Score,
+			&i.Team2Score,
+			&i.AmountOfGames,
+			&i.GameID,
+			&i.LeagueID,
+			&i.SeriesID,
+			&i.TournamentID,
+			&i.GameName,
+			&i.LeagueName,
+			&i.Team1Name,
+			&i.Team1Acronym,
+			&i.Team1Image,
+			&i.Team2Name,
+			&i.Team2Acronym,
+			&i.Team2Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getLeaguesByGameID = `-- name: GetLeaguesByGameID :many
 SELECT l.id, l.name, l.slug, l.game_id, l.image_link, MIN(t.tier) as min_tier
 FROM LEAGUES l
@@ -91,53 +339,82 @@ func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLe
 	return items, nil
 }
 
-const getMatchesBySelections = `-- name: GetMatchesBySelections :many
+const getPastMatchesBySelections = `-- name: GetPastMatchesBySelections :many
 SELECT
-    m.id,
-    m.name,
-    m.slug,
-    m.expected_start_time,
-    m.finished,
-    m.team1_id,
-    m.team2_id,
-    m.team1_score,
-    m.team2_score,
-    m.amount_of_games,
-    m.game_id,
-    m.league_id,
-    m.series_id,
-    m.tournament_id,
-    g.name as game_name,
-    l.name as league_name,
-    t1.name as team1_name,
-    t1.acronym as team1_acronym,
-    t1.image_link as team1_image,
-    t2.name as team2_name,
-    t2.acronym as team2_acronym,
-    t2.image_link as team2_image
-FROM matches m
-INNER JOIN games g ON m.game_id = g.id
-INNER JOIN leagues l ON m.league_id = l.id
-INNER JOIN teams t1 ON m.team1_id = t1.id
-INNER JOIN teams t2 ON m.team2_id = t2.id
-WHERE
-    m.expected_start_time >= NOW() - INTERVAL '7 days'
-    AND m.expected_start_time <= NOW() + INTERVAL '7 days'
-    AND m.game_id = ANY($1::int[])
-    AND (
-        (CARDINALITY($2::int[]) = 0 OR m.league_id = ANY($2::int[]))
-        OR (CARDINALITY($3::int[]) = 0 OR m.team1_id = ANY($3::int[]) OR m.team2_id = ANY($3::int[]))
-    )
-ORDER BY m.expected_start_time ASC
+    id,
+    name,
+    slug,
+    expected_start_time,
+    finished,
+    team1_id,
+    team2_id,
+    team1_score,
+    team2_score,
+    amount_of_games,
+    game_id,
+    league_id,
+    series_id,
+    tournament_id,
+    game_name,
+    league_name,
+    team1_name,
+    team1_acronym,
+    team1_image,
+    team2_name,
+    team2_acronym,
+    team2_image
+FROM (
+    SELECT
+        m.id,
+        m.name,
+        m.slug,
+        m.expected_start_time,
+        m.finished,
+        m.team1_id,
+        m.team2_id,
+        m.team1_score,
+        m.team2_score,
+        m.amount_of_games,
+        m.game_id,
+        m.league_id,
+        m.series_id,
+        m.tournament_id,
+        g.name as game_name,
+        l.name as league_name,
+        t1.name as team1_name,
+        t1.acronym as team1_acronym,
+        t1.image_link as team1_image,
+        t2.name as team2_name,
+        t2.acronym as team2_acronym,
+        t2.image_link as team2_image
+    FROM matches m
+    INNER JOIN games g ON m.game_id = g.id
+    INNER JOIN leagues l ON m.league_id = l.id
+    INNER JOIN tournaments tour ON m.tournament_id = tour.id
+    INNER JOIN teams t1 ON m.team1_id = t1.id
+    INNER JOIN teams t2 ON m.team2_id = t2.id
+    WHERE
+        m.expected_start_time < NOW()
+        AND m.game_id = ANY($1::int[])
+        AND (tour.tier IS NULL OR tour.tier <= $2::int)
+        AND (
+            (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
+            OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+        )
+    ORDER BY m.expected_start_time DESC
+    LIMIT 10
+) AS recent_matches
+ORDER BY expected_start_time ASC
 `
 
-type GetMatchesBySelectionsParams struct {
+type GetPastMatchesBySelectionsParams struct {
 	GameIds   []int32
+	MaxTier   int32
 	LeagueIds []int32
 	TeamIds   []int32
 }
 
-type GetMatchesBySelectionsRow struct {
+type GetPastMatchesBySelectionsRow struct {
 	ID                int32
 	Name              string
 	Slug              pgtype.Text
@@ -162,15 +439,20 @@ type GetMatchesBySelectionsRow struct {
 	Team2Image        pgtype.Text
 }
 
-func (q *Queries) GetMatchesBySelections(ctx context.Context, arg GetMatchesBySelectionsParams) ([]GetMatchesBySelectionsRow, error) {
-	rows, err := q.db.Query(ctx, getMatchesBySelections, arg.GameIds, arg.LeagueIds, arg.TeamIds)
+func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getPastMatchesBySelections,
+		arg.GameIds,
+		arg.MaxTier,
+		arg.LeagueIds,
+		arg.TeamIds,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetMatchesBySelectionsRow
+	var items []GetPastMatchesBySelectionsRow
 	for rows.Next() {
-		var i GetMatchesBySelectionsRow
+		var i GetPastMatchesBySelectionsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -267,6 +549,25 @@ func (q *Queries) GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const getURLMapping = `-- name: GetURLMapping :one
+SELECT hashed_key, value_list, access_count, created_at, accessed_at
+FROM url_mappings
+WHERE hashed_key = $1
+`
+
+func (q *Queries) GetURLMapping(ctx context.Context, hashedKey string) (UrlMapping, error) {
+	row := q.db.QueryRow(ctx, getURLMapping, hashedKey)
+	var i UrlMapping
+	err := row.Scan(
+		&i.HashedKey,
+		&i.ValueList,
+		&i.AccessCount,
+		&i.CreatedAt,
+		&i.AccessedAt,
+	)
+	return i, err
 }
 
 const insertToGames = `-- name: InsertToGames :exec
@@ -460,6 +761,22 @@ func (q *Queries) InsertToTournaments(ctx context.Context, arg InsertToTournamen
 	return err
 }
 
+const insertURLMapping = `-- name: InsertURLMapping :exec
+INSERT INTO url_mappings (hashed_key, value_list, access_count, created_at, accessed_at)
+VALUES ($1, $2, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (hashed_key) DO NOTHING
+`
+
+type InsertURLMappingParams struct {
+	HashedKey string
+	ValueList []byte
+}
+
+func (q *Queries) InsertURLMapping(ctx context.Context, arg InsertURLMappingParams) error {
+	_, err := q.db.Exec(ctx, insertURLMapping, arg.HashedKey, arg.ValueList)
+	return err
+}
+
 const leagueExist = `-- name: LeagueExist :one
 SELECT COUNT(*) FROM leagues WHERE id = $1
 `
@@ -513,4 +830,15 @@ func (q *Queries) TournamentExist(ctx context.Context, id int32) (int64, error) 
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const updateURLMappingAccessCount = `-- name: UpdateURLMappingAccessCount :exec
+UPDATE url_mappings
+SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP
+WHERE hashed_key = $1
+`
+
+func (q *Queries) UpdateURLMappingAccessCount(ctx context.Context, hashedKey string) error {
+	_, err := q.db.Exec(ctx, updateURLMappingAccessCount, hashedKey)
+	return err
 }

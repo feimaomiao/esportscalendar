@@ -55,17 +55,28 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Theme switcher (optional)
-function toggleTheme() {
-  const html = document.querySelector('html');
-  const currentTheme = html.getAttribute('data-theme');
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-}
+// Theme toggle initialization for use after dynamic page loads (like preview page)
+function initThemeToggle() {
+  const themeToggle = document.getElementById('theme-toggle');
+  const currentTheme = localStorage.getItem('theme') || 'dark';
 
-// Load saved theme
-window.addEventListener('load', function() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.querySelector('html').setAttribute('data-theme', savedTheme);
-});
+  if (themeToggle) {
+    // Set checkbox state
+    if (currentTheme === 'light') {
+      themeToggle.checked = true;
+    } else {
+      themeToggle.checked = false;
+    }
+
+    // Add event listener
+    themeToggle.addEventListener('change', function() {
+      if (this.checked) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  }
+}

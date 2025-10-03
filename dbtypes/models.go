@@ -66,3 +66,11 @@ type Tournament struct {
 	LeagueID int32
 	SerieID  int32
 }
+
+type UrlMapping struct {
+	HashedKey   string
+	ValueList   []byte
+	AccessCount int32
+	CreatedAt   pgtype.Timestamp
+	AccessedAt  pgtype.Timestamp
+}

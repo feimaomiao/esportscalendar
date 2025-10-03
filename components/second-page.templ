@@ -193,6 +193,29 @@ templ GameSelectionCard(option Option) {
 				</div>
 			</div>
 
+			<!-- Tournament Tier Filter -->
+			<div class="mt-4">
+				<div class="mb-2 flex items-center justify-between">
+					<span class="font-medium">Maximum Tournament Tier:</span>
+					<span class="badge badge-primary" id={ "tier-value-" + option.ID }>1</span>
+				</div>
+				<input
+					type="range"
+					min="1"
+					max="6"
+					value="1"
+					class="range range-primary"
+					id={ "tier-slider-" + option.ID }/>
+				<div class="w-full flex justify-between text-xs px-2 mt-1">
+					<span>1 (Highest)</span>
+					<span>2</span>
+					<span>3</span>
+					<span>4</span>
+					<span>5</span>
+					<span>6 (All)</span>
+				</div>
+			</div>
+
 		</div>
 	</div>
 }

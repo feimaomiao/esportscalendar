@@ -15,6 +15,23 @@
 
 		console.log('Submit button found, attaching event listener');
 
+		// Handle keyboard events
+		document.addEventListener('keydown', (e) => {
+			const activeElement = document.activeElement;
+			const isSearchInput = activeElement && (
+				activeElement.id && (
+					activeElement.id.startsWith('search-') ||
+					activeElement.id.startsWith('search-teams-')
+				)
+			);
+
+			// Enter key to submit (only when NOT focused on search boxes)
+			if (e.key === 'Enter' && !submitBtn.disabled && !isSearchInput) {
+				e.preventDefault();
+				submitBtn.click();
+			}
+		});
+
 		submitBtn.addEventListener('click', async (e) => {
 			console.log('Submit button clicked', e);
 			e.preventDefault();
@@ -48,24 +65,50 @@
 					}
 				});
 
+				// Get tier value from sessionStorage
+				const savedKey = 'lts-selections-' + gameId;
+				const savedData = sessionStorage.getItem(savedKey);
+				let maxTier = 1; // Default to tier 1
+				if (savedData) {
+					try {
+						const parsed = JSON.parse(savedData);
+						if (parsed.maxTier !== undefined) {
+							maxTier = parsed.maxTier;
+						}
+					} catch (e) {
+						console.error('Failed to parse saved tier:', e);
+					}
+				}
+
 				if (leagues.length > 0 || teams.length > 0) {
+					// Sort leagues and teams numerically
+					leagues.sort((a, b) => a - b);
+					teams.sort((a, b) => a - b);
+
 					selections[gameId] = {
 						leagues: leagues,
-						teams: teams
+						teams: teams,
+						maxTier: maxTier
 					};
 				}
 			});
 
-			console.log('Collected selections:', selections);
+			// Sort game IDs and create a sorted selections object
+			const sortedSelections = {};
+			Object.keys(selections).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
+				sortedSelections[key] = selections[key];
+			});
+
+			console.log('Collected selections:', sortedSelections);
 
 			// Check if any selections were made
-			if (Object.keys(selections).length === 0) {
+			if (Object.keys(sortedSelections).length === 0) {
 				alert('Please select at least one league or team before submitting.');
 				return;
 			}
 
 			// Save selections to sessionStorage before navigating
-			sessionStorage.setItem('preview-selections', JSON.stringify(selections));
+			sessionStorage.setItem('preview-selections', JSON.stringify(sortedSelections));
 
 			// Send POST request to /preview
 			try {
@@ -74,7 +117,7 @@
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify(selections)
+					body: JSON.stringify(sortedSelections)
 				});
 
 				console.log('Response status:', response.status);
@@ -90,12 +133,29 @@
 					document.write(html);
 					document.close();
 
-					// Restore theme after document replacement
-					document.documentElement.setAttribute('data-theme', currentTheme);
-					const themeToggle = document.getElementById('theme-toggle');
-					if (themeToggle && currentTheme === 'light') {
-						themeToggle.checked = true;
-					}
+					// Wait a moment for DOM to be ready, then initialize theme toggle
+					setTimeout(() => {
+						const themeToggle = document.getElementById('theme-toggle');
+						if (themeToggle) {
+							// Set checkbox state
+							if (currentTheme === 'light') {
+								themeToggle.checked = true;
+							}
+
+							// Add event listener
+							themeToggle.addEventListener('change', function() {
+								if (this.checked) {
+									document.documentElement.setAttribute('data-theme', 'light');
+									localStorage.setItem('theme', 'light');
+								} else {
+									document.documentElement.setAttribute('data-theme', 'dark');
+									localStorage.setItem('theme', 'dark');
+								}
+							});
+
+							console.log('Theme toggle initialized on preview page');
+						}
+					}, 100);
 
 					window.history.pushState({}, '', '/preview');
 				} else {

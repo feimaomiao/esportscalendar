@@ -32,6 +32,7 @@ function initGameSelection(gameId) {
 	let allLeagues = [];
 	let selectedLeagues = new Set();
 	let currentFilteredLeagues = [];
+	let maxTier = 1; // Default to tier 1 only
 
 	// Restore saved selections from sessionStorage
 	const savedKey = 'lts-selections-' + gameId;
@@ -44,6 +45,9 @@ function initGameSelection(gameId) {
 			if (parsed.leagues && Array.isArray(parsed.leagues)) {
 				parsed.leagues.forEach(id => selectedLeagues.add(id));
 				hasSavedSelections = true;
+			}
+			if (parsed.maxTier !== undefined) {
+				maxTier = parsed.maxTier;
 			}
 		} catch (e) {
 			console.error('Failed to parse saved selections:', e);
@@ -138,7 +142,8 @@ function initGameSelection(gameId) {
 	function saveSelections() {
 		const data = {
 			leagues: Array.from(selectedLeagues),
-			teams: Array.from(selectedTeams)
+			teams: Array.from(selectedTeams),
+			maxTier: maxTier
 		};
 		console.log('Saving selections for game', gameId, ':', data);
 		sessionStorage.setItem(savedKey, JSON.stringify(data));
@@ -191,7 +196,11 @@ function initGameSelection(gameId) {
 	}
 
 	searchInput.addEventListener('keydown', (e) => {
-		if (e.key === 'ArrowDown') {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			dropdownMenu.style.display = 'none';
+			searchInput.blur();
+		} else if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			const items = leagueList.querySelectorAll('li');
 			if (items.length > 0) {
@@ -227,6 +236,14 @@ function initGameSelection(gameId) {
 	// Show dropdown on focus
 	searchInput.addEventListener('focus', () => {
 		dropdownMenu.style.display = 'block';
+	});
+
+	// Hide dropdown on blur (when losing focus)
+	searchInput.addEventListener('blur', () => {
+		// Use setTimeout to allow click events on dropdown items to register first
+		setTimeout(() => {
+			dropdownMenu.style.display = 'none';
+		}, 200);
 	});
 
 	// Hide dropdown when clicking outside
@@ -468,7 +485,11 @@ function initGameSelection(gameId) {
 	}
 
 	searchTeamsInput.addEventListener('keydown', (e) => {
-		if (e.key === 'ArrowDown') {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			dropdownTeamsMenu.style.display = 'none';
+			searchTeamsInput.blur();
+		} else if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			const items = teamList.querySelectorAll('li');
 			if (items.length > 0) {
@@ -506,12 +527,38 @@ function initGameSelection(gameId) {
 		dropdownTeamsMenu.style.display = 'block';
 	});
 
+	// Hide dropdown on blur for teams (when losing focus)
+	searchTeamsInput.addEventListener('blur', () => {
+		// Use setTimeout to allow click events on dropdown items to register first
+		setTimeout(() => {
+			dropdownTeamsMenu.style.display = 'none';
+		}, 200);
+	});
+
 	// Hide dropdown when clicking outside for teams
 	document.addEventListener('click', (e) => {
 		if (!searchTeamsInput.contains(e.target) && !dropdownTeamsMenu.contains(e.target)) {
 			dropdownTeamsMenu.style.display = 'none';
 		}
 	});
+
+	// Setup tier slider
+	function setupTierSlider() {
+		const tierSlider = document.getElementById('tier-slider-' + gameId);
+		const tierValue = document.getElementById('tier-value-' + gameId);
+
+		if (tierSlider && tierValue) {
+			// Restore saved tier value
+			tierSlider.value = maxTier;
+			tierValue.textContent = maxTier;
+
+			tierSlider.addEventListener('input', (e) => {
+				maxTier = parseInt(e.target.value);
+				tierValue.textContent = maxTier;
+				saveSelections();
+			});
+		}
+	}
 
 	// Deselect all button - needs to reference both leagues and teams
 	function setupDeselectAllButton() {
@@ -541,5 +588,8 @@ function initGameSelection(gameId) {
 	}
 
 	// Call setup after a brief delay to ensure both lists are loaded
-	setTimeout(setupDeselectAllButton, 100);
+	setTimeout(() => {
+		setupDeselectAllButton();
+		setupTierSlider();
+	}, 100);
 }
