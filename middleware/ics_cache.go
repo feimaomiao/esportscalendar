@@ -32,7 +32,7 @@ type ICSCache struct {
 
 func NewICSCache(logger *zap.Logger) (*ICSCache, error) {
 	// Create cache directory if it doesn't exist
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+	if err := os.MkdirAll(cacheDir, 0750); err != nil {
 		return nil, err
 	}
 
@@ -40,10 +40,11 @@ func NewICSCache(logger *zap.Logger) (*ICSCache, error) {
 		entries: make(map[string]*cacheEntry),
 		lruList: list.New(),
 		logger:  logger,
+		mu:      sync.RWMutex{},
 	}, nil
 }
 
-// Get retrieves cached ICS content if valid (not expired)
+// Get retrieves cached ICS content if valid (not expired).
 func (c *ICSCache) Get(hash string) (string, bool) {
 	c.mu.RLock()
 	entry, exists := c.entries[hash]
@@ -75,7 +76,7 @@ func (c *ICSCache) Get(hash string) (string, bool) {
 	return string(content), true
 }
 
-// Set stores ICS content in cache
+// Set stores ICS content in cache.
 func (c *ICSCache) Set(hash string, content string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -83,7 +84,7 @@ func (c *ICSCache) Set(hash string, content string) error {
 	// Check if entry already exists
 	if entry, exists := c.entries[hash]; exists {
 		// Update existing entry
-		if err := os.WriteFile(entry.filePath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(entry.filePath, []byte(content), 0600); err != nil {
 			c.logger.Error("Failed to write cache file", zap.Error(err), zap.String("hash", hash))
 			return err
 		}
@@ -100,7 +101,7 @@ func (c *ICSCache) Set(hash string, content string) error {
 
 	// Create new cache file
 	filePath := filepath.Join(cacheDir, hash+".ics")
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(content), 0600); err != nil {
 		c.logger.Error("Failed to write cache file", zap.Error(err), zap.String("hash", hash))
 		return err
 	}
@@ -118,15 +119,19 @@ func (c *ICSCache) Set(hash string, content string) error {
 	return nil
 }
 
-// evictLRU removes the least recently used entry
-// Must be called with lock held
+// evictLRU removes the least recently used entry.
+// Must be called with lock held.
 func (c *ICSCache) evictLRU() {
 	element := c.lruList.Back()
 	if element == nil {
 		return
 	}
 
-	hash := element.Value.(string)
+	hash, success := element.Value.(string)
+	if !success {
+		c.logger.Warn("Failed to get hash from LRU element")
+		return
+	}
 	entry := c.entries[hash]
 
 	// Remove file
@@ -134,14 +139,14 @@ func (c *ICSCache) evictLRU() {
 		c.logger.Warn("Failed to remove cache file", zap.Error(err), zap.String("hash", hash))
 	}
 
-	// Remove from map and list
+	// Remove from map and list.
 	delete(c.entries, hash)
 	c.lruList.Remove(element)
 
 	c.logger.Debug("Cache entry evicted", zap.String("hash", hash))
 }
 
-// Clear removes all cache entries
+// Clear removes all cache entries.
 func (c *ICSCache) Clear() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()

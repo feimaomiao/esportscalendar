@@ -64,11 +64,12 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 
 		// Build location: League - Series (only include dash if both are non-empty)
 		location := ""
-		if match.LeagueName != "" && match.SeriesName != "" {
+		switch {
+		case match.LeagueName != "" && match.SeriesName != "":
 			location = fmt.Sprintf("%s - %s", match.LeagueName, match.SeriesName)
-		} else if match.LeagueName != "" {
+		case match.LeagueName != "":
 			location = match.LeagueName
-		} else if match.SeriesName != "" {
+		case match.SeriesName != "":
 			location = match.SeriesName
 		}
 		if location != "" {

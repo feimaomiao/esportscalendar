@@ -35,4 +35,6 @@ lcov.info
 .claude/
 
 # Air (live reload) temporary directory
+tmp/esportscalendar
+esportscalendar
 tmp/

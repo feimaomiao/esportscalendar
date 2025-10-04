@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"net/http"
 	"strings"
 	"time"
@@ -11,6 +13,9 @@ import (
 	// loads .env file automatically.
 	_ "github.com/joho/godotenv/autoload"
 )
+
+//go:embed static
+var staticFS embed.FS
 
 func main() {
 	logger, err := zap.NewProduction()
@@ -24,13 +29,17 @@ func main() {
 	logger.Info("Starting application")
 	mux := http.NewServeMux()
 
-	// Serve static files for CSS and JS with proper MIME types
-	fileServer := http.FileServer(http.Dir("./static"))
+	// Serve embedded static files (CSS, JS, images, icons)
+	staticSubFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		logger.Fatal("Failed to create sub filesystem", zap.Error(err))
+	}
+	fileServer := http.FileServer(http.FS(staticSubFS))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set proper MIME types for CSS and JS files
-		if len(r.URL.Path) > 4 && r.URL.Path[len(r.URL.Path)-4:] == ".css" {
+		if strings.HasSuffix(r.URL.Path, ".css") {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		} else if len(r.URL.Path) > 3 && r.URL.Path[len(r.URL.Path)-3:] == ".js" {
+		} else if strings.HasSuffix(r.URL.Path, ".js") {
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 		}
 		fileServer.ServeHTTP(w, r)
