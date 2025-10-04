@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxCacheSize     = 20
+	maxCacheSize     = 256
 	cacheRefreshTime = 2 * time.Hour
 	cacheDir         = "/tmp/esportscalendar-ics-cache"
 )
@@ -24,10 +24,10 @@ type cacheEntry struct {
 }
 
 type ICSCache struct {
-	mu         sync.RWMutex
-	entries    map[string]*cacheEntry
-	lruList    *list.List
-	logger     *zap.Logger
+	mu      sync.RWMutex
+	entries map[string]*cacheEntry
+	lruList *list.List
+	logger  *zap.Logger
 }
 
 func NewICSCache(logger *zap.Logger) (*ICSCache, error) {
