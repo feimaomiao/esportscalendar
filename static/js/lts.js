@@ -127,35 +127,15 @@
 
 					// Store current theme before replacing document
 					const currentTheme = localStorage.getItem('theme') || 'dark';
+					console.log('Current theme before navigation:', currentTheme);
 
 					// Replace entire page content
 					document.open();
 					document.write(html);
 					document.close();
 
-					// Wait a moment for DOM to be ready, then initialize theme toggle
-					setTimeout(() => {
-						const themeToggle = document.getElementById('theme-toggle');
-						if (themeToggle) {
-							// Set checkbox state
-							if (currentTheme === 'light') {
-								themeToggle.checked = true;
-							}
-
-							// Add event listener
-							themeToggle.addEventListener('change', function() {
-								if (this.checked) {
-									document.documentElement.setAttribute('data-theme', 'light');
-									localStorage.setItem('theme', 'light');
-								} else {
-									document.documentElement.setAttribute('data-theme', 'dark');
-									localStorage.setItem('theme', 'dark');
-								}
-							});
-
-							console.log('Theme toggle initialized on preview page');
-						}
-					}, 100);
+					// The BaseLayout's inline script will handle theme initialization
+					// We don't need to do anything here
 
 					window.history.pushState({}, '', '/preview');
 				} else {

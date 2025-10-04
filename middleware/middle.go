@@ -108,6 +108,32 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Middleware) HowToUseHandler(w http.ResponseWriter, r *http.Request) {
+	m.Logger.Info("Handler",
+		zap.String("handler", "HowToUseHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
+
+	component := components.HowToUsePage()
+	if err := component.Render(m.Context, w); err != nil {
+		m.Logger.Error("Failed to render how-to-use page", zap.Error(err))
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
+}
+
+func (m *Middleware) AboutHandler(w http.ResponseWriter, r *http.Request) {
+	m.Logger.Info("Handler",
+		zap.String("handler", "AboutHandler"),
+		zap.String("method", r.Method),
+		zap.String("path", r.URL.Path))
+
+	component := components.AboutPage()
+	if err := component.Render(m.Context, w); err != nil {
+		m.Logger.Error("Failed to render about page", zap.Error(err))
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
+}
+
 func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "SecondPageHandler"),

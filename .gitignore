@@ -33,3 +33,6 @@ lcov.info
 
 .vscode/
 .claude/
+
+# Air (live reload) temporary directory
+tmp/

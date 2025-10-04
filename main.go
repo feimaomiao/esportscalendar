@@ -42,6 +42,8 @@ func main() {
 	mux.HandleFunc("/lts", mw.SecondPageHandler)
 	mux.HandleFunc("/preview", mw.PreviewHandler)
 	mux.HandleFunc("/export", mw.ExportHandler)
+	mux.HandleFunc("/how-to-use", mw.HowToUseHandler)
+	mux.HandleFunc("/about", mw.AboutHandler)
 	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
 	mux.HandleFunc("/api/team-options/", mw.TeamOptionsHandler)
 

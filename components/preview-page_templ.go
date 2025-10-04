@@ -44,7 +44,11 @@ func PreviewPage(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast 
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto p-4\"><div class=\"max-w-5xl mx-auto\">")
+			templ_7745c5c3_Err = ProgressIndicator(3).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div class=\"container mx-auto p-4\"><div class=\"max-w-5xl mx-auto\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -87,7 +91,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"card bg-base-100 shadow-xl\"><div class=\"card-body\"><h2 class=\"card-title text-2xl mb-4\">Here's what your calendar would look like</h2><div class=\"alert alert-info mb-4\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" class=\"stroke-current shrink-0 w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> <span>All times are displayed in <strong>UTC (Coordinated Universal Time)</strong></span></div><div id=\"preview-content\" class=\"mt-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"card bg-base-100 shadow-xl\"><div class=\"card-body\"><h2 class=\"card-title text-2xl mb-4\">Here's what your calendar would look like</h2><div class=\"alert alert-info mb-4\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" class=\"stroke-current shrink-0 w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> <span>All times are displayed in your <strong>local timezone</strong></span></div><div id=\"preview-content\" class=\"mt-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -109,7 +113,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(match.GameName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 43, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 44, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -122,7 +126,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(match.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 47, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 48, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -140,7 +144,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Image.String)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 53, Col: 46}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 54, Col: 46}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -153,7 +157,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 53, Col: 70}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 54, Col: 70}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -172,7 +176,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var8 string
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Acronym.String)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 57, Col: 40}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 58, Col: 40}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -182,7 +186,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 59, Col: 30}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 60, Col: 30}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -197,7 +201,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Acronym.String)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 67, Col: 40}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 68, Col: 40}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -207,7 +211,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 69, Col: 30}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 70, Col: 30}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -226,7 +230,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Image.String)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 73, Col: 46}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 74, Col: 46}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -239,7 +243,7 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 73, Col: 70}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 74, Col: 70}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -255,94 +259,107 @@ func PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showi
 					return templ_7745c5c3_Err
 				}
 				if match.ExpectedStartTime.Valid {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<span class=\"font-mono\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<span class=\"match-time\" data-utc-time=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
-					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("Jan 02, 2006"))
+					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 85, Col: 65}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 85, Col: 116}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span> <span class=\"font-mono font-semibold\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\"><span class=\"font-mono match-date\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var15 string
-					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("15:04"))
+					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("Jan 02, 2006"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 88, Col: 58}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 87, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</span> <span class=\"font-mono font-semibold match-hour\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var16 string
+					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("15:04"))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 90, Col: 59}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span></span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"text-gray-500\">TBD</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<span class=\"text-gray-500\">TBD</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div><!-- League --><div class=\"text-xs text-gray-500 mt-2 truncate\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><!-- League --><div class=\"text-xs text-gray-500 mt-2 truncate\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(match.LeagueName)
+				var templ_7745c5c3_Var17 string
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(match.LeagueName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 97, Col: 28}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 100, Col: 28}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><!-- Status Badge --><div class=\"card-actions justify-end mt-2\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div><!-- Status Badge --><div class=\"card-actions justify-end mt-2\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if match.Finished {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span class=\"badge badge-success badge-sm\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<span class=\"badge badge-success badge-sm\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var17 string
-					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d", match.Team1Score, match.Team2Score))
+					var templ_7745c5c3_Var18 string
+					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d-%d", match.Team1Score, match.Team2Score))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 104, Col: 70}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/preview-page.templ`, Line: 107, Col: 70}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"badge badge-info badge-sm\">Upcoming</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span class=\"badge badge-info badge-sm\">Upcoming</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div><div class=\"card-actions justify-between mt-6\"><a href=\"/lts\" id=\"back-to-selection-btn\" class=\"btn btn-outline\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18\"></path></svg> Back to Selection</a> <button type=\"button\" id=\"export-calendar-btn\" class=\"btn btn-primary\">Export Calendar <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3\"></path></svg></button></div><script>\n\t\t\t\t// Handle back to selection with saved game options\n\t\t\t\tdocument.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {\n\t\t\t\t\te.preventDefault();\n\n\t\t\t\t\tconst savedGameOptions = sessionStorage.getItem('selectedGameOptions');\n\t\t\t\t\tif (savedGameOptions) {\n\t\t\t\t\t\tconst gameIds = JSON.parse(savedGameOptions);\n\n\t\t\t\t\t\tconst response = await fetch('/lts', {\n\t\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\t\theaders: {\n\t\t\t\t\t\t\t\t'Content-Type': 'application/json',\n\t\t\t\t\t\t\t\t'HX-Request': 'true'\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\tbody: JSON.stringify({ options: gameIds })\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\tconst html = await response.text();\n\t\t\t\t\t\t\tconst container = document.querySelector('.container');\n\t\t\t\t\t\t\tif (container) {\n\t\t\t\t\t\t\t\tcontainer.innerHTML = html;\n\n\t\t\t\t\t\t\t\t// Execute scripts in the newly inserted HTML\n\t\t\t\t\t\t\t\tconst scripts = container.querySelectorAll('script');\n\t\t\t\t\t\t\t\tscripts.forEach(oldScript => {\n\t\t\t\t\t\t\t\t\tconst newScript = document.createElement('script');\n\t\t\t\t\t\t\t\t\tif (oldScript.src) {\n\t\t\t\t\t\t\t\t\t\tnewScript.src = oldScript.src;\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tnewScript.textContent = oldScript.textContent;\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\toldScript.parentNode.replaceChild(newScript, oldScript);\n\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\twindow.history.pushState({}, '', '/lts');\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// No saved selections, just navigate normally\n\t\t\t\t\t\twindow.location.href = '/lts';\n\t\t\t\t\t}\n\t\t\t\t});\n\n\t\t\t\t// Handle export calendar button\n\t\t\t\tdocument.getElementById('export-calendar-btn').addEventListener('click', async (e) => {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst btn = e.currentTarget;\n\n\t\t\t\t\t// Get selections from sessionStorage\n\t\t\t\t\tconst previewSelections = sessionStorage.getItem('preview-selections');\n\t\t\t\t\tif (!previewSelections) {\n\t\t\t\t\t\talert('No selections found. Please go back and make your selections again.');\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\n\t\t\t\t\t// Disable button and show loading state\n\t\t\t\t\tbtn.disabled = true;\n\t\t\t\t\tbtn.classList.add('loading');\n\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch('/export', {\n\t\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\t\theaders: {\n\t\t\t\t\t\t\t\t'Content-Type': 'application/json'\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\tbody: previewSelections\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\tconst data = await response.json();\n\n\t\t\t\t\t\t\t// Copy URL to clipboard\n\t\t\t\t\t\t\ttry {\n\t\t\t\t\t\t\t\tawait navigator.clipboard.writeText(data.url);\n\t\t\t\t\t\t\t\talert('Calendar link created and copied to clipboard!\\n\\n' + data.url);\n\t\t\t\t\t\t\t} catch (err) {\n\t\t\t\t\t\t\t\tconsole.error('Failed to copy to clipboard:', err);\n\t\t\t\t\t\t\t\talert('Calendar link created!\\n\\n' + data.url);\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tconst errorData = await response.json();\n\t\t\t\t\t\t\talert('Failed to export calendar: ' + (errorData.error || 'Unknown error'));\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Error exporting calendar:', error);\n\t\t\t\t\t\talert('Error exporting calendar: ' + error.message);\n\t\t\t\t\t} finally {\n\t\t\t\t\t\t// Re-enable button\n\t\t\t\t\t\tbtn.disabled = false;\n\t\t\t\t\t\tbtn.classList.remove('loading');\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t</script></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><div class=\"card-actions justify-between mt-6\"><a href=\"/lts\" id=\"back-to-selection-btn\" class=\"btn btn-outline\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18\"></path></svg> Back to Selection</a> <button type=\"button\" id=\"export-calendar-btn\" class=\"btn btn-primary\">Export Calendar <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3\"></path></svg></button></div><script>\n\t\t\t\t// Convert UTC times to local timezone\n\t\t\t\t(function() {\n\t\t\t\t\tconst matchTimes = document.querySelectorAll('.match-time');\n\t\t\t\t\tmatchTimes.forEach(timeElement => {\n\t\t\t\t\t\tconst utcTimeStr = timeElement.getAttribute('data-utc-time');\n\t\t\t\t\t\tif (!utcTimeStr) return;\n\n\t\t\t\t\t\tconst utcDate = new Date(utcTimeStr);\n\t\t\t\t\t\tif (isNaN(utcDate.getTime())) return;\n\n\t\t\t\t\t\t// Format date\n\t\t\t\t\t\tconst dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };\n\t\t\t\t\t\tconst localDateStr = utcDate.toLocaleDateString('en-US', dateOptions);\n\n\t\t\t\t\t\t// Format time\n\t\t\t\t\t\tconst timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };\n\t\t\t\t\t\tconst localTimeStr = utcDate.toLocaleTimeString('en-US', timeOptions);\n\n\t\t\t\t\t\t// Update the display\n\t\t\t\t\t\tconst dateSpan = timeElement.querySelector('.match-date');\n\t\t\t\t\t\tconst hourSpan = timeElement.querySelector('.match-hour');\n\n\t\t\t\t\t\tif (dateSpan) dateSpan.textContent = localDateStr;\n\t\t\t\t\t\tif (hourSpan) hourSpan.textContent = localTimeStr;\n\t\t\t\t\t});\n\t\t\t\t})();\n\n\t\t\t\t// Handle keyboard events\n\t\t\t\tdocument.addEventListener('keydown', (e) => {\n\t\t\t\t\t// Enter key to trigger export\n\t\t\t\t\tif (e.key === 'Enter') {\n\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\tconst exportBtn = document.getElementById('export-calendar-btn');\n\t\t\t\t\t\tif (exportBtn && !exportBtn.disabled) {\n\t\t\t\t\t\t\texportBtn.click();\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\n\t\t\t\t// Handle back to selection with saved game options\n\t\t\t\tdocument.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {\n\t\t\t\t\te.preventDefault();\n\n\t\t\t\t\tconst savedGameOptions = sessionStorage.getItem('selectedGameOptions');\n\t\t\t\t\tif (savedGameOptions) {\n\t\t\t\t\t\tconst gameIds = JSON.parse(savedGameOptions);\n\n\t\t\t\t\t\tconst response = await fetch('/lts', {\n\t\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\t\theaders: {\n\t\t\t\t\t\t\t\t'Content-Type': 'application/json',\n\t\t\t\t\t\t\t\t'HX-Request': 'true'\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\tbody: JSON.stringify({ options: gameIds })\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\tconst html = await response.text();\n\t\t\t\t\t\t\tconst container = document.querySelector('.container');\n\t\t\t\t\t\t\tif (container) {\n\t\t\t\t\t\t\t\tcontainer.innerHTML = html;\n\n\t\t\t\t\t\t\t\t// Execute scripts in the newly inserted HTML\n\t\t\t\t\t\t\t\tconst scripts = container.querySelectorAll('script');\n\t\t\t\t\t\t\t\tscripts.forEach(oldScript => {\n\t\t\t\t\t\t\t\t\tconst newScript = document.createElement('script');\n\t\t\t\t\t\t\t\t\tif (oldScript.src) {\n\t\t\t\t\t\t\t\t\t\tnewScript.src = oldScript.src;\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tnewScript.textContent = oldScript.textContent;\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\toldScript.parentNode.replaceChild(newScript, oldScript);\n\t\t\t\t\t\t\t\t});\n\n\t\t\t\t\t\t\t\twindow.history.pushState({}, '', '/lts');\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// No saved selections, just navigate normally\n\t\t\t\t\t\twindow.location.href = '/lts';\n\t\t\t\t\t}\n\t\t\t\t});\n\n\t\t\t\t// Handle export calendar button\n\t\t\t\tdocument.getElementById('export-calendar-btn').addEventListener('click', async (e) => {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst btn = e.currentTarget;\n\n\t\t\t\t\t// Get selections from sessionStorage\n\t\t\t\t\tconst previewSelections = sessionStorage.getItem('preview-selections');\n\t\t\t\t\tif (!previewSelections) {\n\t\t\t\t\t\talert('No selections found. Please go back and make your selections again.');\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\n\t\t\t\t\t// Disable button and show loading state\n\t\t\t\t\tbtn.disabled = true;\n\t\t\t\t\tbtn.classList.add('loading');\n\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch('/export', {\n\t\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\t\theaders: {\n\t\t\t\t\t\t\t\t'Content-Type': 'application/json'\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\tbody: previewSelections\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\tconst data = await response.json();\n\n\t\t\t\t\t\t\t// Try to copy to clipboard\n\t\t\t\t\t\t\ttry {\n\t\t\t\t\t\t\t\tawait navigator.clipboard.writeText(data.url);\n\t\t\t\t\t\t\t\talert('Calendar link created and copied to clipboard!\\n\\n' + data.url);\n\t\t\t\t\t\t\t} catch (err) {\n\t\t\t\t\t\t\t\t// Show modal with selectable text input\n\t\t\t\t\t\t\t\tconst modal = document.createElement('div');\n\t\t\t\t\t\t\t\tmodal.className = 'modal modal-open';\n\t\t\t\t\t\t\t\tmodal.innerHTML = `\n\t\t\t\t\t\t\t\t\t<div class=\"modal-box\">\n\t\t\t\t\t\t\t\t\t\t<h3 class=\"font-bold text-lg mb-4\">Calendar Link Created!</h3>\n\t\t\t\t\t\t\t\t\t\t<p class=\"mb-4\">Copy the link below:</p>\n\t\t\t\t\t\t\t\t\t\t<input type=\"text\" readonly value=\"${data.url}\"\n\t\t\t\t\t\t\t\t\t\t\tclass=\"input input-bordered w-full font-mono text-sm\"\n\t\t\t\t\t\t\t\t\t\t\tid=\"calendar-url-input\"\n\t\t\t\t\t\t\t\t\t\t\tonclick=\"this.select()\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"modal-action\">\n\t\t\t\t\t\t\t\t\t\t\t<button class=\"btn\" onclick=\"this.closest('.modal').remove()\">Close</button>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t`;\n\t\t\t\t\t\t\t\tdocument.body.appendChild(modal);\n\n\t\t\t\t\t\t\t\t// Auto-select the text\n\t\t\t\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\t\t\t\tconst input = document.getElementById('calendar-url-input');\n\t\t\t\t\t\t\t\t\tif (input) {\n\t\t\t\t\t\t\t\t\t\tinput.focus();\n\t\t\t\t\t\t\t\t\t\tinput.select();\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}, 100);\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tconst errorData = await response.json();\n\t\t\t\t\t\t\talert('Failed to export calendar: ' + (errorData.error || 'Unknown error'));\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Error exporting calendar:', error);\n\t\t\t\t\t\talert('Error exporting calendar: ' + error.message);\n\t\t\t\t\t} finally {\n\t\t\t\t\t\t// Re-enable button\n\t\t\t\t\t\tbtn.disabled = false;\n\t\t\t\t\t\tbtn.classList.remove('loading');\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t</script></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

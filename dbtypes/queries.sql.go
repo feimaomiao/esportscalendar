@@ -48,52 +48,35 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 
 const getCalendarMatchesBySelections = `-- name: GetCalendarMatchesBySelections :many
 SELECT
-    m.id,
-    m.name,
-    m.slug,
-    m.expected_start_time,
-    m.finished,
-    m.team1_id,
-    m.team2_id,
-    m.team1_score,
-    m.team2_score,
-    m.amount_of_games,
-    m.game_id,
-    m.league_id,
-    m.series_id,
-    m.tournament_id,
-    g.name as game_name,
-    l.name as league_name,
-    tour.name as tournament_name,
-    tour.tier as tournament_tier,
-    t1.name as team1_name,
-    t1.acronym as team1_acronym,
-    t1.image_link as team1_image,
-    t2.name as team2_name,
-    t2.acronym as team2_acronym,
-    t2.image_link as team2_image
+    m.id, m.name, m.slug, m.expected_start_time, m.finished,
+    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+    m.game_id, m.league_id, m.series_id, m.tournament_id,
+    g.name AS game_name,
+    l.name AS league_name,
+    tour.name AS tournament_name,
+    tour.tier AS tournament_tier,
+    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
 FROM matches m
-INNER JOIN games g ON m.game_id = g.id
-INNER JOIN leagues l ON m.league_id = l.id
-INNER JOIN tournaments tour ON m.tournament_id = tour.id
-INNER JOIN teams t1 ON m.team1_id = t1.id
-INNER JOIN teams t2 ON m.team2_id = t2.id
-WHERE
-    m.expected_start_time >= NOW() - INTERVAL '14 days'
+JOIN games g ON m.game_id = g.id
+JOIN leagues l ON m.league_id = l.id
+JOIN tournaments tour ON m.tournament_id = tour.id
+JOIN teams t1 ON m.team1_id = t1.id
+JOIN teams t2 ON m.team2_id = t2.id
+WHERE m.expected_start_time >= NOW() - INTERVAL '14 days'
     AND m.game_id = ANY($1::int[])
-    AND (tour.tier IS NULL OR tour.tier <= $2::int)
     AND (
-        (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
-        OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+        (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
+        OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
     )
 ORDER BY m.expected_start_time ASC
 `
 
 type GetCalendarMatchesBySelectionsParams struct {
 	GameIds   []int32
-	MaxTier   int32
-	LeagueIds []int32
 	TeamIds   []int32
+	LeagueIds []int32
+	MaxTier   int32
 }
 
 type GetCalendarMatchesBySelectionsRow struct {
@@ -126,9 +109,9 @@ type GetCalendarMatchesBySelectionsRow struct {
 func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCalendarMatchesBySelectionsParams) ([]GetCalendarMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getCalendarMatchesBySelections,
 		arg.GameIds,
-		arg.MaxTier,
-		arg.LeagueIds,
 		arg.TeamIds,
+		arg.LeagueIds,
+		arg.MaxTier,
 	)
 	if err != nil {
 		return nil, err
@@ -175,50 +158,33 @@ func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCal
 
 const getFutureMatchesBySelections = `-- name: GetFutureMatchesBySelections :many
 SELECT
-    m.id,
-    m.name,
-    m.slug,
-    m.expected_start_time,
-    m.finished,
-    m.team1_id,
-    m.team2_id,
-    m.team1_score,
-    m.team2_score,
-    m.amount_of_games,
-    m.game_id,
-    m.league_id,
-    m.series_id,
-    m.tournament_id,
-    g.name as game_name,
-    l.name as league_name,
-    t1.name as team1_name,
-    t1.acronym as team1_acronym,
-    t1.image_link as team1_image,
-    t2.name as team2_name,
-    t2.acronym as team2_acronym,
-    t2.image_link as team2_image
+    m.id, m.name, m.slug, m.expected_start_time, m.finished,
+    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+    m.game_id, m.league_id, m.series_id, m.tournament_id,
+    g.name AS game_name,
+    l.name AS league_name,
+    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
 FROM matches m
-INNER JOIN games g ON m.game_id = g.id
-INNER JOIN leagues l ON m.league_id = l.id
-INNER JOIN tournaments tour ON m.tournament_id = tour.id
-INNER JOIN teams t1 ON m.team1_id = t1.id
-INNER JOIN teams t2 ON m.team2_id = t2.id
-WHERE
-    m.expected_start_time >= NOW()
+JOIN games g ON m.game_id = g.id
+JOIN leagues l ON m.league_id = l.id
+JOIN tournaments tour ON m.tournament_id = tour.id
+JOIN teams t1 ON m.team1_id = t1.id
+JOIN teams t2 ON m.team2_id = t2.id
+WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY($1::int[])
-    AND (tour.tier IS NULL OR tour.tier <= $2::int)
     AND (
-        (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
-        OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+        (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
+        OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
     )
 ORDER BY m.expected_start_time ASC
 `
 
 type GetFutureMatchesBySelectionsParams struct {
 	GameIds   []int32
-	MaxTier   int32
-	LeagueIds []int32
 	TeamIds   []int32
+	LeagueIds []int32
+	MaxTier   int32
 }
 
 type GetFutureMatchesBySelectionsRow struct {
@@ -249,9 +215,9 @@ type GetFutureMatchesBySelectionsRow struct {
 func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getFutureMatchesBySelections,
 		arg.GameIds,
-		arg.MaxTier,
-		arg.LeagueIds,
 		arg.TeamIds,
+		arg.LeagueIds,
+		arg.MaxTier,
 	)
 	if err != nil {
 		return nil, err
@@ -341,65 +307,32 @@ func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLe
 
 const getPastMatchesBySelections = `-- name: GetPastMatchesBySelections :many
 SELECT
-    id,
-    name,
-    slug,
-    expected_start_time,
-    finished,
-    team1_id,
-    team2_id,
-    team1_score,
-    team2_score,
-    amount_of_games,
-    game_id,
-    league_id,
-    series_id,
-    tournament_id,
-    game_name,
-    league_name,
-    team1_name,
-    team1_acronym,
-    team1_image,
-    team2_name,
-    team2_acronym,
-    team2_image
+    id, name, slug, expected_start_time, finished,
+    team1_id, team2_id, team1_score, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id,
+    game_name, league_name,
+    team1_name, team1_acronym, team1_image,
+    team2_name, team2_acronym, team2_image
 FROM (
     SELECT
-        m.id,
-        m.name,
-        m.slug,
-        m.expected_start_time,
-        m.finished,
-        m.team1_id,
-        m.team2_id,
-        m.team1_score,
-        m.team2_score,
-        m.amount_of_games,
-        m.game_id,
-        m.league_id,
-        m.series_id,
-        m.tournament_id,
-        g.name as game_name,
-        l.name as league_name,
-        t1.name as team1_name,
-        t1.acronym as team1_acronym,
-        t1.image_link as team1_image,
-        t2.name as team2_name,
-        t2.acronym as team2_acronym,
-        t2.image_link as team2_image
+        m.id, m.name, m.slug, m.expected_start_time, m.finished,
+        m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+        m.game_id, m.league_id, m.series_id, m.tournament_id,
+        g.name AS game_name,
+        l.name AS league_name,
+        t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+        t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
     FROM matches m
-    INNER JOIN games g ON m.game_id = g.id
-    INNER JOIN leagues l ON m.league_id = l.id
-    INNER JOIN tournaments tour ON m.tournament_id = tour.id
-    INNER JOIN teams t1 ON m.team1_id = t1.id
-    INNER JOIN teams t2 ON m.team2_id = t2.id
-    WHERE
-        m.expected_start_time < NOW()
+    JOIN games g ON m.game_id = g.id
+    JOIN leagues l ON m.league_id = l.id
+    JOIN tournaments tour ON m.tournament_id = tour.id
+    JOIN teams t1 ON m.team1_id = t1.id
+    JOIN teams t2 ON m.team2_id = t2.id
+    WHERE m.expected_start_time < NOW()
         AND m.game_id = ANY($1::int[])
-        AND (tour.tier IS NULL OR tour.tier <= $2::int)
         AND (
-            (CARDINALITY($3::int[]) = 0 OR m.league_id = ANY($3::int[]))
-            OR (CARDINALITY($4::int[]) = 0 OR m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[]))
+            (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
+            OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
         )
     ORDER BY m.expected_start_time DESC
     LIMIT 10
@@ -409,9 +342,9 @@ ORDER BY expected_start_time ASC
 
 type GetPastMatchesBySelectionsParams struct {
 	GameIds   []int32
-	MaxTier   int32
-	LeagueIds []int32
 	TeamIds   []int32
+	LeagueIds []int32
+	MaxTier   int32
 }
 
 type GetPastMatchesBySelectionsRow struct {
@@ -442,9 +375,9 @@ type GetPastMatchesBySelectionsRow struct {
 func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getPastMatchesBySelections,
 		arg.GameIds,
-		arg.MaxTier,
-		arg.LeagueIds,
 		arg.TeamIds,
+		arg.LeagueIds,
+		arg.MaxTier,
 	)
 	if err != nil {
 		return nil, err

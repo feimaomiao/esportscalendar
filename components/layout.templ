@@ -4,9 +4,25 @@ templ BaseLayout(title string) {
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
+		<script>
+			// Theme initialization - MUST be first script to prevent flash
+			(function() {
+				try {
+					const theme = localStorage.getItem('theme') || 'dark';
+					console.log('[BaseLayout] Setting theme:', theme);
+					document.documentElement.setAttribute('data-theme', theme);
+				} catch (e) {
+					console.error('[BaseLayout] Failed to set theme:', e);
+					// Fallback to dark if localStorage fails
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+			})();
+		</script>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>{ title }</title>
+		<!-- Favicon -->
+		<link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg"/>
 		<!-- DaisyUI and Tailwind CSS -->
 		<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.24/dist/full.min.css" rel="stylesheet"/>
 		<script src="https://cdn.tailwindcss.com"></script>
@@ -14,19 +30,33 @@ templ BaseLayout(title string) {
 		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 		<!-- Custom CSS -->
 		<link rel="stylesheet" href="/static/css/app.css"/>
-		<script>
-			// Theme initialization before page render
-			const theme = localStorage.getItem('theme') || 'dark';
-			document.documentElement.setAttribute('data-theme', theme);
-		</script>
 	</head>
 	<body>
 		<!-- Navigation Bar -->
 		<nav class="navbar bg-base-100 shadow-lg fixed top-0 left-0 right-0 z-50">
 			<div class="navbar-start">
-				<a href="/" class="btn btn-ghost text-xl font-bold text-primary">EsportsCalendar</a>
+				<!-- Mobile Hamburger Menu -->
+				<div class="dropdown lg:hidden">
+					<label tabindex="0" class="btn btn-ghost btn-circle">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+						</svg>
+					</label>
+					<ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+						<li><a href="/how-to-use">How to Use</a></li>
+						<li><a href="/about">About</a></li>
+					</ul>
+				</div>
+				<a href="/" class="btn btn-ghost text-xl font-bold text-primary flex items-center gap-2">
+					<img src="/static/images/calendar-logo.svg" alt="Calendar Logo" class="w-8 h-8"/>
+					<span class="hidden sm:inline">EsportsCalendar</span>
+				</a>
 			</div>
 			<div class="navbar-center hidden lg:flex">
+				<ul class="menu menu-horizontal px-1">
+					<li><a href="/how-to-use">How to Use</a></li>
+					<li><a href="/about">About</a></li>
+				</ul>
 			</div>
 			<div class="navbar-end gap-2">
 				<!-- Theme Toggle -->
@@ -54,16 +84,19 @@ templ BaseLayout(title string) {
 		</div>
 
 		<!-- Footer -->
-		<footer class="footer p-4 bg-base-300 text-base-content">
-			<aside>
+		<footer class="footer p-4 bg-base-300 text-base-content fixed bottom-0 left-0 right-0 z-50">
+			<aside class="pl-4">
 				<p>
 					<a href="https://icons8.com" target="_blank" rel="noopener noreferrer" class="link link-hover">Icons by Icons8</a>
 				</p>
 			</aside>
 			<nav class="mx-auto">
-				<a href="#how-to-use" class="link link-hover">How to Use</a>
+				<a href="/how-to-use" class="link link-hover">How to Use</a>
 			</nav>
-			<nav class="ml-auto">
+			<nav class="mx-auto">
+				<a href="https://www.buymeacoffee.com/feimaomiao" target="_blank" rel="noopener noreferrer" class="link link-hover">☕ Buy Me a Coffee</a>
+			</nav>
+			<nav class="ml-auto pr-4">
 				<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="link link-hover">Issues</a>
 			</nav>
 		</footer>
@@ -72,23 +105,39 @@ templ BaseLayout(title string) {
 		<script src="/static/js/app.js"></script>
 		<script>
 			// Theme toggle functionality
-			const themeToggle = document.getElementById('theme-toggle');
-			const currentTheme = localStorage.getItem('theme') || 'dark';
-
-			// Set initial state
-			if (currentTheme === 'light') {
-				themeToggle.checked = true;
-			}
-
-			themeToggle.addEventListener('change', function() {
-				if (this.checked) {
-					document.documentElement.setAttribute('data-theme', 'light');
-					localStorage.setItem('theme', 'light');
-				} else {
-					document.documentElement.setAttribute('data-theme', 'dark');
-					localStorage.setItem('theme', 'dark');
+			(function() {
+				const themeToggle = document.getElementById('theme-toggle');
+				if (!themeToggle) {
+					console.error('[Theme Toggle] Element not found');
+					return;
 				}
-			});
+
+				const currentTheme = localStorage.getItem('theme') || 'dark';
+				console.log('[Theme Toggle] Initializing with theme:', currentTheme);
+
+				// Set initial state
+				if (currentTheme === 'light') {
+					themeToggle.checked = true;
+				} else {
+					themeToggle.checked = false;
+				}
+
+				// Remove any existing event listeners by cloning the element
+				const newThemeToggle = themeToggle.cloneNode(true);
+				themeToggle.parentNode.replaceChild(newThemeToggle, themeToggle);
+
+				// Add event listener to the new element
+				newThemeToggle.addEventListener('change', function() {
+					console.log('[Theme Toggle] Changed to:', this.checked ? 'light' : 'dark');
+					if (this.checked) {
+						document.documentElement.setAttribute('data-theme', 'light');
+						localStorage.setItem('theme', 'light');
+					} else {
+						document.documentElement.setAttribute('data-theme', 'dark');
+						localStorage.setItem('theme', 'dark');
+					}
+				});
+			})();
 		</script>
 	</body>
 	</html>

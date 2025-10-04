@@ -4,13 +4,12 @@
 @plugin "daisyui" {
 themes:
     light --default,
-    dark --prefersdark;
+    dark;
 }
 @plugin "daisyui/theme" {
 name: "light";
 default: true;
 prefersdark: false;
-color-scheme: "light";
 --color-base-100: oklch(92% 0 0);
 --color-base-200: oklch(87% 0 0);
 --color-base-300: oklch(70% 0 0);
@@ -43,8 +42,7 @@ color-scheme: "light";
 @plugin "daisyui/theme" {
 name: "dark";
 default: false;
-prefersdark: true;
-color-scheme: "dark";
+prefersdark: false;
 --color-base-100: oklch(26% 0 0);
 --color-base-200: oklch(20% 0 0);
 --color-base-300: oklch(14% 0 0);

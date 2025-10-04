@@ -547,14 +547,20 @@ function initGameSelection(gameId) {
 		const tierSlider = document.getElementById('tier-slider-' + gameId);
 		const tierValue = document.getElementById('tier-value-' + gameId);
 
+		// Function to convert tier number to letter
+		function getTierLabel(tier) {
+			const tierMap = { 1: 'S', 2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'All' };
+			return tierMap[tier] || tier;
+		}
+
 		if (tierSlider && tierValue) {
 			// Restore saved tier value
 			tierSlider.value = maxTier;
-			tierValue.textContent = maxTier;
+			tierValue.textContent = getTierLabel(maxTier);
 
 			tierSlider.addEventListener('input', (e) => {
 				maxTier = parseInt(e.target.value);
-				tierValue.textContent = maxTier;
+				tierValue.textContent = getTierLabel(maxTier);
 				saveSelections();
 			});
 		}

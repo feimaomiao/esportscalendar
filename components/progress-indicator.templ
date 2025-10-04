@@ -1,0 +1,30 @@
+package components
+
+// ProgressIndicator shows the current step in the calendar creation flow
+// currentStep: 1 = Select Games, 2 = Select Leagues/Teams, 3 = Preview/Export
+templ ProgressIndicator(currentStep int) {
+	<div class="w-full bg-base-100 py-4 mb-6">
+		<div class="container mx-auto px-4">
+			<ul class="steps w-full">
+				<li class={ "step", templ.KV("step-primary", currentStep >= 1) }>
+					<div class="flex flex-col items-center">
+						<span class="font-semibold text-sm md:text-base">Select Games</span>
+						<span class="text-xs text-base-content/60 hidden md:block">Choose esports to follow</span>
+					</div>
+				</li>
+				<li class={ "step", templ.KV("step-primary", currentStep >= 2) }>
+					<div class="flex flex-col items-center">
+						<span class="font-semibold text-sm md:text-base">Leagues & Teams</span>
+						<span class="text-xs text-base-content/60 hidden md:block">Filter your selections</span>
+					</div>
+				</li>
+				<li class={ "step", templ.KV("step-primary", currentStep >= 3) }>
+					<div class="flex flex-col items-center">
+						<span class="font-semibold text-sm md:text-base">Export</span>
+						<span class="text-xs text-base-content/60 hidden md:block">Get your calendar</span>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+}

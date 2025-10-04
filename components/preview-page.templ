@@ -5,6 +5,7 @@ import "fmt"
 
 templ PreviewPage(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool) {
 	@BaseLayout("Preview - EsportsCalendar") {
+		@ProgressIndicator(3)
 		<div class="container mx-auto p-4">
 			<div class="max-w-5xl mx-auto">
 				@PreviewPageContent(matches, showingPast)
@@ -22,7 +23,7 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 				</svg>
-				<span>All times are displayed in <strong>UTC (Coordinated Universal Time)</strong></span>
+				<span>All times are displayed in your <strong>local timezone</strong></span>
 			</div>
 
 			<div id="preview-content" class="mt-4">
@@ -81,11 +82,13 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 										</svg>
 										if match.ExpectedStartTime.Valid {
-											<span class="font-mono">
-												{ match.ExpectedStartTime.Time.Format("Jan 02, 2006") }
-											</span>
-											<span class="font-mono font-semibold">
-												{ match.ExpectedStartTime.Time.Format("15:04") }
+											<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
+												<span class="font-mono match-date">
+													{ match.ExpectedStartTime.Time.Format("Jan 02, 2006") }
+												</span>
+												<span class="font-mono font-semibold match-hour">
+													{ match.ExpectedStartTime.Time.Format("15:04") }
+												</span>
 											</span>
 										} else {
 											<span class="text-gray-500">TBD</span>
@@ -129,6 +132,45 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 				</button>
 			</div>
 			<script>
+				// Convert UTC times to local timezone
+				(function() {
+					const matchTimes = document.querySelectorAll('.match-time');
+					matchTimes.forEach(timeElement => {
+						const utcTimeStr = timeElement.getAttribute('data-utc-time');
+						if (!utcTimeStr) return;
+
+						const utcDate = new Date(utcTimeStr);
+						if (isNaN(utcDate.getTime())) return;
+
+						// Format date
+						const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };
+						const localDateStr = utcDate.toLocaleDateString('en-US', dateOptions);
+
+						// Format time
+						const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+						const localTimeStr = utcDate.toLocaleTimeString('en-US', timeOptions);
+
+						// Update the display
+						const dateSpan = timeElement.querySelector('.match-date');
+						const hourSpan = timeElement.querySelector('.match-hour');
+
+						if (dateSpan) dateSpan.textContent = localDateStr;
+						if (hourSpan) hourSpan.textContent = localTimeStr;
+					});
+				})();
+
+				// Handle keyboard events
+				document.addEventListener('keydown', (e) => {
+					// Enter key to trigger export
+					if (e.key === 'Enter') {
+						e.preventDefault();
+						const exportBtn = document.getElementById('export-calendar-btn');
+						if (exportBtn && !exportBtn.disabled) {
+							exportBtn.click();
+						}
+					}
+				});
+
 				// Handle back to selection with saved game options
 				document.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {
 					e.preventDefault();
@@ -201,13 +243,37 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 						if (response.ok) {
 							const data = await response.json();
 
-							// Copy URL to clipboard
+							// Try to copy to clipboard
 							try {
 								await navigator.clipboard.writeText(data.url);
 								alert('Calendar link created and copied to clipboard!\n\n' + data.url);
 							} catch (err) {
-								console.error('Failed to copy to clipboard:', err);
-								alert('Calendar link created!\n\n' + data.url);
+								// Show modal with selectable text input
+								const modal = document.createElement('div');
+								modal.className = 'modal modal-open';
+								modal.innerHTML = `
+									<div class="modal-box">
+										<h3 class="font-bold text-lg mb-4">Calendar Link Created!</h3>
+										<p class="mb-4">Copy the link below:</p>
+										<input type="text" readonly value="${data.url}"
+											class="input input-bordered w-full font-mono text-sm"
+											id="calendar-url-input"
+											onclick="this.select()">
+										<div class="modal-action">
+											<button class="btn" onclick="this.closest('.modal').remove()">Close</button>
+										</div>
+									</div>
+								`;
+								document.body.appendChild(modal);
+
+								// Auto-select the text
+								setTimeout(() => {
+									const input = document.getElementById('calendar-url-input');
+									if (input) {
+										input.focus();
+										input.select();
+									}
+								}, 100);
 							}
 						} else {
 							const errorData = await response.json();

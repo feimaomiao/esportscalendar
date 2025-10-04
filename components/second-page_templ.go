@@ -41,7 +41,11 @@ func SecondPage(selectedOptions []Option) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto p-4\"><div class=\"max-w-5xl mx-auto\">")
+			templ_7745c5c3_Err = ProgressIndicator(2).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div class=\"container mx-auto p-4\"><div class=\"max-w-5xl mx-auto\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -145,7 +149,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 116, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 117, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -158,7 +162,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(option.Logo)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 120, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 121, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -171,7 +175,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 120, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 121, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -184,7 +188,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 122, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 123, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -197,7 +201,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs("deselect-all-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 129, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 130, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -210,7 +214,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("selected-combined-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 136, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 137, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -223,7 +227,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-container-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 147, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 148, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -236,7 +240,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("search-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 150, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 151, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -249,7 +253,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-menu-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 154, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 155, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -262,7 +266,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("loading-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 155, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 156, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -275,7 +279,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("league-list-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 159, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 160, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -288,7 +292,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs("no-results-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 160, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 161, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -301,7 +305,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-teams-container-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 174, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 175, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -314,7 +318,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs("search-teams-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 177, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 178, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -327,7 +331,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs("dropdown-teams-menu-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 181, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 182, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -340,7 +344,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs("loading-teams-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 182, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 183, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -353,7 +357,7 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs("team-list-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 186, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 187, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -366,39 +370,39 @@ func GameSelectionCard(option Option) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs("no-teams-results-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 187, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 188, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\">No teams found</div></div></div></div></div></div><!-- Tournament Tier Filter --><div class=\"mt-4\"><div class=\"mb-2 flex items-center justify-between\"><span class=\"font-medium\">Maximum Tournament Tier:</span> <span class=\"badge badge-primary\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\">No teams found</div></div></div></div></div></div><!-- Tournament Tier Filter --><div class=\"mt-4\"><div class=\"mb-2 flex items-center justify-between\"><div class=\"flex items-center gap-2\"><span class=\"font-medium\">Minimum Tournament Tier:</span><div class=\"tooltip\" data-tip=\"Different tiered tournaments may exist within the same league. Use this slider to filter out lower-tier tournaments.\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 text-info cursor-help\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z\"></path></svg></div></div><span class=\"badge badge-primary\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs("tier-value-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 200, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 208, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\">1</span></div><input type=\"range\" min=\"1\" max=\"6\" value=\"1\" class=\"range range-primary\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\">S</span></div><input type=\"range\" min=\"1\" max=\"6\" value=\"1\" class=\"range range-primary\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs("tier-slider-" + option.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 208, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/second-page.templ`, Line: 216, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><div class=\"w-full flex justify-between text-xs px-2 mt-1\"><span>1 (Highest)</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span> <span>6 (All)</span></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><div class=\"w-full flex justify-between text-xs px-2 mt-1\"><span>S</span> <span>A</span> <span>B</span> <span>C</span> <span>D</span> <span>All</span></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
