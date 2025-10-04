@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/feimaomiao/esportscalendar/middleware"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	// loads .env file automatically.
@@ -27,7 +28,13 @@ func main() {
 	}()
 
 	logger.Info("Starting application")
-	mux := http.NewServeMux()
+
+	// Set Gin to release mode for production
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+
+	// Add Gin's built-in recovery and logging middleware
+	router.Use(gin.Recovery())
 
 	// Serve embedded static files (CSS, JS, images, icons)
 	staticSubFS, err := fs.Sub(staticFS, "static")
@@ -35,33 +42,55 @@ func main() {
 		logger.Fatal("Failed to create sub filesystem", zap.Error(err))
 	}
 	fileServer := http.FileServer(http.FS(staticSubFS))
-	mux.Handle("/static/", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.GET("/static/*filepath", func(c *gin.Context) {
 		// Set proper MIME types for CSS and JS files
-		if strings.HasSuffix(r.URL.Path, ".css") {
-			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		} else if strings.HasSuffix(r.URL.Path, ".js") {
-			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		if strings.HasSuffix(c.Request.URL.Path, ".css") {
+			c.Header("Content-Type", "text/css; charset=utf-8")
+		} else if strings.HasSuffix(c.Request.URL.Path, ".js") {
+			c.Header("Content-Type", "application/javascript; charset=utf-8")
 		}
-		fileServer.ServeHTTP(w, r)
-	})))
+		c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/static/")
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
 
 	mw := middleware.InitMiddleHandler(logger)
 
-	// Routes
-	mux.HandleFunc("/lts", mw.SecondPageHandler)
-	mux.HandleFunc("/preview", mw.PreviewHandler)
-	mux.HandleFunc("/export", mw.ExportHandler)
-	mux.HandleFunc("/how-to-use", mw.HowToUseHandler)
-	mux.HandleFunc("/about", mw.AboutHandler)
-	mux.HandleFunc("/api/league-options/", mw.LeagueOptionsHandler)
-	mux.HandleFunc("/api/team-options/", mw.TeamOptionsHandler)
+	// Serve robots.txt and sitemap.xml from embedded static files
+	router.GET("/robots.txt", func(c *gin.Context) {
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		data, err := staticFS.ReadFile("static/robots.txt")
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Data(http.StatusOK, "text/plain; charset=utf-8", data)
+	})
+	router.GET("/sitemap.xml", func(c *gin.Context) {
+		c.Header("Content-Type", "application/xml; charset=utf-8")
+		data, err := staticFS.ReadFile("static/sitemap.xml")
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Data(http.StatusOK, "application/xml; charset=utf-8", data)
+	})
 
-	// Calendar handler and index - handles both /:hash.ics and /
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".ics") {
-			mw.CalendarHandler(w, r)
+	// Routes
+	router.GET("/", mw.IndexHandler)
+	router.Any("/lts", mw.SecondPageHandler)
+	router.POST("/preview", mw.PreviewHandler)
+	router.POST("/export", mw.ExportHandler)
+	router.GET("/how-to-use", mw.HowToUseHandler)
+	router.GET("/about", mw.AboutHandler)
+	router.GET("/api/league-options/*param", mw.LeagueOptionsHandler)
+	router.GET("/api/team-options/*param", mw.TeamOptionsHandler)
+
+	// NoRoute handler for .ics files (calendar downloads)
+	router.NoRoute(func(c *gin.Context) {
+		if strings.HasSuffix(c.Request.URL.Path, ".ics") {
+			mw.CalendarHandler(c)
 		} else {
-			mw.IndexHandler(w, r)
+			c.Status(http.StatusNotFound)
 		}
 	})
 
@@ -71,7 +100,7 @@ func main() {
 	// Create server with timeouts for security
 	server := &http.Server{
 		Addr:              ":8080",
-		Handler:           mux,
+		Handler:           router,
 		ReadTimeout:       minute,
 		ReadHeaderTimeout: minute,
 		WriteTimeout:      minute,

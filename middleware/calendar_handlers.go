@@ -7,22 +7,21 @@ import (
 	"strings"
 
 	"github.com/feimaomiao/esportscalendar/dbtypes"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) ExportHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "ExportHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	// Parse JSON body with selections
 	var requestBody map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		m.Logger.Error("Failed to parse JSON body", zap.Error(err))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, map[string]string{"error": "Invalid request body"}, m.Logger)
+		c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 	m.Logger.Debug("Received selections for export", zap.Any("selections", requestBody))
@@ -31,9 +30,7 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 	jsonBytes, err := json.Marshal(requestBody)
 	if err != nil {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		writeJSON(w, map[string]string{"error": "Failed to process selections"}, m.Logger)
+		c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process selections"})
 		return
 	}
 
@@ -48,9 +45,7 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		m.Logger.Error("Failed to store URL mapping", zap.Error(err), zap.String("hash", hash))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		writeJSON(w, map[string]string{"error": "Failed to create calendar link"}, m.Logger)
+		c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create calendar link"})
 		return
 	}
 
@@ -59,22 +54,21 @@ func (m *Middleware) ExportHandler(w http.ResponseWriter, r *http.Request) {
 		"hash": hash,
 		"url":  fmt.Sprintf("http://localhost:8080//%s.ics", hash),
 	}
-	w.Header().Set("Content-Type", "application/json")
-	writeJSON(w, response, m.Logger)
+	c.JSON(http.StatusOK, response)
 }
 
-func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) CalendarHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "CalendarHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	// Extract hash from URL path (format: /:hash.ics)
-	path := strings.TrimPrefix(r.URL.Path, "/")
+	path := strings.TrimPrefix(c.Request.URL.Path, "/")
 	hash := strings.TrimSuffix(path, ".ics")
 
 	if hash == "" || hash == path {
-		http.Error(w, "Invalid calendar URL", http.StatusBadRequest)
+		c.String(http.StatusBadRequest, "Invalid calendar URL")
 		return
 	}
 
@@ -84,7 +78,7 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	mapping, err := m.DBConn.GetURLMapping(m.Context, hash)
 	if err != nil {
 		m.Logger.Error("Hash not found", zap.String("hash", hash), zap.Error(err))
-		http.Error(w, "Calendar not found", http.StatusNotFound)
+		c.String(http.StatusNotFound, "Calendar not found")
 		return
 	}
 
@@ -99,9 +93,9 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	if cacheHit {
 		m.Logger.Info("Cache HIT", zap.String("hash", hash))
 		// Set headers for iCalendar file download
-		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
-		if _, writeErr := w.Write([]byte(icsContent)); writeErr != nil {
+		c.Header("Content-Type", "text/calendar; charset=utf-8")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+		if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
 			m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
 			return
 		}
@@ -115,7 +109,7 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	var selections map[string]any
 	if unmarshalErr := json.Unmarshal(mapping.ValueList, &selections); unmarshalErr != nil {
 		m.Logger.Error("Failed to parse stored selections", zap.Error(unmarshalErr))
-		http.Error(w, "Invalid calendar data", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Invalid calendar data")
 		return
 	}
 
@@ -138,7 +132,7 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			m.Logger.Error("Failed to fetch matches", zap.Error(err))
-			http.Error(w, "Failed to generate calendar", http.StatusInternalServerError)
+			c.String(http.StatusInternalServerError, "Failed to generate calendar")
 			return
 		}
 	}
@@ -152,9 +146,9 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set headers for iCalendar file download
-	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
-	if _, writeErr := w.Write([]byte(icsContent)); writeErr != nil {
+	c.Header("Content-Type", "text/calendar; charset=utf-8")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+	if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
 		m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
 		return
 	}

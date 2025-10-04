@@ -7,25 +7,27 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "LeagueOptionsHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
-	// Extract game ID from URL path
-	path := strings.TrimPrefix(r.URL.Path, "/api/league-options/")
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+	// Extract game ID from URL path or param
+	path := strings.TrimPrefix(c.Param("param"), "/")
+	if path == "" {
+		path = strings.TrimPrefix(c.Request.URL.Path, "/api/league-options/")
+	}
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := map[string]any{
+		c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   true,
 			"message": "Invalid game ID",
 			"leagues": []any{},
-		}
-		writeJSON(w, response, m.Logger)
+		})
 		return
 	}
 
@@ -38,10 +40,10 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 				zap.String("cache_key", cacheKey),
 				zap.Int64("game_id", gameID),
 				zap.Int("response_size_bytes", len(jsonBytes)))
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Cache-Control", "public, max-age=600")
-			w.Header().Set("X-Cache", "HIT")
-			if _, writeErr := w.Write(jsonBytes); writeErr != nil {
+			c.Header("Content-Type", "application/json")
+			c.Header("Cache-Control", "public, max-age=600")
+			c.Header("X-Cache", "HIT")
+			if _, writeErr := c.Writer.Write(jsonBytes); writeErr != nil {
 				m.Logger.Error("Failed to write cached response", zap.Error(writeErr))
 			}
 			return
@@ -56,7 +58,6 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 	// Fetch leagues from database
 	leagues, err := m.DBConn.GetLeaguesByGameID(m.Context, int32(gameID))
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		var message string
 		// Check if it's a connection error or other database issue
 		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "connect") {
@@ -64,12 +65,11 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 		} else {
 			message = "Unable to load leagues. Please refresh the page: " + err.Error()
 		}
-		response := map[string]any{
+		c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   true,
 			"message": message,
 			"leagues": []any{},
-		}
-		writeJSON(w, response, m.Logger)
+		})
 		return
 	}
 
@@ -117,7 +117,7 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
 		m.Logger.Error("Failed to marshal response", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -130,30 +130,31 @@ func (m *Middleware) LeagueOptionsHandler(w http.ResponseWriter, r *http.Request
 		zap.Int("response_size_bytes", len(responseBytes)))
 
 	// Return JSON response with HTTP cache headers (cache for 10 minutes)
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "public, max-age=600")
-	w.Header().Set("X-Cache", "MISS")
-	if _, writeErr := w.Write(responseBytes); writeErr != nil {
+	c.Header("Content-Type", "application/json")
+	c.Header("Cache-Control", "public, max-age=600")
+	c.Header("X-Cache", "MISS")
+	if _, writeErr := c.Writer.Write(responseBytes); writeErr != nil {
 		m.Logger.Error("Failed to write response", zap.Error(writeErr))
 	}
 }
 
-func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "TeamOptionsHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
-	// Extract game ID from URL path
-	path := strings.TrimPrefix(r.URL.Path, "/api/team-options/")
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+	// Extract game ID from URL path or param
+	path := strings.TrimPrefix(c.Param("param"), "/")
+	if path == "" {
+		path = strings.TrimPrefix(c.Request.URL.Path, "/api/team-options/")
+	}
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := map[string]any{
+		c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   true,
 			"message": "Invalid game ID",
 			"teams":   []any{},
-		}
-		writeJSON(w, response, m.Logger)
+		})
 		return
 	}
 
@@ -166,10 +167,10 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 				zap.String("cache_key", cacheKey),
 				zap.Int64("game_id", gameID),
 				zap.Int("response_size_bytes", len(jsonBytes)))
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Cache-Control", "public, max-age=600")
-			w.Header().Set("X-Cache", "HIT")
-			if _, writeErr := w.Write(jsonBytes); writeErr != nil {
+			c.Header("Content-Type", "application/json")
+			c.Header("Cache-Control", "public, max-age=600")
+			c.Header("X-Cache", "HIT")
+			if _, writeErr := c.Writer.Write(jsonBytes); writeErr != nil {
 				m.Logger.Error("Failed to write cached response", zap.Error(writeErr))
 			}
 			return
@@ -184,7 +185,6 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 	// Fetch teams from database
 	teams, err := m.DBConn.GetTeamsByGameID(m.Context, int32(gameID))
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		var message string
 		// Check if it's a connection error or other database issue
 		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "connect") {
@@ -192,12 +192,11 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 		} else {
 			message = "Unable to load teams. Please refresh the page: " + err.Error()
 		}
-		response := map[string]any{
+		c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   true,
 			"message": message,
 			"teams":   []any{},
-		}
-		writeJSON(w, response, m.Logger)
+		})
 		return
 	}
 
@@ -240,7 +239,7 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
 		m.Logger.Error("Failed to marshal response", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -253,10 +252,10 @@ func (m *Middleware) TeamOptionsHandler(w http.ResponseWriter, r *http.Request) 
 		zap.Int("response_size_bytes", len(responseBytes)))
 
 	// Return JSON response with HTTP cache headers (cache for 10 minutes)
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "public, max-age=600")
-	w.Header().Set("X-Cache", "MISS")
-	if _, writeErr := w.Write(responseBytes); writeErr != nil {
+	c.Header("Content-Type", "application/json")
+	c.Header("Cache-Control", "public, max-age=600")
+	c.Header("X-Cache", "MISS")
+	if _, writeErr := c.Writer.Write(responseBytes); writeErr != nil {
 		m.Logger.Error("Failed to write response", zap.Error(writeErr))
 	}
 }

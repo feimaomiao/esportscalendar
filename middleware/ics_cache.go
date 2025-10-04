@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	maxCacheSize     = 256
-	cacheRefreshTime = 2 * time.Hour
+	maxCacheSize = 256
+	// Forces the cache to refresh each hour
+	cacheRefreshTime = time.Hour
 	cacheDir         = "/tmp/esportscalendar-ics-cache"
 )
 

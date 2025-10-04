@@ -1,17 +1,17 @@
 package middleware
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	m.Logger.Info("IndexHandler", zap.String("method", r.Method), zap.String("path", r.URL.Path))
+func (m *Middleware) IndexHandler(c *gin.Context) {
+	m.Logger.Info("IndexHandler", zap.String("method", c.Request.Method), zap.String("path", c.Request.URL.Path))
 
 	var games []dbtypes.Game
 	var cacheHit bool
@@ -37,7 +37,7 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		games, err = m.DBConn.GetAllGames(m.Context)
 		if err != nil {
-			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+			c.String(http.StatusInternalServerError, "Failed to fetch games")
 			return
 		}
 		// Cache the games list
@@ -68,49 +68,49 @@ func (m *Middleware) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set HTTP cache headers (cache for 5 minutes)
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	c.Header("Cache-Control", "public, max-age=300")
 	if cacheHit {
-		w.Header().Set("X-Cache", "HIT")
+		c.Header("X-Cache", "HIT")
 	} else {
-		w.Header().Set("X-Cache", "MISS")
+		c.Header("X-Cache", "MISS")
 	}
 
 	component := components.Index(options)
-	if err := component.Render(m.Context, w); err != nil {
+	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render index", zap.Error(err))
-		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
 
-func (m *Middleware) HowToUseHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) HowToUseHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "HowToUseHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	component := components.HowToUsePage()
-	if err := component.Render(m.Context, w); err != nil {
+	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render how-to-use page", zap.Error(err))
-		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
 
-func (m *Middleware) AboutHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) AboutHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "AboutHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	component := components.AboutPage()
-	if err := component.Render(m.Context, w); err != nil {
+	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render about page", zap.Error(err))
-		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
 
-func (m *Middleware) renderLoadingPage(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write([]byte(`<!DOCTYPE html>
+func (m *Middleware) renderLoadingPage(c *gin.Context) {
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	if _, err := c.Writer.Write([]byte(`<!DOCTYPE html>
 <html>
 <head>
 	<title>Loading - EsportsCalendar</title>
@@ -146,24 +146,24 @@ func (m *Middleware) renderLoadingPage(w http.ResponseWriter) {
 	}
 }
 
-func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "SecondPageHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	var selectedOptionIDs []string
 
 	// Parse form data first (HTMX default)
-	if err := r.ParseForm(); err == nil && len(r.Form["options"]) > 0 {
-		selectedOptionIDs = r.Form["options"]
+	if err := c.Request.ParseForm(); err == nil && len(c.Request.Form["options"]) > 0 {
+		selectedOptionIDs = c.Request.Form["options"]
 		m.Logger.Debug("Parsed options from form", zap.Strings("options", selectedOptionIDs))
-	} else if r.Header.Get("Content-Type") == "application/json" {
+	} else if c.Request.Header.Get("Content-Type") == "application/json" {
 		// Fallback to JSON for backward compatibility
 		var requestBody struct {
 			Options []string `json:"options"`
 		}
-		if jsonErr := json.NewDecoder(r.Body).Decode(&requestBody); jsonErr == nil {
+		if jsonErr := c.ShouldBindJSON(&requestBody); jsonErr == nil {
 			selectedOptionIDs = requestBody.Options
 			m.Logger.Debug("Parsed options from JSON body", zap.Strings("options", selectedOptionIDs))
 		} else {
@@ -172,8 +172,8 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If GET request with no options, render a page that checks sessionStorage
-	if r.Method == http.MethodGet && len(selectedOptionIDs) == 0 {
-		m.renderLoadingPage(w)
+	if c.Request.Method == http.MethodGet && len(selectedOptionIDs) == 0 {
+		m.renderLoadingPage(c)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		games, err = m.DBConn.GetAllGames(m.Context)
 		if err != nil {
-			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+			c.String(http.StatusInternalServerError, "Failed to fetch games")
 			return
 		}
 		m.Cache.Add(cacheKey, games)
@@ -230,43 +230,43 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set HTTP cache headers (cache for 5 minutes)
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	c.Header("Cache-Control", "public, max-age=300")
 	if cacheHit {
-		w.Header().Set("X-Cache", "HIT")
+		c.Header("X-Cache", "HIT")
 	} else {
-		w.Header().Set("X-Cache", "MISS")
+		c.Header("X-Cache", "MISS")
 	}
 
 	// For HTMX partial updates
-	if r.Header.Get("Hx-Request") == "true" {
+	if c.Request.Header.Get("Hx-Request") == "true" {
 		component := components.SecondPageContent(selectedOptions)
-		if err := component.Render(m.Context, w); err != nil {
+		if err := component.Render(m.Context, c.Writer); err != nil {
 			m.Logger.Error("Failed to render second page content", zap.Error(err))
-			http.Error(w, "Failed to render page", http.StatusInternalServerError)
+			c.String(http.StatusInternalServerError, "Failed to render page")
 		}
 		return
 	}
 
 	// Full page load
 	component := components.SecondPage(selectedOptions)
-	if err := component.Render(m.Context, w); err != nil {
+	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render second page", zap.Error(err))
-		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
 
-func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
+func (m *Middleware) PreviewHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "PreviewHandler"),
-		zap.String("method", r.Method),
-		zap.String("path", r.URL.Path))
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
 
 	// Parse JSON body with selections
 	var requestBody map[string]any
-	if r.Header.Get("Content-Type") == "application/json" {
-		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+	if c.Request.Header.Get("Content-Type") == "application/json" {
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
 			m.Logger.Error("Failed to parse JSON body", zap.Error(err))
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			c.String(http.StatusBadRequest, "Invalid request body")
 			return
 		}
 		m.Logger.Debug("Received selections", zap.Any("selections", requestBody))
@@ -284,15 +284,15 @@ func (m *Middleware) PreviewHandler(w http.ResponseWriter, r *http.Request) {
 	matches, showingPast, err := m.fetchMatches(gameIDs, leagueIDs, teamIDs, maxTier)
 	if err != nil {
 		m.Logger.Error("Failed to fetch matches", zap.Error(err))
-		http.Error(w, "Failed to fetch matches", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to fetch matches")
 		return
 	}
 
 	// Render the preview page with matches
 	component := components.PreviewPage(matches, showingPast)
-	if renderErr := component.Render(m.Context, w); renderErr != nil {
+	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 		m.Logger.Error("Failed to render preview page", zap.Error(renderErr))
-		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
 
