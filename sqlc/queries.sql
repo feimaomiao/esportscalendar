@@ -169,6 +169,7 @@ SELECT
     m.game_id, m.league_id, m.series_id, m.tournament_id,
     g.name AS game_name,
     l.name AS league_name,
+    s.name AS series_name,
     tour.name AS tournament_name,
     tour.tier AS tournament_tier,
     t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
@@ -176,6 +177,7 @@ SELECT
 FROM matches m
 JOIN games g ON m.game_id = g.id
 JOIN leagues l ON m.league_id = l.id
+JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 JOIN teams t1 ON m.team1_id = t1.id
 JOIN teams t2 ON m.team2_id = t2.id

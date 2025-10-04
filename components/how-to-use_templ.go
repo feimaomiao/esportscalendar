@@ -89,7 +89,7 @@ func HowToUsePage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Additional Information</h2><div class=\"mt-2 space-y-2\"><p>⏰ <strong>Time Zone:</strong> All match times are displayed in UTC (Coordinated Universal Time). Your calendar app will convert them to your local timezone.</p><p>🔄 <strong>Updates:</strong> The calendar feed automatically updates, so new matches will appear without needing to regenerate the link.</p><p>🎮 <strong>Multiple Games:</strong> You can select multiple games and they'll all be included in a single calendar feed.</p></div></div></div><!-- Get Started Button --><div class=\"card-actions justify-center mt-6\"><a href=\"/\" class=\"btn btn-primary btn-lg\">Get Started")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Additional Information</h2><div class=\"mt-2 space-y-2\"><p>⏰ <strong>Time Zone:</strong> All match times are displayed in UTC (Coordinated Universal Time). Your calendar app will convert them to your local timezone.</p><p>🔄 <strong>Updates:</strong> The calendar feed automatically updates, so new matches will appear without needing to regenerate the link. Note that calendar apps may take some time to sync updates (typically a few hours to a day depending on your app settings).</p><p>🎮 <strong>Multiple Games:</strong> You can select multiple games and they'll all be included in a single calendar feed.</p></div></div></div><!-- Get Started Button --><div class=\"card-actions justify-center mt-6\"><a href=\"/\" class=\"btn btn-primary btn-lg\">Get Started")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
