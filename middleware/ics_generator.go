@@ -34,10 +34,10 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 		ics.WriteString(fmt.Sprintf("DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
 		ics.WriteString(fmt.Sprintf("DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z")))
 
-		// Include score in summary for finished matches
-		summary := match.Name
-		if match.Finished {
-			summary = fmt.Sprintf("%s [%d-%d]", match.Name, match.Team1Score, match.Team2Score)
+		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
+		summary := fmt.Sprintf("[%s] %s", match.GameName, match.Name)
+		if match.TournamentName != "" {
+			summary = fmt.Sprintf("[%s] %s - %s", match.GameName, match.TournamentName, match.Name)
 		}
 		ics.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(summary)))
 
@@ -62,22 +62,18 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 		}
 		ics.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(description)))
 
-		// Build location: [Game] - [League] - [Series] - [Tournament], omitting empty fields
-		var locationParts []string
-		if match.GameName != "" {
-			locationParts = append(locationParts, match.GameName)
+		// Build location: League - Series (only include dash if both are non-empty)
+		location := ""
+		if match.LeagueName != "" && match.SeriesName != "" {
+			location = fmt.Sprintf("%s - %s", match.LeagueName, match.SeriesName)
+		} else if match.LeagueName != "" {
+			location = match.LeagueName
+		} else if match.SeriesName != "" {
+			location = match.SeriesName
 		}
-		if match.LeagueName != "" {
-			locationParts = append(locationParts, match.LeagueName)
+		if location != "" {
+			ics.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICS(location)))
 		}
-		if match.SeriesName != "" {
-			locationParts = append(locationParts, match.SeriesName)
-		}
-		if match.TournamentName != "" {
-			locationParts = append(locationParts, match.TournamentName)
-		}
-		location := strings.Join(locationParts, " - ")
-		ics.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICS(location)))
 
 		// All matches are confirmed
 		ics.WriteString("STATUS:CONFIRMED\r\n")

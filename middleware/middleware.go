@@ -12,11 +12,12 @@ import (
 )
 
 type Middleware struct {
-	DB      *pgxpool.Pool
-	DBConn  *dbtypes.Queries
-	Context context.Context
-	Cache   *lru.Cache[string, any]
-	Logger  *zap.Logger
+	DB       *pgxpool.Pool
+	DBConn   *dbtypes.Queries
+	Context  context.Context
+	Cache    *lru.Cache[string, any]
+	ICSCache *ICSCache
+	Logger   *zap.Logger
 }
 
 func InitMiddleHandler(logger *zap.Logger) Middleware {
@@ -39,11 +40,18 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		panic(err)
 	}
 
+	// Initialize ICS file cache
+	icsCache, err := NewICSCache(logger)
+	if err != nil {
+		panic(err)
+	}
+
 	return Middleware{
-		DB:      conn,
-		DBConn:  dbConn,
-		Context: context.Background(),
-		Cache:   cache,
-		Logger:  logger,
+		DB:       conn,
+		DBConn:   dbConn,
+		Context:  context.Background(),
+		Cache:    cache,
+		ICSCache: icsCache,
+		Logger:   logger,
 	}
 }

@@ -94,6 +94,23 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 		m.Logger.Warn("Failed to update access count", zap.Error(err), zap.String("hash", hash))
 	}
 
+	// Try to get from cache first
+	icsContent, cacheHit := m.ICSCache.Get(hash)
+	if cacheHit {
+		m.Logger.Info("Cache HIT", zap.String("hash", hash))
+		// Set headers for iCalendar file download
+		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+		if _, writeErr := w.Write([]byte(icsContent)); writeErr != nil {
+			m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
+			return
+		}
+		m.Logger.Debug("Served calendar from cache", zap.String("hash", hash))
+		return
+	}
+	m.Logger.Info("Cache MISS", zap.String("hash", hash))
+
+	// Cache miss or expired - generate new content
 	// Parse selections from stored JSON
 	var selections map[string]any
 	if unmarshalErr := json.Unmarshal(mapping.ValueList, &selections); unmarshalErr != nil {
@@ -127,7 +144,12 @@ func (m *Middleware) CalendarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate iCalendar format
-	icsContent := generateICS(matches)
+	icsContent = generateICS(matches)
+
+	// Store in cache
+	if cacheErr := m.ICSCache.Set(hash, icsContent); cacheErr != nil {
+		m.Logger.Warn("Failed to cache ICS file", zap.Error(cacheErr), zap.String("hash", hash))
+	}
 
 	// Set headers for iCalendar file download
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
