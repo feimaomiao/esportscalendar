@@ -7,7 +7,6 @@ templ HowToUsePage() {
 				<div class="card bg-base-100 shadow-xl">
 					<div class="card-body">
 						<h1 class="card-title text-3xl mb-6">How to Use EsportsCalendar</h1>
-
 						<div class="space-y-8">
 							<!-- Introduction -->
 							<div>
@@ -15,7 +14,6 @@ templ HowToUsePage() {
 									EsportsCalendar helps you stay updated on your favorite esports matches by generating a personalized calendar feed that you can subscribe to in your calendar app.
 								</p>
 							</div>
-
 							<!-- Step 1 -->
 							<div class="card bg-base-200">
 								<div class="card-body">
@@ -27,14 +25,11 @@ templ HowToUsePage() {
 										On the first page, choose which games you want to track. You can select one or multiple games that you're interested in following individually.
 									</p>
 									<div class="alert alert-info mt-2">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-										</svg>
+										@IconInfo("stroke-current shrink-0 w-6 h-6")
 										<span>Select only the games you actively follow to keep your calendar focused.</span>
 									</div>
 								</div>
 							</div>
-
 							<!-- Step 2 -->
 							<div class="card bg-base-200">
 								<div class="card-body">
@@ -47,25 +42,19 @@ templ HowToUsePage() {
 									</p>
 									<div class="mt-4 space-y-2">
 										<div class="flex items-start gap-2">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
+											@IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5")
 											<div>
 												<strong>Search Leagues:</strong> Find specific leagues you want to track
 											</div>
 										</div>
 										<div class="flex items-start gap-2">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
+											@IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5")
 											<div>
 												<strong>Search Teams:</strong> Follow your favorite teams across all tournaments
 											</div>
 										</div>
 										<div class="flex items-start gap-2">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
+											@IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5")
 											<div>
 												<strong>Tournament Tier Filter:</strong> Set the maximum tier to filter out lower-tier games. Tier 1 is the highest (major tournaments), while Tier 6 includes all games.
 											</div>
@@ -73,7 +62,6 @@ templ HowToUsePage() {
 									</div>
 								</div>
 							</div>
-
 							<!-- Step 3 -->
 							<div class="card bg-base-200">
 								<div class="card-body">
@@ -85,14 +73,11 @@ templ HowToUsePage() {
 										Preview the matches that will appear in your calendar based on your selections. If everything looks good, click "Export Calendar" to generate your personalized calendar link.
 									</p>
 									<div class="alert alert-success mt-4">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-										</svg>
+										@IconCheckCircle("stroke-current shrink-0 w-6 h-6")
 										<span>The preview shows a sample of upcoming matches. Your calendar will automatically update with new matches as they're scheduled!</span>
 									</div>
 								</div>
 							</div>
-
 							<!-- Step 4 -->
 							<div class="card bg-base-200">
 								<div class="card-body">
@@ -103,13 +88,11 @@ templ HowToUsePage() {
 									<p class="mt-2">
 										After generating your calendar link, you'll need to subscribe to it in your calendar application. This creates a live feed that automatically updates with new matches.
 									</p>
-
 									<div class="mt-4">
 										<h3 class="font-bold text-lg mb-3">How to Subscribe:</h3>
-
 										<!-- Apple Calendar -->
 										<div class="collapse collapse-arrow bg-base-300 mb-2">
-											<input type="checkbox" />
+											<input type="checkbox"/>
 											<div class="collapse-title font-medium">
 												📅 Apple Calendar (macOS/iOS)
 											</div>
@@ -123,10 +106,9 @@ templ HowToUsePage() {
 												</ol>
 											</div>
 										</div>
-
 										<!-- Google Calendar -->
 										<div class="collapse collapse-arrow bg-base-300 mb-2">
-											<input type="checkbox" />
+											<input type="checkbox"/>
 											<div class="collapse-title font-medium">
 												📆 Google Calendar
 											</div>
@@ -141,10 +123,9 @@ templ HowToUsePage() {
 												</ol>
 											</div>
 										</div>
-
 										<!-- Outlook -->
 										<div class="collapse collapse-arrow bg-base-300 mb-2">
-											<input type="checkbox" />
+											<input type="checkbox"/>
 											<div class="collapse-title font-medium">
 												📧 Outlook
 											</div>
@@ -161,14 +142,11 @@ templ HowToUsePage() {
 									</div>
 								</div>
 							</div>
-
 							<!-- Additional Info -->
 							<div class="card bg-base-200">
 								<div class="card-body">
 									<h2 class="card-title text-xl">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-										</svg>
+										@IconInfo("h-6 w-6 stroke-current")
 										Additional Information
 									</h2>
 									<div class="mt-2 space-y-2">
@@ -178,14 +156,11 @@ templ HowToUsePage() {
 									</div>
 								</div>
 							</div>
-
 							<!-- Get Started Button -->
 							<div class="card-actions justify-center mt-6">
 								<a href="/" class="btn btn-primary btn-lg">
 									Get Started
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-									</svg>
+									@IconArrowRight("w-5 h-5")
 								</a>
 							</div>
 						</div>

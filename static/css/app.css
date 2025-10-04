@@ -165,7 +165,6 @@
 
 /* Game icon containers */
 .game-icon-container {
-  background-color: white;
   border-radius: 0.25rem;
   padding: 0.25rem;
   display: flex;
@@ -188,7 +187,6 @@
 }
 
 .game-icon-large-container {
-  background-color: white;
   border-radius: 0.25rem;
   padding: 0.5rem;
   display: flex;
@@ -252,7 +250,6 @@
 
 /* League/Team item styling */
 .item-icon-container {
-  background-color: white;
   border-radius: 0.25rem;
   padding: 0.25rem;
   display: flex;

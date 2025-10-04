@@ -65,6 +65,10 @@
 
 			if (response.ok) {
 				const html = await response.text();
+
+				// Update page title
+				document.title = 'Leagues & Teams - EsportsCalendar';
+
 				const container = document.getElementById('select');
 				container.innerHTML = html;
 

@@ -18,19 +18,17 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 	<div class="card bg-base-100 shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">Here's what your calendar would look like</h2>
-
 			<div class="alert alert-info mb-4">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 				</svg>
 				<span>All times are displayed in your <strong>local timezone</strong></span>
 			</div>
-
 			<div id="preview-content" class="mt-4">
 				if len(matches) == 0 {
 					<div class="alert alert-warning">
 						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
 						</svg>
 						<span>No matches found for your selections.</span>
 					</div>
@@ -43,10 +41,8 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 									<div class="mb-2">
 										<span class="badge badge-primary badge-sm">{ match.GameName }</span>
 									</div>
-
 									<!-- Match Name -->
 									<h3 class="card-title text-base mb-2">{ match.Name }</h3>
-
 									<!-- Teams -->
 									<div class="flex items-center justify-between gap-2 mb-3">
 										<div class="flex items-center gap-2 flex-1">
@@ -75,11 +71,10 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 											}
 										</div>
 									</div>
-
 									<!-- Expected Start Time -->
 									<div class="flex items-center gap-2 text-sm">
 										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 										</svg>
 										if match.ExpectedStartTime.Valid {
 											<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
@@ -94,12 +89,10 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 											<span class="text-gray-500">TBD</span>
 										}
 									</div>
-
 									<!-- League -->
 									<div class="text-xs text-gray-500 mt-2 truncate">
 										{ match.LeagueName }
 									</div>
-
 									<!-- Status Badge -->
 									<div class="card-actions justify-end mt-2">
 										if match.Finished {
@@ -116,18 +109,15 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 					</div>
 				}
 			</div>
-
 			<div class="card-actions justify-between mt-6">
 				<a href="/lts" id="back-to-selection-btn" class="btn btn-outline">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-					</svg>
+					@IconArrowLeft("w-5 h-5")
 					Back to Selection
 				</a>
 				<button type="button" id="export-calendar-btn" class="btn btn-primary">
 					Export Calendar
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
 					</svg>
 				</button>
 			</div>
@@ -174,45 +164,8 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 				// Handle back to selection with saved game options
 				document.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {
 					e.preventDefault();
-
-					const savedGameOptions = sessionStorage.getItem('selectedGameOptions');
-					if (savedGameOptions) {
-						const gameIds = JSON.parse(savedGameOptions);
-
-						const response = await fetch('/lts', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								'HX-Request': 'true'
-							},
-							body: JSON.stringify({ options: gameIds })
-						});
-
-						if (response.ok) {
-							const html = await response.text();
-							const container = document.querySelector('.container');
-							if (container) {
-								container.innerHTML = html;
-
-								// Execute scripts in the newly inserted HTML
-								const scripts = container.querySelectorAll('script');
-								scripts.forEach(oldScript => {
-									const newScript = document.createElement('script');
-									if (oldScript.src) {
-										newScript.src = oldScript.src;
-									} else {
-										newScript.textContent = oldScript.textContent;
-									}
-									oldScript.parentNode.replaceChild(newScript, oldScript);
-								});
-
-								window.history.pushState({}, '', '/lts');
-							}
-						}
-					} else {
-						// No saved selections, just navigate normally
-						window.location.href = '/lts';
-					}
+					// Just navigate to /lts - the page will restore selections from sessionStorage
+					window.location.href = '/lts';
 				});
 
 				// Handle export calendar button
