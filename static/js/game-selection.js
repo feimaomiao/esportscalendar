@@ -97,44 +97,25 @@ function initGameSelection(gameId) {
 			console.error('Error fetching leagues:', error);
 		});
 
-	// Render leagues list
+	// Render leagues list - optimized
 	let highlightedLeagueIndex = -1;
 	function renderLeagues(leagues) {
-		leagueList.innerHTML = '';
+		const html = leagues.map((league, index) => `
+			<li data-index="${index}">
+				<label class="label cursor-pointer justify-start gap-2 p-2">
+					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedLeagues.has(league.id) ? 'checked' : ''} onchange="toggleLeague(${league.id})">
+					<div class="item-icon-container">
+						<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon" onerror="this.src='/static/images/default-logo.png'">
+					</div>
+					<span class="text-sm">${league.name}</span>
+				</label>
+			</li>
+		`).join('');
+		leagueList.innerHTML = html;
 		highlightedLeagueIndex = -1;
-		leagues.forEach((league, index) => {
-			const li = document.createElement('li');
-			li.setAttribute('data-index', index);
-			const label = document.createElement('label');
-			label.className = 'label cursor-pointer justify-start gap-2 p-2';
-
-			const checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.className = 'checkbox checkbox-sm checkbox-primary';
-			checkbox.checked = selectedLeagues.has(league.id);
-			checkbox.addEventListener('change', () => toggleLeague(league));
-
-			// Add league image with white background
-			const imgContainer = document.createElement('div');
-			imgContainer.className = 'item-icon-container';
-			const img = document.createElement('img');
-			img.src = league.image || '/static/images/default-logo.png';
-			img.alt = league.name;
-			img.className = 'item-icon';
-			img.onerror = function() {
-				this.src = '/static/images/default-logo.png';
-			};
-			imgContainer.appendChild(img);
-
-			const span = document.createElement('span');
-			span.textContent = league.name;
-			span.className = 'text-sm';
-
-			label.appendChild(checkbox);
-			label.appendChild(imgContainer);
-			label.appendChild(span);
-			li.appendChild(label);
-			leagueList.appendChild(li);
+		// Re-bind toggle functions
+		leagueList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+			cb.addEventListener('change', () => toggleLeague(leagues[i]));
 		});
 	}
 
@@ -313,44 +294,25 @@ function initGameSelection(gameId) {
 			console.error('Error fetching teams:', error);
 		});
 
-	// Render teams list
+	// Render teams list - optimized
 	let highlightedTeamIndex = -1;
 	function renderTeams(teams) {
-		teamList.innerHTML = '';
+		const html = teams.map((team, index) => `
+			<li data-index="${index}">
+				<label class="label cursor-pointer justify-start gap-2 p-2">
+					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedTeams.has(team.id) ? 'checked' : ''}>
+					<div class="item-icon-container">
+						<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon" onerror="this.src='/static/images/default-logo.png'">
+					</div>
+					<span class="text-sm">${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
+				</label>
+			</li>
+		`).join('');
+		teamList.innerHTML = html;
 		highlightedTeamIndex = -1;
-		teams.forEach((team, index) => {
-			const li = document.createElement('li');
-			li.setAttribute('data-index', index);
-			const label = document.createElement('label');
-			label.className = 'label cursor-pointer justify-start gap-2 p-2';
-
-			const checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.className = 'checkbox checkbox-sm checkbox-primary';
-			checkbox.checked = selectedTeams.has(team.id);
-			checkbox.addEventListener('change', () => toggleTeam(team));
-
-			// Add team image with white background
-			const imgContainer = document.createElement('div');
-			imgContainer.className = 'item-icon-container';
-			const img = document.createElement('img');
-			img.src = team.image || '/static/images/default-logo.png';
-			img.alt = team.name;
-			img.className = 'item-icon';
-			img.onerror = function() {
-				this.src = '/static/images/default-logo.png';
-			};
-			imgContainer.appendChild(img);
-
-			const span = document.createElement('span');
-			span.textContent = team.acronym ? team.acronym + ' - ' + team.name : team.name;
-			span.className = 'text-sm';
-
-			label.appendChild(checkbox);
-			label.appendChild(imgContainer);
-			label.appendChild(span);
-			li.appendChild(label);
-			teamList.appendChild(li);
+		// Re-bind toggle functions
+		teamList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+			cb.addEventListener('change', () => toggleTeam(teams[i]));
 		});
 	}
 
@@ -365,88 +327,51 @@ function initGameSelection(gameId) {
 		updateCombinedDisplay();
 	}
 
-	// Update combined display with both leagues and teams
+	// Update combined display - optimized with template literals
 	function updateCombinedDisplay() {
-		selectedCombinedContainer.innerHTML = '';
+		const leagueHTML = allLeagues.filter(l => selectedLeagues.has(l.id)).map(league => `
+			<div class="badge badge-primary badge-lg gap-2 rounded-md py-3" data-league-id="${league.id}">
+				<div class="item-icon-container">
+					<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
+				</div>
+				<span class="text-sm">${league.name}</span>
+				<button class="btn btn-ghost btn-xs btn-circle ml-1" onclick="removeLeague(${league.id})">✕</button>
+			</div>
+		`).join('');
 
-		// Add selected leagues
-		allLeagues.filter(l => selectedLeagues.has(l.id)).forEach(league => {
-			const badge = document.createElement('div');
-			badge.className = 'badge badge-primary badge-lg gap-2 rounded-md py-3';
-			badge.setAttribute('data-league-id', league.id);
+		const teamHTML = allTeams.filter(t => selectedTeams.has(t.id)).map(team => `
+			<div class="badge badge-secondary badge-lg gap-2 rounded-md py-3" data-team-id="${team.id}">
+				<div class="item-icon-container">
+					<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
+				</div>
+				<span class="text-sm">${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
+				<button class="btn btn-ghost btn-xs btn-circle ml-1" onclick="removeTeam(${team.id})">✕</button>
+			</div>
+		`).join('');
 
-			// Add league image with white background
-			const imgContainer = document.createElement('div');
-			imgContainer.className = 'item-icon-container';
-			const img = document.createElement('img');
-			img.src = league.image || '/static/images/default-logo.png';
-			img.alt = league.name;
-			img.className = 'item-icon-badge';
-			img.onerror = function() {
-				this.src = '/static/images/default-logo.png';
-			};
-			imgContainer.appendChild(img);
-			badge.appendChild(imgContainer);
-
-			const span = document.createElement('span');
-			span.textContent = league.name;
-			span.className = 'text-sm';
-			badge.appendChild(span);
-
-			const removeBtn = document.createElement('button');
-			removeBtn.className = 'btn btn-ghost btn-xs btn-circle ml-1';
-			removeBtn.innerHTML = '✕';
-			removeBtn.addEventListener('click', () => {
-				selectedLeagues.delete(league.id);
-				saveSelections();
-				updateCombinedDisplay();
-				const filtered = filterLeagues(searchInput.value);
-				renderLeagues(filtered);
-			});
-
-			badge.appendChild(removeBtn);
-			selectedCombinedContainer.appendChild(badge);
-		});
-
-		// Add selected teams
-		allTeams.filter(t => selectedTeams.has(t.id)).forEach(team => {
-			const badge = document.createElement('div');
-			badge.className = 'badge badge-secondary badge-lg gap-2 rounded-md py-3';
-			badge.setAttribute('data-team-id', team.id);
-
-			// Add team image with white background
-			const imgContainer = document.createElement('div');
-			imgContainer.className = 'item-icon-container';
-			const img = document.createElement('img');
-			img.src = team.image || '/static/images/default-logo.png';
-			img.alt = team.name;
-			img.className = 'item-icon-badge';
-			img.onerror = function() {
-				this.src = '/static/images/default-logo.png';
-			};
-			imgContainer.appendChild(img);
-			badge.appendChild(imgContainer);
-
-			const span = document.createElement('span');
-			span.textContent = team.acronym ? team.acronym + ' - ' + team.name : team.name;
-			span.className = 'text-sm';
-			badge.appendChild(span);
-
-			const removeBtn = document.createElement('button');
-			removeBtn.className = 'btn btn-ghost btn-xs btn-circle ml-1';
-			removeBtn.innerHTML = '✕';
-			removeBtn.addEventListener('click', () => {
-				selectedTeams.delete(team.id);
-				saveSelections();
-				updateCombinedDisplay();
-				const filtered = filterTeams(searchTeamsInput.value);
-				renderTeams(filtered);
-			});
-
-			badge.appendChild(removeBtn);
-			selectedCombinedContainer.appendChild(badge);
-		});
+		selectedCombinedContainer.innerHTML = leagueHTML + teamHTML;
 	}
+
+	// Helper functions for removal
+	window.removeLeague = function(id) {
+		const league = allLeagues.find(l => l.id === id);
+		if (league) {
+			selectedLeagues.delete(id);
+			saveSelections();
+			updateCombinedDisplay();
+			renderLeagues(filterLeagues(searchInput.value));
+		}
+	};
+
+	window.removeTeam = function(id) {
+		const team = allTeams.find(t => t.id === id);
+		if (team) {
+			selectedTeams.delete(id);
+			saveSelections();
+			updateCombinedDisplay();
+			renderTeams(filterTeams(searchTeamsInput.value));
+		}
+	};
 
 	// Filter teams based on search input
 	function filterTeams(query) {

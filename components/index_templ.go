@@ -45,7 +45,7 @@ func Index(options []Option) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div id=\"select\" class=\"container mx-auto p-4\"><div class=\"max-w-2xl mx-auto\"><div class=\"card bg-base-100 shadow-2xl border border-base-300\"><div class=\"card-body\"><h1 class=\"card-title text-3xl mb-6\">Select games to track</h1><form id=\"game-form\"><div class=\"space-y-4\" id=\"game-options\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div id=\"select\" class=\"container mx-auto p-4\"><div class=\"max-w-2xl mx-auto\"><div class=\"card bg-base-100 shadow-2xl border border-base-300\"><div class=\"card-body\"><h1 class=\"card-title text-3xl mb-6\">Select games to track</h1><form id=\"game-form\" hx-post=\"/lts\" hx-target=\"#select\" hx-swap=\"innerHTML\" hx-push-url=\"true\"><div class=\"space-y-4\" id=\"game-options\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -102,7 +102,7 @@ func Index(options []Option) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"checkbox checkbox-primary game-checkbox\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"checkbox checkbox-primary game-checkbox\" onchange=\"document.getElementById('continue-btn').disabled=!document.querySelectorAll('.game-checkbox:checked').length\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -125,7 +125,7 @@ func Index(options []Option) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</button></div></form><script src=\"/static/js/index.js\"></script></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</button></div></form><script>\n\t\t\t\t\t\t// Restore selections and initial button state\n\t\t\t\t\t\t!function(){const e=document.querySelectorAll('.game-checkbox'),t=sessionStorage.getItem('selectedGameOptions');if(t)try{JSON.parse(t).forEach(t=>{e.forEach(e=>{e.value===t&&(e.checked=!0)})})}catch{}document.getElementById('continue-btn').disabled=!document.querySelectorAll('.game-checkbox:checked').length,document.getElementById('game-form').addEventListener('submit',()=>{const t=Array.from(e).filter(e=>e.checked).map(e=>e.value);sessionStorage.setItem('selectedGameOptions',JSON.stringify(t)),document.title='Leagues & Teams - EsportsCalendar'})}();\n\t\t\t\t\t</script></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

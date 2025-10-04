@@ -8,7 +8,7 @@ templ Index(options []Option) {
 				<div class="card bg-base-100 shadow-2xl border border-base-300">
 					<div class="card-body">
 						<h1 class="card-title text-3xl mb-6">Select games to track</h1>
-						<form id="game-form">
+						<form id="game-form" hx-post="/lts" hx-target="#select" hx-swap="innerHTML" hx-push-url="true">
 							<div class="space-y-4" id="game-options">
 								for _, opt := range options {
 									<div class="form-control">
@@ -24,6 +24,7 @@ templ Index(options []Option) {
 												name="options"
 												value={ opt.ID }
 												class="checkbox checkbox-primary game-checkbox"
+												onchange="document.getElementById('continue-btn').disabled=!document.querySelectorAll('.game-checkbox:checked').length"
 												if opt.Checked {
 													checked
 												}
@@ -39,7 +40,10 @@ templ Index(options []Option) {
 								</button>
 							</div>
 						</form>
-						<script src="/static/js/index.js"></script>
+						<script>
+						// Restore selections and initial button state
+						!function(){const e=document.querySelectorAll('.game-checkbox'),t=sessionStorage.getItem('selectedGameOptions');if(t)try{JSON.parse(t).forEach(t=>{e.forEach(e=>{e.value===t&&(e.checked=!0)})})}catch{}document.getElementById('continue-btn').disabled=!document.querySelectorAll('.game-checkbox:checked').length,document.getElementById('game-form').addEventListener('submit',()=>{const t=Array.from(e).filter(e=>e.checked).map(e=>e.value);sessionStorage.setItem('selectedGameOptions',JSON.stringify(t)),document.title='Leagues & Teams - EsportsCalendar'})}();
+					</script>
 					</div>
 				</div>
 			</div>

@@ -180,28 +180,21 @@ func (m *Middleware) SecondPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var selectedOptionIDs []string
 
-	// Try to parse JSON body first
-	if r.Header.Get("Content-Type") == "application/json" {
+	// Parse form data first (HTMX default)
+	if err := r.ParseForm(); err == nil && len(r.Form["options"]) > 0 {
+		selectedOptionIDs = r.Form["options"]
+		m.Logger.Debug("Parsed options from form", zap.Strings("options", selectedOptionIDs))
+	} else if r.Header.Get("Content-Type") == "application/json" {
+		// Fallback to JSON for backward compatibility
 		var requestBody struct {
 			Options []string `json:"options"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&requestBody); err == nil {
+		if jsonErr := json.NewDecoder(r.Body).Decode(&requestBody); jsonErr == nil {
 			selectedOptionIDs = requestBody.Options
 			m.Logger.Debug("Parsed options from JSON body", zap.Strings("options", selectedOptionIDs))
 		} else {
-			m.Logger.Error("Failed to parse JSON body", zap.Error(err))
+			m.Logger.Error("Failed to parse JSON body", zap.Error(jsonErr))
 		}
-	}
-
-	// Fallback to query params or form data if no JSON body
-	if len(selectedOptionIDs) == 0 {
-		if err := r.ParseForm(); err != nil {
-			m.Logger.Error("Failed to parse form", zap.Error(err))
-			http.Error(w, "Invalid form data", http.StatusBadRequest)
-			return
-		}
-		selectedOptionIDs = r.Form["options"]
-		m.Logger.Debug("Parsed options from form/query", zap.Strings("options", selectedOptionIDs))
 	}
 
 	// If GET request with no options, render a page that checks sessionStorage

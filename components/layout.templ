@@ -5,21 +5,8 @@ templ BaseLayout(title string) {
 	<html lang="en">
 		<head>
 			<script>
-			// Theme initialization - MUST be first script to prevent flash
-			(function() {
-				try {
-					const savedTheme = localStorage.getItem('theme');
-					const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-					const theme = savedTheme || systemTheme;
-					console.log('[BaseLayout] Setting theme:', theme, '(saved:', savedTheme, 'system:', systemTheme + ')');
-					document.documentElement.setAttribute('data-theme', theme);
-				} catch (e) {
-					console.error('[BaseLayout] Failed to set theme:', e);
-					// Fallback to system preference or dark
-					const fallback = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-					document.documentElement.setAttribute('data-theme', fallback);
-				}
-			})();
+			// Theme initialization - MUST be blocking to prevent flash
+			!function(){try{const t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}}();
 		</script>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -45,6 +32,13 @@ templ BaseLayout(title string) {
 			<script src="https://cdn.tailwindcss.com"></script>
 			<!-- HTMX -->
 			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<script>
+			// HTMX global config
+			htmx.config.defaultSwapStyle='innerHTML';
+			htmx.on('htmx:afterSwap',e=>e.detail.target.classList.add('fade-in'));
+			htmx.on('htmx:beforeRequest',e=>{if(e.detail.elt.tagName==='BUTTON')e.detail.elt.classList.add('loading')});
+			htmx.on('htmx:afterRequest',e=>{if(e.detail.elt.tagName==='BUTTON')e.detail.elt.classList.remove('loading')});
+		</script>
 			<!-- Custom CSS -->
 			<link rel="stylesheet" href="/static/css/app.css"/>
 		</head>
@@ -110,45 +104,18 @@ templ BaseLayout(title string) {
 					<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="link link-hover">Issues</a>
 				</nav>
 			</footer>
-			<!-- Custom JavaScript -->
-			<script src="/static/js/app.js"></script>
+			<style>
+			/* Smooth scroll for anchor links */
+			html { scroll-behavior: smooth; }
+			/* HTMX fade-in animation */
+			.fade-in { animation: fadeIn 0.3s ease-in; }
+			@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+			/* Checkbox label visual feedback */
+			.label-checked { opacity: 1; font-weight: 600; }
+		</style>
 			<script>
-			// Theme toggle functionality
-			(function() {
-				const themeToggle = document.getElementById('theme-toggle');
-				if (!themeToggle) {
-					console.error('[Theme Toggle] Element not found');
-					return;
-				}
-
-				const savedTheme = localStorage.getItem('theme');
-				const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-				const currentTheme = savedTheme || systemTheme;
-				console.log('[Theme Toggle] Initializing with theme:', currentTheme);
-
-				// Set initial state
-				if (currentTheme === 'light') {
-					themeToggle.checked = true;
-				} else {
-					themeToggle.checked = false;
-				}
-
-				// Remove any existing event listeners by cloning the element
-				const newThemeToggle = themeToggle.cloneNode(true);
-				themeToggle.parentNode.replaceChild(newThemeToggle, themeToggle);
-
-				// Add event listener to the new element
-				newThemeToggle.addEventListener('change', function() {
-					console.log('[Theme Toggle] Changed to:', this.checked ? 'light' : 'dark');
-					if (this.checked) {
-						document.documentElement.setAttribute('data-theme', 'light');
-						localStorage.setItem('theme', 'light');
-					} else {
-						document.documentElement.setAttribute('data-theme', 'dark');
-						localStorage.setItem('theme', 'dark');
-					}
-				});
-			})();
+			// Theme toggle - consolidated and minified
+			!function(){const t=document.getElementById('theme-toggle');if(t){const e=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');t.checked='light'===e,t.onchange=()=>{const e=t.checked?'light':'dark';document.documentElement.setAttribute('data-theme',e),localStorage.setItem('theme',e)}}}();
 		</script>
 		</body>
 	</html>

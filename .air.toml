@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ."
+  cmd = "templ fmt . && templ generate && go build -o ./tmp/main ."
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "public", "static"]
   exclude_file = []
@@ -14,7 +14,7 @@ tmp_dir = "tmp"
   follow_symlink = false
   full_bin = ""
   include_dir = []
-  include_ext = ["go"]
+  include_ext = ["go", "templ"]
   include_file = []
   kill_delay = "500ms"
   log = "build-errors.log"

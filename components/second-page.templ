@@ -81,25 +81,19 @@ templ SecondPageContent(selectedOptions []Option) {
 					@IconArrowLeft("w-5 h-5")
 					Back to Options
 				</a>
-				<button type="button" id="submit-selection-btn" class="btn btn-primary">
+				<button type="button" id="submit-selection-btn" class="btn btn-primary" onclick="submitPreview()">
 					Submit Selection for Preview
 					@IconArrowRight("w-5 h-5")
 				</button>
 			</div>
 			<script>
-				// Handle back to options - just navigate normally since index.js handles restoration
-				// The selectedGameOptions in sessionStorage will be automatically restored
+				function submitPreview(){const e=document.querySelectorAll('[data-game-id]'),t={};e.forEach(e=>{const a=e.getAttribute('data-game-id'),n=e.querySelector(`#selected-combined-${a}`);if(!n)return;const s=[],c=[];n.querySelectorAll('.badge').forEach(e=>{e.classList.contains('badge-primary')&&e.hasAttribute('data-league-id')?s.push(parseInt(e.getAttribute('data-league-id'))):e.classList.contains('badge-secondary')&&e.hasAttribute('data-team-id')&&c.push(parseInt(e.getAttribute('data-team-id')))});const d=sessionStorage.getItem('lts-selections-'+a);let r=1;if(d)try{const e=JSON.parse(d);void 0!==e.maxTier&&(r=e.maxTier)}catch{}(s.length>0||c.length>0)&&(s.sort((e,t)=>e-t),c.sort((e,t)=>e-t),t[a]={leagues:s,teams:c,maxTier:r})});const a={};if(Object.keys(t).sort((e,t)=>parseInt(e)-parseInt(t)).forEach(e=>{a[e]=t[e]}),0===Object.keys(a).length)return void alert('Please select at least one league or team before submitting.');sessionStorage.setItem('preview-selections',JSON.stringify(a)),fetch('/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a)}).then(e=>e.ok?e.text().then(e=>{document.open(),document.write(e),document.close(),history.pushState({},'','/preview')}):Promise.reject(e.statusText)).catch(e=>{console.error('Error:',e),alert('Error: '+e)})}document.addEventListener('keydown',e=>{'Enter'===e.key&&!document.getElementById('submit-selection-btn').disabled&&(['search-','search-teams-'].every(t=>!document.activeElement.id.startsWith(t))&&(e.preventDefault(),submitPreview()))});
 			</script>
 			<div id="result" class="mt-4">
 				<!-- Processing results would appear here -->
 			</div>
 		</div>
 	</div>
-	<script>
-		console.log('DEBUG: Inline script executing');
-		console.log('DEBUG: Submit button exists?', !!document.getElementById('submit-selection-btn'));
-	</script>
-	<script src="/static/js/lts.js"></script>
 }
 
 templ GameSelectionCard(option Option) {
