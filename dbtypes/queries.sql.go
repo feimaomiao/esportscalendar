@@ -12,9 +12,13 @@ import (
 )
 
 const gameExist = `-- name: GameExist :one
+
 SELECT COUNT(*) FROM games WHERE id = $1
 `
 
+// ============================================================================
+// Existence Check Queries
+// ============================================================================
 func (q *Queries) GameExist(ctx context.Context, id int32) (int64, error) {
 	row := q.db.QueryRow(ctx, gameExist, id)
 	var count int64
@@ -23,9 +27,16 @@ func (q *Queries) GameExist(ctx context.Context, id int32) (int64, error) {
 }
 
 const getAllGames = `-- name: GetAllGames :many
-SELECT id, name, slug FROM games WHERE (id != 14) ORDER BY id ASC
+
+SELECT id, name, slug
+FROM games
+WHERE id != 14  -- Exclude specific game
+ORDER BY id ASC
 `
 
+// ============================================================================
+// Basic Retrieval Queries
+// ============================================================================
 func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 	rows, err := q.db.Query(ctx, getAllGames)
 	if err != nil {
@@ -47,6 +58,7 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 }
 
 const getCalendarMatchesBySelections = `-- name: GetCalendarMatchesBySelections :many
+
 SELECT
     m.id, m.name, m.slug, m.expected_start_time, m.finished,
     m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
@@ -109,6 +121,9 @@ type GetCalendarMatchesBySelectionsRow struct {
 	Team2Image        pgtype.Text
 }
 
+// ============================================================================
+// Match Selection Queries (for Calendar Export)
+// ============================================================================
 func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCalendarMatchesBySelectionsParams) ([]GetCalendarMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getCalendarMatchesBySelections,
 		arg.GameIds,
@@ -161,6 +176,7 @@ func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCal
 }
 
 const getFutureMatchesBySelections = `-- name: GetFutureMatchesBySelections :many
+
 SELECT
     m.id, m.name, m.slug, m.expected_start_time, m.finished,
     m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
@@ -218,6 +234,9 @@ type GetFutureMatchesBySelectionsRow struct {
 	Team2Image        pgtype.Text
 }
 
+// ============================================================================
+// Match Selection Queries (for Preview)
+// ============================================================================
 func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getFutureMatchesBySelections,
 		arg.GameIds,
@@ -268,9 +287,15 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 }
 
 const getLeaguesByGameID = `-- name: GetLeaguesByGameID :many
-SELECT l.id, l.name, l.slug, l.game_id, l.image_link, MIN(t.tier) as min_tier
-FROM LEAGUES l
-LEFT JOIN TOURNAMENTS t ON l.id = t.league_id
+SELECT
+    l.id,
+    l.name,
+    l.slug,
+    l.game_id,
+    l.image_link,
+    MIN(t.tier) AS min_tier
+FROM leagues l
+LEFT JOIN tournaments t ON l.id = t.league_id
 WHERE l.game_id = $1
 GROUP BY l.id, l.name, l.slug, l.game_id, l.image_link
 ORDER BY MIN(t.tier) ASC, l.name ASC
@@ -430,7 +455,10 @@ func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMat
 }
 
 const getSeriesByGameID = `-- name: GetSeriesByGameID :many
-SELECT id, name, slug, game_id, league_id FROM series WHERE game_id = $1 ORDER BY name ASC
+SELECT id, name, slug, game_id, league_id
+FROM series
+WHERE game_id = $1
+ORDER BY name ASC
 `
 
 func (q *Queries) GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series, error) {
@@ -513,7 +541,10 @@ func (q *Queries) GetURLMapping(ctx context.Context, hashedKey string) (UrlMappi
 }
 
 const insertToGames = `-- name: InsertToGames :exec
-INSERT INTO games (id, name, slug) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET
+
+INSERT INTO games (id, name, slug)
+VALUES ($1, $2, $3)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug
 `
@@ -524,13 +555,18 @@ type InsertToGamesParams struct {
 	Slug pgtype.Text
 }
 
+// ============================================================================
+// INSERT/UPSERT Queries
+// ============================================================================
 func (q *Queries) InsertToGames(ctx context.Context, arg InsertToGamesParams) error {
 	_, err := q.db.Exec(ctx, insertToGames, arg.ID, arg.Name, arg.Slug)
 	return err
 }
 
 const insertToLeagues = `-- name: InsertToLeagues :exec
-INSERT INTO leagues (id, name, slug, image_link, game_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET
+INSERT INTO leagues (id, name, slug, image_link, game_id)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug,
     image_link = EXCLUDED.image_link,
@@ -557,7 +593,13 @@ func (q *Queries) InsertToLeagues(ctx context.Context, arg InsertToLeaguesParams
 }
 
 const insertToMatches = `-- name: InsertToMatches :exec
-INSERT INTO matches (id, name, slug, finished, expected_start_time, actual_game_time, team1_id, team1_score, team2_id, team2_score, amount_of_games, game_id, league_id, series_id, tournament_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) ON CONFLICT (id) DO UPDATE SET
+INSERT INTO matches (
+    id, name, slug, finished, expected_start_time, actual_game_time,
+    team1_id, team1_score, team2_id, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug,
     finished = EXCLUDED.finished,
@@ -614,7 +656,9 @@ func (q *Queries) InsertToMatches(ctx context.Context, arg InsertToMatchesParams
 }
 
 const insertToSeries = `-- name: InsertToSeries :exec
-INSERT INTO series (id, name, slug, game_id, league_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET
+INSERT INTO series (id, name, slug, game_id, league_id)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug,
     game_id = EXCLUDED.game_id,
@@ -641,7 +685,9 @@ func (q *Queries) InsertToSeries(ctx context.Context, arg InsertToSeriesParams) 
 }
 
 const insertToTeams = `-- name: InsertToTeams :exec
-INSERT INTO teams (id, name, slug, acronym, image_link, game_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET
+INSERT INTO teams (id, name, slug, acronym, image_link, game_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug,
     acronym = EXCLUDED.acronym,
@@ -671,7 +717,9 @@ func (q *Queries) InsertToTeams(ctx context.Context, arg InsertToTeamsParams) er
 }
 
 const insertToTournaments = `-- name: InsertToTournaments :exec
-INSERT INTO tournaments (id,name, slug,tier, game_id, league_id, serie_id) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO UPDATE SET
+INSERT INTO tournaments (id, name, slug, tier, game_id, league_id, serie_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     slug = EXCLUDED.slug,
     tier = EXCLUDED.tier,
@@ -704,6 +752,7 @@ func (q *Queries) InsertToTournaments(ctx context.Context, arg InsertToTournamen
 }
 
 const insertURLMapping = `-- name: InsertURLMapping :exec
+
 INSERT INTO url_mappings (hashed_key, value_list, access_count, created_at, accessed_at)
 VALUES ($1, $2, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (hashed_key) DO NOTHING
@@ -714,6 +763,9 @@ type InsertURLMappingParams struct {
 	ValueList []byte
 }
 
+// ============================================================================
+// URL Mapping Queries (for Calendar Links)
+// ============================================================================
 func (q *Queries) InsertURLMapping(ctx context.Context, arg InsertURLMappingParams) error {
 	_, err := q.db.Exec(ctx, insertURLMapping, arg.HashedKey, arg.ValueList)
 	return err

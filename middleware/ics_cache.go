@@ -12,7 +12,7 @@ import (
 
 const (
 	maxCacheSize = 256
-	// Forces the cache to refresh each hour
+	// Forces the cache to refresh each hour.
 	cacheRefreshTime = time.Hour
 	cacheDir         = "/tmp/esportscalendar-ics-cache"
 )
@@ -162,5 +162,30 @@ func (c *ICSCache) Clear() error {
 	c.lruList = list.New()
 
 	c.logger.Info("Cache cleared")
+	return nil
+}
+
+// Cleanup removes all cache entries and the cache directory.
+func (c *ICSCache) Cleanup() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Remove all cache entries
+	for hash, entry := range c.entries {
+		if err := os.Remove(entry.filePath); err != nil {
+			c.logger.Warn("Failed to remove cache file", zap.Error(err), zap.String("hash", hash))
+		}
+	}
+
+	c.entries = make(map[string]*cacheEntry)
+	c.lruList = list.New()
+
+	// Remove the cache directory
+	if err := os.RemoveAll(cacheDir); err != nil {
+		c.logger.Error("Failed to remove cache directory", zap.Error(err), zap.String("cache_dir", cacheDir))
+		return err
+	}
+
+	c.logger.Info("Cache cleaned up and directory removed", zap.String("cache_dir", cacheDir))
 	return nil
 }

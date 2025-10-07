@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/feimaomiao/esportscalendar/middleware"
@@ -58,8 +62,8 @@ func main() {
 	// Serve robots.txt and sitemap.xml from embedded static files
 	router.GET("/robots.txt", func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain; charset=utf-8")
-		data, err := staticFS.ReadFile("static/robots.txt")
-		if err != nil {
+		data, readErr := staticFS.ReadFile("static/robots.txt")
+		if readErr != nil {
 			c.Status(http.StatusNotFound)
 			return
 		}
@@ -67,8 +71,8 @@ func main() {
 	})
 	router.GET("/sitemap.xml", func(c *gin.Context) {
 		c.Header("Content-Type", "application/xml; charset=utf-8")
-		data, err := staticFS.ReadFile("static/sitemap.xml")
-		if err != nil {
+		data, readErr := staticFS.ReadFile("static/sitemap.xml")
+		if readErr != nil {
 			c.Status(http.StatusNotFound)
 			return
 		}
@@ -107,7 +111,35 @@ func main() {
 		IdleTimeout:       minute,
 	}
 
-	if serverErr := server.ListenAndServe(); serverErr != nil {
-		logger.Fatal("Server failed to start", zap.Error(serverErr))
+	// Channel to listen for interrupt signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		if serverErr := server.ListenAndServe(); serverErr != nil && serverErr != http.ErrServerClosed {
+			logger.Fatal("Server failed to start", zap.Error(serverErr))
+		}
+	}()
+
+	logger.Info("Server started successfully")
+
+	// Wait for interrupt signal
+	<-quit
+	logger.Info("Shutdown signal received")
+
+	// Create shutdown context with timeout
+	const shutdownTimeout = 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	// Gracefully shutdown the server
+	if shutdownErr := server.Shutdown(ctx); shutdownErr != nil {
+		logger.Error("Server forced to shutdown", zap.Error(shutdownErr))
+	} else {
+		logger.Info("Server shutdown gracefully")
 	}
+
+	// Perform cleanup
+	mw.Cleanup()
 }

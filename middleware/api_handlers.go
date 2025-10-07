@@ -33,8 +33,8 @@ func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("league-options:%d", gameID)
-	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if jsonBytes, cacheOk := cachedData.([]byte); cacheOk {
+	if m.RedisCache != nil {
+		if jsonBytes, ok := m.RedisCache.GetBytes(cacheKey); ok {
 			m.Logger.Info("Cache HIT",
 				zap.String("handler", "LeagueOptionsHandler"),
 				zap.String("cache_key", cacheKey),
@@ -122,12 +122,17 @@ func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 	}
 
 	// Cache the response
-	m.Cache.Add(cacheKey, responseBytes)
-	m.Logger.Info("Data cached",
-		zap.String("handler", "LeagueOptionsHandler"),
-		zap.String("cache_key", cacheKey),
-		zap.Int("num_leagues", len(leagueList)),
-		zap.Int("response_size_bytes", len(responseBytes)))
+	if m.RedisCache != nil {
+		if cacheErr := m.RedisCache.SetBytes(cacheKey, responseBytes); cacheErr != nil {
+			m.Logger.Warn("Failed to cache response", zap.Error(cacheErr))
+		} else {
+			m.Logger.Info("Data cached",
+				zap.String("handler", "LeagueOptionsHandler"),
+				zap.String("cache_key", cacheKey),
+				zap.Int("num_leagues", len(leagueList)),
+				zap.Int("response_size_bytes", len(responseBytes)))
+		}
+	}
 
 	// Return JSON response with HTTP cache headers (cache for 10 minutes)
 	c.Header("Content-Type", "application/json")
@@ -160,8 +165,8 @@ func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("team-options:%d", gameID)
-	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if jsonBytes, cacheOk := cachedData.([]byte); cacheOk {
+	if m.RedisCache != nil {
+		if jsonBytes, ok := m.RedisCache.GetBytes(cacheKey); ok {
 			m.Logger.Info("Cache HIT",
 				zap.String("handler", "TeamOptionsHandler"),
 				zap.String("cache_key", cacheKey),
@@ -244,12 +249,17 @@ func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 	}
 
 	// Cache the response
-	m.Cache.Add(cacheKey, responseBytes)
-	m.Logger.Info("Data cached",
-		zap.String("handler", "TeamOptionsHandler"),
-		zap.String("cache_key", cacheKey),
-		zap.Int("num_teams", len(teamList)),
-		zap.Int("response_size_bytes", len(responseBytes)))
+	if m.RedisCache != nil {
+		if cacheErr := m.RedisCache.SetBytes(cacheKey, responseBytes); cacheErr != nil {
+			m.Logger.Warn("Failed to cache response", zap.Error(cacheErr))
+		} else {
+			m.Logger.Info("Data cached",
+				zap.String("handler", "TeamOptionsHandler"),
+				zap.String("cache_key", cacheKey),
+				zap.Int("num_teams", len(teamList)),
+				zap.Int("response_size_bytes", len(responseBytes)))
+		}
+	}
 
 	// Return JSON response with HTTP cache headers (cache for 10 minutes)
 	c.Header("Content-Type", "application/json")

@@ -104,21 +104,25 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	}
 
 	// Try to get from cache first
-	icsContent, cacheHit := m.ICSCache.Get(hash)
-	if cacheHit {
-		m.Logger.Info("Cache HIT", zap.String("hash", hash))
-		// Set headers for iCalendar file download
-		c.Status(http.StatusOK)
-		c.Header("Content-Type", "text/calendar; charset=utf-8")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
-		if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
-			m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
+	var icsContent string
+	var cacheHit bool
+	if m.RedisCache != nil {
+		icsContent, cacheHit = m.RedisCache.GetICS(hash)
+		if cacheHit {
+			m.Logger.Info("Cache HIT", zap.String("hash", hash))
+			// Set headers for iCalendar file download
+			c.Status(http.StatusOK)
+			c.Header("Content-Type", "text/calendar; charset=utf-8")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+			if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
+				m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
+				return
+			}
+			m.Logger.Debug("Served calendar from cache", zap.String("hash", hash))
 			return
 		}
-		m.Logger.Debug("Served calendar from cache", zap.String("hash", hash))
-		return
+		m.Logger.Info("Cache MISS", zap.String("hash", hash))
 	}
-	m.Logger.Info("Cache MISS", zap.String("hash", hash))
 
 	// Cache miss or expired - generate new content
 	// Parse stored data from JSON
@@ -174,8 +178,10 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	icsContent = generateICS(matches, hideScores)
 
 	// Store in cache
-	if cacheErr := m.ICSCache.Set(hash, icsContent); cacheErr != nil {
-		m.Logger.Warn("Failed to cache ICS file", zap.Error(cacheErr), zap.String("hash", hash))
+	if m.RedisCache != nil {
+		if cacheErr := m.RedisCache.SetICS(hash, icsContent); cacheErr != nil {
+			m.Logger.Warn("Failed to cache ICS file", zap.Error(cacheErr), zap.String("hash", hash))
+		}
 	}
 
 	// Set headers for iCalendar file download

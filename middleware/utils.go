@@ -3,8 +3,6 @@ package middleware
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
-	"net/http"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -15,13 +13,6 @@ func generateHash(data []byte) string {
 	hash := sha256.Sum256(data)
 	// Return first 16 characters for a shorter URL
 	return hex.EncodeToString(hash[:])[:16]
-}
-
-// writeJSON writes a JSON response and logs errors.
-func writeJSON(w http.ResponseWriter, data any, logger *zap.Logger) {
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		logger.Error("Failed to encode JSON response", zap.Error(err))
-	}
 }
 
 // parseSelections extracts game IDs, league IDs, team IDs, and max tier from selections JSON.

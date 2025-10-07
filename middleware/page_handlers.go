@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -19,18 +20,23 @@ func (m *Middleware) IndexHandler(c *gin.Context) {
 
 	// Check cache first
 	cacheKey := "all-games"
-	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if cachedGames, cacheOk := cachedData.([]dbtypes.Game); cacheOk {
-			m.Logger.Info("Cache HIT",
-				zap.String("handler", "IndexHandler"),
-				zap.String("cache_key", cacheKey),
-				zap.Int("num_games", len(cachedGames)))
-			games = cachedGames
-			cacheHit = true
+	if m.RedisCache != nil {
+		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if err := json.Unmarshal([]byte(cachedJSON), &games); err == nil {
+				m.Logger.Info("Cache HIT",
+					zap.String("handler", "IndexHandler"),
+					zap.String("cache_key", cacheKey),
+					zap.Int("num_games", len(games)))
+				cacheHit = true
+			} else {
+				m.Logger.Warn("Failed to unmarshal cached games", zap.Error(err))
+			}
 		}
 	}
 
 	// If not in cache, fetch from database
+	//nolint:nestif // Nested structure is readable and necessary for cache-then-db pattern
 	if games == nil {
 		m.Logger.Info("Cache MISS",
 			zap.String("handler", "IndexHandler"),
@@ -42,11 +48,19 @@ func (m *Middleware) IndexHandler(c *gin.Context) {
 			return
 		}
 		// Cache the games list
-		m.Cache.Add(cacheKey, games)
-		m.Logger.Info("Data cached",
-			zap.String("handler", "IndexHandler"),
-			zap.String("cache_key", cacheKey),
-			zap.Int("num_games", len(games)))
+		if m.RedisCache != nil {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if gamesJSON, marshalErr := json.Marshal(games); marshalErr == nil {
+				if cacheErr := m.RedisCache.SetData(cacheKey, string(gamesJSON)); cacheErr != nil {
+					m.Logger.Warn("Failed to cache games", zap.Error(cacheErr))
+				} else {
+					m.Logger.Info("Data cached",
+						zap.String("handler", "IndexHandler"),
+						zap.String("cache_key", cacheKey),
+						zap.Int("num_games", len(games)))
+				}
+			}
+		}
 	}
 
 	var options []components.Option
@@ -147,6 +161,7 @@ func (m *Middleware) renderLoadingPage(c *gin.Context) {
 	}
 }
 
+//nolint:gocognit // Handler complexity is acceptable for this use case
 func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "SecondPageHandler"),
@@ -182,17 +197,22 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	var games []dbtypes.Game
 	var cacheHit bool
 	cacheKey := "all-games"
-	if cachedData, ok := m.Cache.Get(cacheKey); ok {
-		if cachedGames, cacheOk := cachedData.([]dbtypes.Game); cacheOk {
-			m.Logger.Info("Cache HIT",
-				zap.String("handler", "SecondPageHandler"),
-				zap.String("cache_key", cacheKey),
-				zap.Int("num_games", len(cachedGames)))
-			games = cachedGames
-			cacheHit = true
+	if m.RedisCache != nil {
+		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if err := json.Unmarshal([]byte(cachedJSON), &games); err == nil {
+				m.Logger.Info("Cache HIT",
+					zap.String("handler", "SecondPageHandler"),
+					zap.String("cache_key", cacheKey),
+					zap.Int("num_games", len(games)))
+				cacheHit = true
+			} else {
+				m.Logger.Warn("Failed to unmarshal cached games", zap.Error(err))
+			}
 		}
 	}
 
+	//nolint:nestif // Nested structure is readable and necessary for cache-then-db pattern
 	if games == nil {
 		m.Logger.Info("Cache MISS",
 			zap.String("handler", "SecondPageHandler"),
@@ -203,11 +223,19 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "Failed to fetch games")
 			return
 		}
-		m.Cache.Add(cacheKey, games)
-		m.Logger.Info("Data cached",
-			zap.String("handler", "SecondPageHandler"),
-			zap.String("cache_key", cacheKey),
-			zap.Int("num_games", len(games)))
+		if m.RedisCache != nil {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if gamesJSON, marshalErr := json.Marshal(games); marshalErr == nil {
+				if cacheErr := m.RedisCache.SetData(cacheKey, string(gamesJSON)); cacheErr != nil {
+					m.Logger.Warn("Failed to cache games", zap.Error(cacheErr))
+				} else {
+					m.Logger.Info("Data cached",
+						zap.String("handler", "SecondPageHandler"),
+						zap.String("cache_key", cacheKey),
+						zap.Int("num_games", len(games)))
+				}
+			}
+		}
 	}
 
 	// Build Option objects for selected games
@@ -395,13 +423,13 @@ func (m *Middleware) fetchMatches(
 	m.Logger.Debug("Found past matches", zap.Int("count", len(pastMatches)))
 
 	// Convert past matches to the same type as future matches
-	pastMatchesConverted := make([]dbtypes.GetFutureMatchesBySelectionsRow, len(pastMatches))
-	for i, pm := range pastMatches {
-		pastMatchesConverted[i] = dbtypes.GetFutureMatchesBySelectionsRow(pm)
+	matches = make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
+	for _, pm := range pastMatches {
+		matches = append(matches, dbtypes.GetFutureMatchesBySelectionsRow(pm))
 	}
 
 	// Combine: past matches (in ASC order) + future matches (in ASC order)
-	matches = append(pastMatchesConverted, futureMatches...)
+	matches = append(matches, futureMatches...)
 
 	if len(futureMatches) == 0 && len(pastMatches) > 0 {
 		showingPast = true
