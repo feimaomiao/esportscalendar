@@ -8,7 +8,7 @@ import (
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
-func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
+func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool) string {
 	var ics strings.Builder
 
 	ics.WriteString("BEGIN:VCALENDAR\r\n")
@@ -50,15 +50,26 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow) string {
 			match.GameName,
 		)
 		if match.Finished {
-			description = fmt.Sprintf("%s vs %s [%d-%d] - %s - %s (%s)",
-				match.Team1Name,
-				match.Team2Name,
-				match.Team1Score,
-				match.Team2Score,
-				match.TournamentName,
-				match.LeagueName,
-				match.GameName,
-			)
+			if hideScores {
+				// Show "Finished" instead of score
+				description = fmt.Sprintf("%s vs %s [Finished] - %s - %s (%s)",
+					match.Team1Name,
+					match.Team2Name,
+					match.TournamentName,
+					match.LeagueName,
+					match.GameName,
+				)
+			} else {
+				description = fmt.Sprintf("%s vs %s [%d-%d] - %s - %s (%s)",
+					match.Team1Name,
+					match.Team2Name,
+					match.Team1Score,
+					match.Team2Score,
+					match.TournamentName,
+					match.LeagueName,
+					match.GameName,
+				)
+			}
 		}
 		ics.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(description)))
 

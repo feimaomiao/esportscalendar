@@ -17,16 +17,17 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path))
 
-	// Parse JSON body with selections
+	// Parse JSON body with selections and hideScores
 	var requestBody map[string]any
 	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		m.Logger.Error("Failed to parse JSON body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
-	m.Logger.Debug("Received selections for export", zap.Any("selections", requestBody))
+	m.Logger.Debug("Received request body for export", zap.Any("request_body", requestBody))
 
 	// Generate canonical JSON (sorted keys for consistent hashing)
+	// This preserves both selections and hideScores in the stored data
 	jsonBytes, err := json.Marshal(requestBody)
 	if err != nil {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
@@ -36,7 +37,14 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 
 	// Generate hash
 	hash := generateHash(jsonBytes)
-	m.Logger.Debug("Generated hash", zap.String("hash", hash))
+	previewLen := 100
+	if len(jsonBytes) < previewLen {
+		previewLen = len(jsonBytes)
+	}
+	m.Logger.Info("Exporting calendar",
+		zap.String("hash", hash),
+		zap.Int("payload_size", len(jsonBytes)),
+		zap.String("payload_preview", string(jsonBytes[:previewLen])))
 
 	// Store in database
 	err = m.DBConn.InsertURLMapping(m.Context, dbtypes.InsertURLMappingParams{
@@ -52,7 +60,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	// Return the hash as JSON
 	response := map[string]string{
 		"hash": hash,
-		"url":  fmt.Sprintf("http://localhost:8080//%s.ics", hash),
+		"url":  fmt.Sprintf("http://localhost:8080/%s.ics", hash),
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -72,15 +80,22 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 		return
 	}
 
-	m.Logger.Debug("Looking up hash", zap.String("hash", hash))
+	m.Logger.Info("Looking up calendar",
+		zap.String("hash", hash),
+		zap.String("full_path", c.Request.URL.Path))
 
 	// Retrieve selections from database
 	mapping, err := m.DBConn.GetURLMapping(m.Context, hash)
 	if err != nil {
-		m.Logger.Error("Hash not found", zap.String("hash", hash), zap.Error(err))
+		m.Logger.Error("Calendar not found in database",
+			zap.String("hash", hash),
+			zap.String("url", c.Request.URL.Path),
+			zap.Error(err))
 		c.String(http.StatusNotFound, "Calendar not found")
 		return
 	}
+
+	m.Logger.Info("Calendar found in database", zap.String("hash", hash))
 
 	// Update access count
 	err = m.DBConn.UpdateURLMappingAccessCount(m.Context, hash)
@@ -93,6 +108,7 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	if cacheHit {
 		m.Logger.Info("Cache HIT", zap.String("hash", hash))
 		// Set headers for iCalendar file download
+		c.Status(http.StatusOK)
 		c.Header("Content-Type", "text/calendar; charset=utf-8")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
 		if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
@@ -105,12 +121,28 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	m.Logger.Info("Cache MISS", zap.String("hash", hash))
 
 	// Cache miss or expired - generate new content
-	// Parse selections from stored JSON
-	var selections map[string]any
-	if unmarshalErr := json.Unmarshal(mapping.ValueList, &selections); unmarshalErr != nil {
-		m.Logger.Error("Failed to parse stored selections", zap.Error(unmarshalErr))
+	// Parse stored data from JSON
+	var storedData map[string]any
+	if unmarshalErr := json.Unmarshal(mapping.ValueList, &storedData); unmarshalErr != nil {
+		m.Logger.Error("Failed to parse stored data", zap.Error(unmarshalErr))
 		c.String(http.StatusInternalServerError, "Invalid calendar data")
 		return
+	}
+
+	// Extract hideScores flag (default to false)
+	hideScores := false
+	if hideScoresVal, ok := storedData["hideScores"].(bool); ok {
+		hideScores = hideScoresVal
+	}
+
+	// Extract selections (handle both old and new format)
+	var selections map[string]any
+	if selectionsVal, ok := storedData["selections"].(map[string]any); ok {
+		// New format with selections wrapper
+		selections = selectionsVal
+	} else {
+		// Old format without wrapper
+		selections = storedData
 	}
 
 	// Extract game IDs, league IDs, team IDs, and max tier from selections
@@ -119,7 +151,8 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 		zap.Any("game_ids", gameIDs),
 		zap.Any("league_ids", leagueIDs),
 		zap.Any("team_ids", teamIDs),
-		zap.Int32("max_tier", maxTier))
+		zap.Int32("max_tier", maxTier),
+		zap.Bool("hide_scores", hideScores))
 
 	// Fetch matches from database (14 days old and future, filtered by tier)
 	var matches []dbtypes.GetCalendarMatchesBySelectionsRow
@@ -137,8 +170,8 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 		}
 	}
 
-	// Generate iCalendar format
-	icsContent = generateICS(matches)
+	// Generate iCalendar format with hideScores flag
+	icsContent = generateICS(matches, hideScores)
 
 	// Store in cache
 	if cacheErr := m.ICSCache.Set(hash, icsContent); cacheErr != nil {
@@ -146,6 +179,7 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	}
 
 	// Set headers for iCalendar file download
+	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/calendar; charset=utf-8")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
 	if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {

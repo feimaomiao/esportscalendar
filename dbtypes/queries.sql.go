@@ -182,13 +182,15 @@ WHERE m.expected_start_time >= NOW()
         OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
     )
 ORDER BY m.expected_start_time ASC
+LIMIT $5::int
 `
 
 type GetFutureMatchesBySelectionsParams struct {
-	GameIds   []int32
-	TeamIds   []int32
-	LeagueIds []int32
-	MaxTier   int32
+	GameIds    []int32
+	TeamIds    []int32
+	LeagueIds  []int32
+	MaxTier    int32
+	LimitCount int32
 }
 
 type GetFutureMatchesBySelectionsRow struct {
@@ -222,6 +224,7 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 		arg.TeamIds,
 		arg.LeagueIds,
 		arg.MaxTier,
+		arg.LimitCount,
 	)
 	if err != nil {
 		return nil, err
@@ -339,16 +342,17 @@ FROM (
             OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
         )
     ORDER BY m.expected_start_time DESC
-    LIMIT 10
+    LIMIT $5::int
 ) AS recent_matches
 ORDER BY expected_start_time ASC
 `
 
 type GetPastMatchesBySelectionsParams struct {
-	GameIds   []int32
-	TeamIds   []int32
-	LeagueIds []int32
-	MaxTier   int32
+	GameIds    []int32
+	TeamIds    []int32
+	LeagueIds  []int32
+	MaxTier    int32
+	LimitCount int32
 }
 
 type GetPastMatchesBySelectionsRow struct {
@@ -382,6 +386,7 @@ func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMat
 		arg.TeamIds,
 		arg.LeagueIds,
 		arg.MaxTier,
+		arg.LimitCount,
 	)
 	if err != nil {
 		return nil, err

@@ -63,14 +63,20 @@ func parseSelections(
 			}
 		}
 
-		// Extract max tier (use the minimum across all games to be most restrictive)
+		// Extract max tier (use the maximum across all games to be most inclusive)
 		if tierValue, tierOk := selectionMap["maxTier"].(float64); tierOk {
 			tier := int32(tierValue)
-			if tier < maxTier {
+			logger.Debug("Tier selection for game",
+				zap.Int32("game_id", int32(gameID)),
+				zap.Int32("selected_tier", tier),
+				zap.Int32("current_max_tier", maxTier))
+			if tier > maxTier {
 				maxTier = tier
+				logger.Debug("Updated maxTier", zap.Int32("new_max_tier", maxTier))
 			}
 		}
 	}
 
+	logger.Debug("Final tier selection", zap.Int32("max_tier", maxTier))
 	return gameIDs, leagueIDs, teamIDs, maxTier
 }

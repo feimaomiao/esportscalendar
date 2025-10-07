@@ -111,7 +111,8 @@ WHERE m.expected_start_time >= NOW()
         (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[]))
         OR (m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
     )
-ORDER BY m.expected_start_time ASC;
+ORDER BY m.expected_start_time ASC
+LIMIT sqlc.arg(limit_count)::int;
 
 -- name: GetPastMatchesBySelections :many
 SELECT
@@ -143,7 +144,7 @@ FROM (
             OR (m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
         )
     ORDER BY m.expected_start_time DESC
-    LIMIT 10
+    LIMIT sqlc.arg(limit_count)::int
 ) AS recent_matches
 ORDER BY expected_start_time ASC;
 

@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
@@ -256,52 +257,108 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 }
 
 func (m *Middleware) PreviewHandler(c *gin.Context) {
+	// Generate unique request ID for debugging
+	requestID := c.GetHeader("X-Request-ID")
+	if requestID == "" {
+		requestID = c.RemoteIP() + "-" + strconv.FormatInt(time.Now().UnixNano(), 36)
+	}
+
 	m.Logger.Info("Handler",
 		zap.String("handler", "PreviewHandler"),
 		zap.String("method", c.Request.Method),
-		zap.String("path", c.Request.URL.Path))
+		zap.String("path", c.Request.URL.Path),
+		zap.String("request_id", requestID))
 
-	// Parse JSON body with selections
+	// Parse JSON body with selections and hideScores
 	var requestBody map[string]any
 	if c.Request.Header.Get("Content-Type") == "application/json" {
 		if err := c.ShouldBindJSON(&requestBody); err != nil {
-			m.Logger.Error("Failed to parse JSON body", zap.Error(err))
+			m.Logger.Error("Failed to parse JSON body",
+				zap.String("request_id", requestID),
+				zap.Error(err))
 			c.String(http.StatusBadRequest, "Invalid request body")
 			return
 		}
-		m.Logger.Debug("Received selections", zap.Any("selections", requestBody))
+		m.Logger.Debug("Received request body",
+			zap.String("request_id", requestID),
+			zap.Any("request_body", requestBody))
+	}
+
+	// Extract hideScores flag (default to false)
+	hideScores := false
+	if hideScoresVal, ok := requestBody["hideScores"].(bool); ok {
+		hideScores = hideScoresVal
+	}
+
+	// Extract selections (handle both old and new format)
+	var selections map[string]any
+	if selectionsVal, ok := requestBody["selections"].(map[string]any); ok {
+		// New format with selections wrapper
+		selections = selectionsVal
+	} else {
+		// Old format without wrapper
+		selections = requestBody
 	}
 
 	// Extract game IDs, league IDs, team IDs, and max tier from selections
-	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(requestBody, m.Logger)
-	m.Logger.Debug("Parsed IDs from selections",
+	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	m.Logger.Info("Preview request parsed",
+		zap.String("request_id", requestID),
+		zap.Int("num_games", len(gameIDs)),
+		zap.Int("num_leagues", len(leagueIDs)),
+		zap.Int("num_teams", len(teamIDs)),
+		zap.Int32("max_tier", maxTier),
+		zap.Bool("hide_scores", hideScores),
 		zap.Any("game_ids", gameIDs),
 		zap.Any("league_ids", leagueIDs),
-		zap.Any("team_ids", teamIDs),
-		zap.Int32("max_tier", maxTier))
+		zap.Any("team_ids", teamIDs))
 
-	// Fetch matches from database - show minimum of 10 matches
+	// Fetch matches from database - show up to 5 past and 5 future
+	startTime := time.Now()
 	matches, showingPast, err := m.fetchMatches(gameIDs, leagueIDs, teamIDs, maxTier)
+	fetchDuration := time.Since(startTime)
+
 	if err != nil {
-		m.Logger.Error("Failed to fetch matches", zap.Error(err))
+		m.Logger.Error("Failed to fetch matches",
+			zap.String("request_id", requestID),
+			zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to fetch matches")
 		return
 	}
 
+	m.Logger.Info("Preview matches fetched",
+		zap.String("request_id", requestID),
+		zap.Int("match_count", len(matches)),
+		zap.Bool("showing_past", showingPast),
+		zap.Duration("fetch_duration", fetchDuration))
+
 	// Render the preview page with matches
-	component := components.PreviewPage(matches, showingPast)
+	renderStart := time.Now()
+	component := components.PreviewPage(matches, showingPast, hideScores)
 	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
-		m.Logger.Error("Failed to render preview page", zap.Error(renderErr))
+		m.Logger.Error("Failed to render preview page",
+			zap.String("request_id", requestID),
+			zap.Error(renderErr))
 		c.String(http.StatusInternalServerError, "Failed to render page")
+		return
 	}
+
+	renderDuration := time.Since(renderStart)
+	totalDuration := time.Since(startTime)
+
+	m.Logger.Info("Preview request completed",
+		zap.String("request_id", requestID),
+		zap.Duration("render_duration", renderDuration),
+		zap.Duration("total_duration", totalDuration))
 }
 
-// fetchMatches retrieves matches based on selections, backfilling with past matches if needed.
+// fetchMatches retrieves matches based on selections, showing up to 5 past and 5 future matches.
 func (m *Middleware) fetchMatches(
 	gameIDs, leagueIDs, teamIDs []int32,
 	maxTier int32,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, bool, error) {
-	const minMatches = 10
+	const pastLimit = 5
+	const futureLimit = 5
 	var matches []dbtypes.GetFutureMatchesBySelectionsRow
 	var showingPast bool
 
@@ -309,58 +366,51 @@ func (m *Middleware) fetchMatches(
 		return matches, showingPast, nil
 	}
 
-	// Try to get future matches first
+	// Fetch up to 5 future matches
 	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
-		GameIds:   gameIDs,
-		LeagueIds: leagueIDs,
-		TeamIds:   teamIDs,
-		MaxTier:   maxTier,
+		GameIds:    gameIDs,
+		LeagueIds:  leagueIDs,
+		TeamIds:    teamIDs,
+		MaxTier:    maxTier,
+		LimitCount: futureLimit,
 	})
 	if err != nil {
 		return nil, false, err
 	}
 
-	matches = futureMatches
 	m.Logger.Debug("Found future matches", zap.Int("count", len(futureMatches)))
 
-	// If we have fewer than 10 matches, backfill with past matches
-	if len(matches) < minMatches {
-		numNeeded := minMatches - len(matches)
-		m.Logger.Debug("Need more matches - fetching past matches",
-			zap.Int("num_needed", numNeeded),
-			zap.Int("min_matches", minMatches))
-
-		pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
-			GameIds:   gameIDs,
-			LeagueIds: leagueIDs,
-			TeamIds:   teamIDs,
-			MaxTier:   maxTier,
-		})
-		if pastErr != nil {
-			return nil, false, pastErr
-		}
-
-		// Convert and prepend past matches (they're already in ASC order from SQL)
-		// We need to prepend them since they come before future matches chronologically
-		pastMatchesConverted := make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches))
-		for _, pm := range pastMatches {
-			pastMatchesConverted = append(pastMatchesConverted, dbtypes.GetFutureMatchesBySelectionsRow(pm))
-			if len(pastMatchesConverted) >= minMatches-len(futureMatches) {
-				break
-			}
-		}
-
-		// Prepend past matches to future matches (both in ASC order, so chronological)
-		matches = append(pastMatchesConverted, matches...)
-
-		if len(futureMatches) == 0 {
-			showingPast = true
-		}
-		m.Logger.Debug("Added past matches",
-			zap.Int("past_matches_added", len(pastMatchesConverted)),
-			zap.Int("total_matches", len(matches)))
+	// Fetch up to 5 past matches
+	pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+		GameIds:    gameIDs,
+		LeagueIds:  leagueIDs,
+		TeamIds:    teamIDs,
+		MaxTier:    maxTier,
+		LimitCount: pastLimit,
+	})
+	if pastErr != nil {
+		return nil, false, pastErr
 	}
 
-	m.Logger.Debug("Final match count", zap.Int("count", len(matches)), zap.Bool("showing_past", showingPast))
+	m.Logger.Debug("Found past matches", zap.Int("count", len(pastMatches)))
+
+	// Convert past matches to the same type as future matches
+	pastMatchesConverted := make([]dbtypes.GetFutureMatchesBySelectionsRow, len(pastMatches))
+	for i, pm := range pastMatches {
+		pastMatchesConverted[i] = dbtypes.GetFutureMatchesBySelectionsRow(pm)
+	}
+
+	// Combine: past matches (in ASC order) + future matches (in ASC order)
+	matches = append(pastMatchesConverted, futureMatches...)
+
+	if len(futureMatches) == 0 && len(pastMatches) > 0 {
+		showingPast = true
+	}
+
+	m.Logger.Debug("Final match count",
+		zap.Int("past", len(pastMatches)),
+		zap.Int("future", len(futureMatches)),
+		zap.Int("total", len(matches)),
+		zap.Bool("showing_past", showingPast))
 	return matches, showingPast, nil
 }
