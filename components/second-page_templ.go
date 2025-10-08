@@ -113,7 +113,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"card-actions justify-between mt-6\"><a href=\"/\" id=\"back-to-options-btn\" class=\"btn btn-outline\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"card-actions flex-col md:flex-row md:justify-between gap-4 mt-6\"><a href=\"/\" id=\"back-to-options-btn\" class=\"btn btn-outline w-full md:w-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -121,7 +121,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Back to Options</a><div class=\"flex flex-col items-end gap-2\"><div class=\"form-control\"><label class=\"label cursor-pointer gap-2\"><input type=\"checkbox\" id=\"hide-scores-checkbox\" class=\"checkbox checkbox-primary\"> <span class=\"label-text\">Hide past game scores (show as \"Finished\")</span></label></div><button type=\"button\" id=\"submit-selection-btn\" class=\"btn btn-primary\" onclick=\"submitPreview()\">Submit Selection for Preview")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Back to Options</a><div class=\"flex flex-col items-stretch md:items-end gap-2 w-full md:w-auto\"><div class=\"form-control\"><label class=\"label cursor-pointer gap-2 justify-center md:justify-end\"><input type=\"checkbox\" id=\"hide-scores-checkbox\" class=\"checkbox checkbox-primary\"> <span class=\"label-text\">Hide past game scores (show as \"Finished\")</span></label></div><button type=\"button\" id=\"submit-selection-btn\" class=\"btn btn-primary w-full md:w-auto\" onclick=\"submitPreview()\">Submit Selection for Preview")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

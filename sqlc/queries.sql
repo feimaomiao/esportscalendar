@@ -151,8 +151,8 @@ JOIN teams t2 ON m.team2_id = t2.id
 WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
-        (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[]))
-        OR (m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+        (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -183,8 +183,8 @@ FROM (
     WHERE m.expected_start_time < NOW()
         AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
-            (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[]))
-            OR (m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+            (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
+            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
         )
     ORDER BY m.expected_start_time DESC
     LIMIT sqlc.arg(limit_count)::int
@@ -214,11 +214,11 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 JOIN teams t1 ON m.team1_id = t1.id
 JOIN teams t2 ON m.team2_id = t2.id
-WHERE m.expected_start_time >= NOW() - INTERVAL '14 days'
+WHERE m.expected_start_time >= NOW() - INTERVAL '3 days'
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
-        (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[]))
-        OR (m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+        (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
     )
 ORDER BY m.expected_start_time ASC;
 

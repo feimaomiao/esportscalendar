@@ -95,6 +95,19 @@ func (c *RedisCache) SetICS(hash string, content string) error {
 	return nil
 }
 
+// DeleteICS removes a specific ICS file from cache.
+func (c *RedisCache) DeleteICS(hash string) error {
+	key := icsPrefix + hash
+	err := c.client.Del(c.ctx, key).Err()
+	if err != nil {
+		c.logger.Error("Failed to delete ICS from cache", zap.Error(err), zap.String("hash", hash))
+		return err
+	}
+
+	c.logger.Info("ICS cache entry deleted", zap.String("hash", hash))
+	return nil
+}
+
 // GetData retrieves general data from cache (for games, leagues, teams, etc.).
 func (c *RedisCache) GetData(key string) (string, bool) {
 	fullKey := dataPrefix + key

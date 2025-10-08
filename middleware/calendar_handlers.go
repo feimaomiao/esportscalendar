@@ -103,10 +103,19 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 		m.Logger.Warn("Failed to update access count", zap.Error(err), zap.String("hash", hash))
 	}
 
-	// Try to get from cache first
+	// Check if refresh is requested via query parameter
+	refresh := c.Query("refresh") == "1"
+	if refresh && m.RedisCache != nil {
+		m.Logger.Info("Cache refresh requested", zap.String("hash", hash))
+		if delErr := m.RedisCache.DeleteICS(hash); delErr != nil {
+			m.Logger.Warn("Failed to delete cache entry", zap.Error(delErr), zap.String("hash", hash))
+		}
+	}
+
+	// Try to get from cache first (unless refresh was requested)
 	var icsContent string
 	var cacheHit bool
-	if m.RedisCache != nil {
+	if m.RedisCache != nil && !refresh {
 		icsContent, cacheHit = m.RedisCache.GetICS(hash)
 		if cacheHit {
 			m.Logger.Info("Cache HIT", zap.String("hash", hash))
@@ -114,6 +123,8 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 			c.Status(http.StatusOK)
 			c.Header("Content-Type", "text/calendar; charset=utf-8")
 			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+			c.Header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+			c.Header("X-Cache", "HIT")
 			if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
 				m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
 				return
@@ -188,6 +199,8 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/calendar; charset=utf-8")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+	c.Header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+	c.Header("X-Cache", "MISS")
 	if _, writeErr := c.Writer.Write([]byte(icsContent)); writeErr != nil {
 		m.Logger.Error("Failed to write calendar content", zap.Error(writeErr))
 		return

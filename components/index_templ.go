@@ -117,7 +117,7 @@ func Index(options []Option) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"card-actions justify-end mt-6\"><button type=\"submit\" id=\"continue-btn\" class=\"btn btn-primary\" disabled>Continue to Next Page")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"card-actions justify-end mt-6\"><button type=\"submit\" id=\"continue-btn\" class=\"btn btn-primary w-full md:w-auto\" disabled>Continue to Next Page")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -77,11 +77,11 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 JOIN teams t1 ON m.team1_id = t1.id
 JOIN teams t2 ON m.team2_id = t2.id
-WHERE m.expected_start_time >= NOW() - INTERVAL '14 days'
+WHERE m.expected_start_time >= NOW() - INTERVAL '3 days'
     AND m.game_id = ANY($1::int[])
     AND (
-        (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
-        OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
     )
 ORDER BY m.expected_start_time ASC
 `
@@ -194,8 +194,8 @@ JOIN teams t2 ON m.team2_id = t2.id
 WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
-        (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
-        OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -363,8 +363,8 @@ FROM (
     WHERE m.expected_start_time < NOW()
         AND m.game_id = ANY($1::int[])
         AND (
-            (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[]))
-            OR (m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+            (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
         )
     ORDER BY m.expected_start_time DESC
     LIMIT $5::int

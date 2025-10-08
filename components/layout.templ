@@ -87,12 +87,12 @@ templ BaseLayout(title string) {
 					</a>
 				</div>
 			</nav>
-			<div class="min-h-screen bg-base-200 pt-16 pb-16">
+			<div class="min-h-screen bg-base-200 pt-16 pb-24 md:pb-16">
 				{ children... }
 			</div>
 			<!-- Footer -->
-			<footer class="footer p-4 bg-base-300 text-base-content fixed bottom-0 left-0 right-0 z-50">
-				<aside class="pl-4">
+			<footer class="footer p-2 md:p-4 bg-base-300 text-base-content fixed bottom-0 left-0 right-0 z-50 text-xs md:text-base">
+				<aside class="pl-1 md:pl-4">
 					<p>
 						<a href="https://icons8.com" target="_blank" rel="noopener noreferrer" class="link link-hover">Icons by Icons8</a>
 					</p>
@@ -100,7 +100,7 @@ templ BaseLayout(title string) {
 				<nav class="mx-auto">
 					<a href="https://www.buymeacoffee.com/feimaomiao" target="_blank" rel="noopener noreferrer" class="link link-hover">☕ Buy Me a Coffee</a>
 				</nav>
-				<nav class="ml-auto pr-4">
+				<nav class="ml-auto pr-1 md:pr-4">
 					<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="link link-hover">Issues</a>
 				</nav>
 			</footer>

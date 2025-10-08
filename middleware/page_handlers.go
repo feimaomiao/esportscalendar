@@ -380,13 +380,13 @@ func (m *Middleware) PreviewHandler(c *gin.Context) {
 		zap.Duration("total_duration", totalDuration))
 }
 
-// fetchMatches retrieves matches based on selections, showing up to 5 past and 5 future matches.
+// fetchMatches retrieves matches based on selections, showing up to 5 past matches and all future matches.
 func (m *Middleware) fetchMatches(
 	gameIDs, leagueIDs, teamIDs []int32,
 	maxTier int32,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, bool, error) {
 	const pastLimit = 5
-	const futureLimit = 5
+	const futureLimit = 100000 // No practical limit on future matches
 	var matches []dbtypes.GetFutureMatchesBySelectionsRow
 	var showingPast bool
 
@@ -394,7 +394,7 @@ func (m *Middleware) fetchMatches(
 		return matches, showingPast, nil
 	}
 
-	// Fetch up to 5 future matches
+	// Fetch all future matches
 	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
@@ -408,7 +408,7 @@ func (m *Middleware) fetchMatches(
 
 	m.Logger.Debug("Found future matches", zap.Int("count", len(futureMatches)))
 
-	// Fetch up to 5 past matches
+	// Fetch most recent 5 past matches for context
 	pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
