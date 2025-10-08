@@ -30,10 +30,10 @@ type RedisCache struct {
 
 // NewRedisCache creates a new Redis cache client.
 func NewRedisCache(ctx context.Context, logger *zap.Logger) (*RedisCache, error) {
-	// Get Redis address from environment variable, default to localhost
+	// Get Redis address from environment variable, default to redis service in Docker network
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+		redisAddr = "redis:6379"
 	}
 
 	// Get Redis password from environment variable (optional)

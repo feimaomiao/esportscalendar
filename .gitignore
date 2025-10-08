@@ -38,3 +38,5 @@ lcov.info
 tmp/esportscalendar
 esportscalendar
 tmp/
+
+node_modules/
