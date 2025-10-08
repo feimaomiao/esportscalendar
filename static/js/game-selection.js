@@ -1,3 +1,22 @@
+// Check if any selections are made and enable/disable submit button
+function checkAndUpdateSubmitButton() {
+	const gameCards = document.querySelectorAll('[data-game-id]');
+	let hasSelections = false;
+
+	gameCards.forEach(card => {
+		const gameId = card.getAttribute('data-game-id');
+		const selectedContainer = document.getElementById('selected-combined-' + gameId);
+		if (selectedContainer && selectedContainer.querySelectorAll('.badge').length > 0) {
+			hasSelections = true;
+		}
+	});
+
+	const submitBtn = document.getElementById('submit-selection-btn');
+	if (submitBtn) {
+		submitBtn.disabled = !hasSelections;
+	}
+}
+
 // Game selection - League and Team management
 function initGameSelection(gameId) {
 	console.log('initGameSelection called with gameId:', gameId, 'type:', typeof gameId);
@@ -350,6 +369,9 @@ function initGameSelection(gameId) {
 		`).join('');
 
 		selectedCombinedContainer.innerHTML = leagueHTML + teamHTML;
+
+		// Update submit button state
+		checkAndUpdateSubmitButton();
 	}
 
 	// Helper functions for removal

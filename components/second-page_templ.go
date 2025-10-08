@@ -121,7 +121,7 @@ func SecondPageContent(selectedOptions []Option) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Back to Options</a><div class=\"flex flex-col items-stretch md:items-end gap-2 w-full md:w-auto\"><div class=\"form-control\"><label class=\"label cursor-pointer gap-2 justify-center md:justify-end\"><input type=\"checkbox\" id=\"hide-scores-checkbox\" class=\"checkbox checkbox-primary\"> <span class=\"label-text\">Hide past game scores (show as \"Finished\")</span></label></div><button type=\"button\" id=\"submit-selection-btn\" class=\"btn btn-primary w-full md:w-auto\" onclick=\"submitPreview()\">Submit Selection for Preview")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Back to Options</a><div class=\"flex flex-col items-stretch md:items-end gap-2 w-full md:w-auto\"><div class=\"form-control\"><label class=\"label cursor-pointer gap-2 justify-center md:justify-end\"><input type=\"checkbox\" id=\"hide-scores-checkbox\" class=\"checkbox checkbox-primary\"> <span class=\"label-text\">Spoiler Block</span></label></div><button type=\"button\" id=\"submit-selection-btn\" class=\"btn btn-primary w-full md:w-auto\" onclick=\"submitPreview()\" disabled>Submit Selection for Preview")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -392,7 +392,7 @@ func GameSelectionCard(option Option) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\">No teams found</div></div></div></div></div></div><!-- Tournament Tier Filter --><div class=\"mt-4\"><div class=\"mb-2 flex items-center justify-between\"><div class=\"flex items-center gap-2\"><span class=\"font-medium\">Minimum Tournament Tier:</span><div class=\"tooltip\" data-tip=\"Different tiered tournaments may exist within the same league. Use this slider to filter out lower-tier tournaments.\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 text-info cursor-help\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z\"></path></svg></div></div><span class=\"badge badge-primary\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\">No teams found</div></div></div></div></div></div><!-- Tournament Tier Filter --><div class=\"mt-4\"><div class=\"mb-2 flex items-center justify-between\"><div class=\"flex items-center gap-2\"><span class=\"font-medium\">Minimum Tournament Tier:</span><div class=\"tooltip\" data-tip=\"Different tiered tournaments may exist within the same league. Putting this slider to S will only show matches with an S tier tournament within the selected leagues.\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 text-info cursor-help\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z\"></path></svg></div></div><span class=\"badge badge-primary\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

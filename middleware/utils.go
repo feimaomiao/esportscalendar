@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const defaultMaxTier = 2 // Default to tier A (tier 2)
+
 // generateHash creates a consistent hash from the selections JSON.
 func generateHash(data []byte) string {
 	hash := sha256.Sum256(data)
@@ -21,7 +23,7 @@ func parseSelections(
 	logger *zap.Logger,
 ) ([]int32, []int32, []int32, int32) {
 	var gameIDs, leagueIDs, teamIDs []int32
-	maxTier := int32(2) // Default to tier A (tier 2)
+	maxTier := int32(defaultMaxTier)
 
 	for gameIDStr, selectionData := range selections {
 		gameID, parseErr := strconv.ParseInt(gameIDStr, 10, 32)
