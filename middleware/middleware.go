@@ -22,7 +22,7 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 	logger.Info("Initializing middleware with database connection")
 	ctx := context.Background()
 
-	connStr := fmt.Sprintf("host=localhost port=5432 user=%s password=%s dbname=esports sslmode=disable",
+	connStr := fmt.Sprintf("host=postgres port=5432 user=%s password=%s dbname=esports sslmode=disable",
 		os.Getenv("postgres_user"),
 		os.Getenv("postgres_password"))
 	conn, err := pgxpool.New(ctx, connStr)

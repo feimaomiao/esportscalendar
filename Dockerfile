@@ -1,19 +1,54 @@
-# Build stage
+# Node stage for building CSS
+FROM node:20-alpine AS css-builder
+
+WORKDIR /build
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install npm dependencies
+RUN npm ci
+
+# Copy input CSS and config
+COPY input.css tailwind.config.js ./
+
+# Create output directory
+RUN mkdir -p ./public/static/css
+
+# Build Tailwind CSS
+RUN npx @tailwindcss/cli -i input.css -o ./public/static/css/tw.css --minify
+
+# Go build stage
 FROM golang:1.23.3-alpine AS builder
 
-# Install build dependencies
+# Install build dependencies including templ and sqlc
 RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /build
 
+# Install templ CLI
+RUN go install github.com/a-h/templ/cmd/templ@latest
+
+# Install sqlc
+RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies
+# Download Go dependencies
 RUN go mod download
 
-# Copy source code and static files
+# Copy source code
 COPY . .
+
+# Generate SQLC code
+RUN sqlc generate
+
+# Generate templ code
+RUN templ generate
+
+# Copy built CSS from css-builder stage
+COPY --from=css-builder /build/public/static/css/tw.css ./static/css/tw.css
 
 # Build the application
 # CGO_ENABLED=0 for static binary
