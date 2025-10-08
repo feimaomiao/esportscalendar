@@ -29,7 +29,7 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		endTime := startTime.Add(duration)
 
 		ics.WriteString("BEGIN:VEVENT\r\n")
-		ics.WriteString(fmt.Sprintf("UID:%d@localhost:8080/\r\n", match.ID))
+		ics.WriteString(fmt.Sprintf("UID:%d@esportscalendar.app\r\n", match.ID))
 		ics.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
 		ics.WriteString(fmt.Sprintf("DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
 		ics.WriteString(fmt.Sprintf("DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z")))

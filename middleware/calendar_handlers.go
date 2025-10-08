@@ -60,7 +60,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	// Return the hash as JSON
 	response := map[string]string{
 		"hash": hash,
-		"url":  fmt.Sprintf("http://localhost:8080/%s.ics", hash),
+		"url":  fmt.Sprintf("https://esportscalendar.app/%s.ics", hash),
 	}
 	c.JSON(http.StatusOK, response)
 }
