@@ -45,9 +45,14 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		ics.WriteString(fmt.Sprintf("URL:%s\r\n", baseURL))
 
 		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
+		// Add scores to title if match is finished and hideScores is false
 		summary := fmt.Sprintf("[%s] %s", match.GameName, match.Name)
 		if match.TournamentName != "" {
 			summary = fmt.Sprintf("[%s] %s - %s", match.GameName, match.TournamentName, match.Name)
+		}
+		if match.Finished && !hideScores {
+			// Add score to the title
+			summary = fmt.Sprintf("%s [%d-%d]", summary, match.Team1Score, match.Team2Score)
 		}
 		ics.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(summary)))
 

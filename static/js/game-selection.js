@@ -32,7 +32,7 @@ function initGameSelection(gameId) {
 	let allLeagues = [];
 	let selectedLeagues = new Set();
 	let currentFilteredLeagues = [];
-	let maxTier = 1; // Default to tier 1 only
+	let maxTier = 2; // Default to tier A (tier 2)
 
 	// Restore saved selections from sessionStorage
 	const savedKey = 'lts-selections-' + gameId;

@@ -405,7 +405,7 @@ func GameSelectionCard(option Option) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\">S</span></div><input type=\"range\" min=\"1\" max=\"6\" value=\"1\" class=\"range range-primary\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\">A</span></div><input type=\"range\" min=\"1\" max=\"6\" value=\"2\" class=\"range range-primary\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

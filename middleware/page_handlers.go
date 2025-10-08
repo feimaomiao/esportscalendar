@@ -380,13 +380,13 @@ func (m *Middleware) PreviewHandler(c *gin.Context) {
 		zap.Duration("total_duration", totalDuration))
 }
 
-// fetchMatches retrieves matches based on selections, showing up to 5 past matches and all future matches.
+// fetchMatches retrieves matches based on selections, showing up to 10 total matches.
+// Prioritizes future matches and only uses past matches if there are no available future ones.
 func (m *Middleware) fetchMatches(
 	gameIDs, leagueIDs, teamIDs []int32,
 	maxTier int32,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, bool, error) {
-	const pastLimit = 5
-	const futureLimit = 100000 // No practical limit on future matches
+	const totalLimit = 10
 	var matches []dbtypes.GetFutureMatchesBySelectionsRow
 	var showingPast bool
 
@@ -394,13 +394,13 @@ func (m *Middleware) fetchMatches(
 		return matches, showingPast, nil
 	}
 
-	// Fetch all future matches
+	// Fetch up to 10 future matches first (prioritize future matches)
 	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
 		TeamIds:    teamIDs,
 		MaxTier:    maxTier,
-		LimitCount: futureLimit,
+		LimitCount: totalLimit,
 	})
 	if err != nil {
 		return nil, false, err
@@ -408,19 +408,26 @@ func (m *Middleware) fetchMatches(
 
 	m.Logger.Debug("Found future matches", zap.Int("count", len(futureMatches)))
 
-	// Fetch most recent 5 past matches for context
-	pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
-		GameIds:    gameIDs,
-		LeagueIds:  leagueIDs,
-		TeamIds:    teamIDs,
-		MaxTier:    maxTier,
-		LimitCount: pastLimit,
-	})
-	if pastErr != nil {
-		return nil, false, pastErr
-	}
+	// Calculate how many past matches we need to fill up to 10 total
+	remainingSlots := totalLimit - len(futureMatches)
 
-	m.Logger.Debug("Found past matches", zap.Int("count", len(pastMatches)))
+	var pastMatches []dbtypes.GetPastMatchesBySelectionsRow
+	if remainingSlots > 0 {
+		// Only fetch past matches if we have remaining slots
+		var pastErr error
+		pastMatches, pastErr = m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+			GameIds:    gameIDs,
+			LeagueIds:  leagueIDs,
+			TeamIds:    teamIDs,
+			MaxTier:    maxTier,
+			LimitCount: int32(remainingSlots), // #nosec G115 -- remainingSlots is bounded by totalLimit (10)
+		})
+		if pastErr != nil {
+			return nil, false, pastErr
+		}
+
+		m.Logger.Debug("Found past matches", zap.Int("count", len(pastMatches)))
+	}
 
 	// Convert past matches to the same type as future matches
 	matches = make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
