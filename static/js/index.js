@@ -55,8 +55,7 @@
 			const response = await fetch('/lts', {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
-					'HX-Request': 'true'
+					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({ options: selectedOptions })
 			});
@@ -66,27 +65,14 @@
 			if (response.ok) {
 				const html = await response.text();
 
-				// Update page title
-				document.title = 'Leagues & Teams - EsportsCalendar';
+				// Replace entire page to update progress indicator
+				document.open();
+				document.write(html);
+				document.close();
 
-				const container = document.getElementById('select');
-				container.innerHTML = html;
-
-				// Execute scripts in the newly inserted HTML
-				const scripts = container.querySelectorAll('script');
-				scripts.forEach(oldScript => {
-					const newScript = document.createElement('script');
-					// Copy src attribute if present (external script)
-					if (oldScript.src) {
-						newScript.src = oldScript.src;
-					} else {
-						// Inline script
-						newScript.textContent = oldScript.textContent;
-					}
-					oldScript.parentNode.replaceChild(newScript, oldScript);
-				});
-
+				// Update URL and title after document rewrite
 				window.history.pushState({}, '', '/lts');
+				document.title = 'Leagues & Teams - EsportsCalendar';
 			} else {
 				console.error('Request failed:', response.statusText);
 				alert('Request failed: ' + response.statusText);
