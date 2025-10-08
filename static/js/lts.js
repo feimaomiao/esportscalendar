@@ -68,7 +68,7 @@
 				// Get tier value from sessionStorage
 				const savedKey = 'lts-selections-' + gameId;
 				const savedData = sessionStorage.getItem(savedKey);
-				let maxTier = 1; // Default to tier 1
+				let maxTier = 2; // Default to tier A (tier 2)
 				if (savedData) {
 					try {
 						const parsed = JSON.parse(savedData);

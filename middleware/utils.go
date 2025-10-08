@@ -21,7 +21,7 @@ func parseSelections(
 	logger *zap.Logger,
 ) ([]int32, []int32, []int32, int32) {
 	var gameIDs, leagueIDs, teamIDs []int32
-	maxTier := int32(1) // Default to tier 1
+	maxTier := int32(2) // Default to tier A (tier 2)
 
 	for gameIDStr, selectionData := range selections {
 		gameID, parseErr := strconv.ParseInt(gameIDStr, 10, 32)
