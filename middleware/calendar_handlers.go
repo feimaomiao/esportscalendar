@@ -60,7 +60,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	// Return the hash as JSON
 	response := map[string]string{
 		"hash": hash,
-		"url":  fmt.Sprintf("https://esportscalendar.app/%s.ics", hash),
+		"url":  fmt.Sprintf("%s/%s.ics", m.BaseURL, hash),
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -186,7 +186,7 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	}
 
 	// Generate iCalendar format with hideScores flag
-	icsContent = generateICS(matches, hideScores)
+	icsContent = generateICS(matches, hideScores, m.BaseURL)
 
 	// Store in cache
 	if m.RedisCache != nil {

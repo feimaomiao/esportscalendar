@@ -47,13 +47,21 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 									<div class="flex items-center justify-between gap-2 mb-3">
 										<div class="flex items-center gap-2 flex-1">
 											if match.Team1Image.Valid && match.Team1Image.String != "" {
-												<img src={ match.Team1Image.String } alt={ match.Team1Name } class="w-8 h-8 rounded"/>
+												if match.Team1Name.Valid {
+													<img src={ match.Team1Image.String } alt={ match.Team1Name.String } class="w-8 h-8 rounded"/>
+												} else {
+													<img src={ match.Team1Image.String } alt="TBD" class="w-8 h-8 rounded"/>
+												}
+											} else {
+												<img src="/static/images/default-logo.png" alt="TBD" class="w-8 h-8 rounded"/>
 											}
 											<span class="font-semibold text-sm truncate">
 												if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
 													{ match.Team1Acronym.String }
+												} else if match.Team1Name.Valid {
+													{ match.Team1Name.String }
 												} else {
-													{ match.Team1Name }
+													TBD
 												}
 											</span>
 										</div>
@@ -62,12 +70,20 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 											<span class="font-semibold text-sm truncate">
 												if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
 													{ match.Team2Acronym.String }
+												} else if match.Team2Name.Valid {
+													{ match.Team2Name.String }
 												} else {
-													{ match.Team2Name }
+													TBD
 												}
 											</span>
 											if match.Team2Image.Valid && match.Team2Image.String != "" {
-												<img src={ match.Team2Image.String } alt={ match.Team2Name } class="w-8 h-8 rounded"/>
+												if match.Team2Name.Valid {
+													<img src={ match.Team2Image.String } alt={ match.Team2Name.String } class="w-8 h-8 rounded"/>
+												} else {
+													<img src={ match.Team2Image.String } alt="TBD" class="w-8 h-8 rounded"/>
+												}
+											} else {
+												<img src="/static/images/default-logo.png" alt="TBD" class="w-8 h-8 rounded"/>
 											}
 										</div>
 									</div>

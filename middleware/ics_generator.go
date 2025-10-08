@@ -8,7 +8,7 @@ import (
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
-func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool) string {
+func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool, baseURL string) string {
 	var ics strings.Builder
 
 	ics.WriteString("BEGIN:VCALENDAR\r\n")
@@ -19,6 +19,15 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 	ics.WriteString("X-WR-TIMEZONE:UTC\r\n")
 
 	for _, match := range matches {
+		// Get team names with fallback to "TBD"
+		team1Name := "TBD"
+		if match.Team1Name.Valid {
+			team1Name = match.Team1Name.String
+		}
+		team2Name := "TBD"
+		if match.Team2Name.Valid {
+			team2Name = match.Team2Name.String
+		}
 		if !match.ExpectedStartTime.Valid {
 			continue
 		}
@@ -29,10 +38,11 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		endTime := startTime.Add(duration)
 
 		ics.WriteString("BEGIN:VEVENT\r\n")
-		ics.WriteString(fmt.Sprintf("UID:%d@esportscalendar.app\r\n", match.ID))
+		ics.WriteString(fmt.Sprintf("UID:%d@%s\r\n", match.ID, baseURL))
 		ics.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
 		ics.WriteString(fmt.Sprintf("DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
 		ics.WriteString(fmt.Sprintf("DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z")))
+		ics.WriteString(fmt.Sprintf("URL:%s\r\n", baseURL))
 
 		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
 		summary := fmt.Sprintf("[%s] %s", match.GameName, match.Name)
@@ -43,8 +53,8 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 
 		// Build description with teams, league, tournament, and score for finished matches
 		description := fmt.Sprintf("%s vs %s - %s - %s (%s)",
-			match.Team1Name,
-			match.Team2Name,
+			team1Name,
+			team2Name,
 			match.TournamentName,
 			match.LeagueName,
 			match.GameName,
@@ -53,16 +63,16 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 			if hideScores {
 				// Show "Finished" instead of score
 				description = fmt.Sprintf("%s vs %s [Finished] - %s - %s (%s)",
-					match.Team1Name,
-					match.Team2Name,
+					team1Name,
+					team2Name,
 					match.TournamentName,
 					match.LeagueName,
 					match.GameName,
 				)
 			} else {
 				description = fmt.Sprintf("%s vs %s [%d-%d] - %s - %s (%s)",
-					match.Team1Name,
-					match.Team2Name,
+					team1Name,
+					team2Name,
 					match.Team1Score,
 					match.Team2Score,
 					match.TournamentName,

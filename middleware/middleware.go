@@ -16,6 +16,7 @@ type Middleware struct {
 	Context    context.Context
 	RedisCache *RedisCache
 	Logger     *zap.Logger
+	BaseURL    string
 }
 
 func InitMiddleHandler(logger *zap.Logger) Middleware {
@@ -40,12 +41,22 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		redisCache = nil
 	}
 
+	// Get base URL from environment variable with default fallback
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://esportscalendar.app"
+		logger.Info("BASE_URL not set, using default", zap.String("base_url", baseURL))
+	} else {
+		logger.Info("Using BASE_URL from environment", zap.String("base_url", baseURL))
+	}
+
 	return Middleware{
 		DB:         conn,
 		DBConn:     dbConn,
 		Context:    ctx,
 		RedisCache: redisCache,
 		Logger:     logger,
+		BaseURL:    baseURL,
 	}
 }
 

@@ -146,8 +146,8 @@ FROM matches m
 JOIN games g ON m.game_id = g.id
 JOIN leagues l ON m.league_id = l.id
 JOIN tournaments tour ON m.tournament_id = tour.id
-JOIN teams t1 ON m.team1_id = t1.id
-JOIN teams t2 ON m.team2_id = t2.id
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
 WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
@@ -178,8 +178,8 @@ FROM (
     JOIN games g ON m.game_id = g.id
     JOIN leagues l ON m.league_id = l.id
     JOIN tournaments tour ON m.tournament_id = tour.id
-    JOIN teams t1 ON m.team1_id = t1.id
-    JOIN teams t2 ON m.team2_id = t2.id
+    LEFT JOIN teams t1 ON m.team1_id = t1.id
+    LEFT JOIN teams t2 ON m.team2_id = t2.id
     WHERE m.expected_start_time < NOW()
         AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
@@ -212,8 +212,8 @@ JOIN games g ON m.game_id = g.id
 JOIN leagues l ON m.league_id = l.id
 JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
-JOIN teams t1 ON m.team1_id = t1.id
-JOIN teams t2 ON m.team2_id = t2.id
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
 WHERE m.expected_start_time >= NOW() - INTERVAL '3 days'
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
