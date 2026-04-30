@@ -26,6 +26,20 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	}
 	m.Logger.Debug("Received request body for export", zap.Any("request_body", requestBody))
 
+	// Validate selections before storing — refuse oversize / empty payloads.
+	var selections map[string]any
+	if v, ok := requestBody["selections"].(map[string]any); ok {
+		selections = v
+	} else {
+		selections = requestBody
+	}
+	gIDs, lIDs, tIDs, _ := parseSelections(selections, m.Logger)
+	if vErr := validateSelections(gIDs, lIDs, tIDs); vErr != nil {
+		m.Logger.Warn("Invalid export selections", zap.Error(vErr))
+		c.JSON(http.StatusBadRequest, map[string]string{"error": vErr.Error()})
+		return
+	}
+
 	// Generate canonical JSON (sorted keys for consistent hashing)
 	// This preserves both selections and hideScores in the stored data
 	jsonBytes, err := json.Marshal(requestBody)

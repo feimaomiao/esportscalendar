@@ -2,51 +2,55 @@ package components
 
 templ Index(options []Option) {
 	@BaseLayout("Select Games - EsportsCalendar") {
-		@ProgressIndicator(1)
-		<div id="select" class="container mx-auto p-4">
-			<div class="max-w-2xl mx-auto">
-				<div class="card bg-base-100 shadow-2xl border border-base-300">
-					<div class="card-body">
-						<h1 class="card-title text-3xl mb-6">Select games to track</h1>
-						<form id="game-form" hx-post="/lts" hx-target="#select" hx-swap="innerHTML" hx-push-url="true">
-							<div class="space-y-4" id="game-options">
-								for _, opt := range options {
-									<div class="form-control">
-										<label class="label cursor-pointer hover:bg-base-200 rounded-lg p-4 transition-colors border border-transparent hover:border-base-300">
-											<div class="option-content">
-												<div class="game-icon-container">
-													<img src={ opt.Logo } alt={ opt.Label } class="game-icon"/>
-												</div>
-												<span class="label-text text-lg">{ opt.Label }</span>
-											</div>
-											<input
-												type="checkbox"
-												name="options"
-												value={ opt.ID }
-												class="checkbox checkbox-primary game-checkbox"
-												onchange="document.getElementById('continue-btn').disabled=!document.querySelectorAll('.game-checkbox:checked').length"
-												if opt.Checked {
-													checked
-												}
-											/>
-										</label>
+		@IndexInner(options)
+	}
+}
+
+templ IndexInner(options []Option) {
+	@ProgressIndicator(1)
+	<div id="select" class="container mx-auto p-4">
+		<div class="max-w-2xl mx-auto">
+			<div class="card bg-base-100 shadow-2xl border border-base-300">
+				<div class="card-body">
+					<h1 class="card-title text-3xl mb-6">Select games to track</h1>
+					<form
+						id="game-form"
+						action="/lts"
+						method="POST"
+						hx-post="/lts"
+						hx-target="#page-content"
+						hx-swap="innerHTML"
+						hx-push-url="/lts"
+					>
+						<div class="space-y-3" id="game-options">
+							for _, opt := range options {
+								<label class="flex items-center justify-between gap-4 min-h-16 p-4 rounded-lg border-2 border-base-300 bg-base-100 cursor-pointer transition-colors hover:border-primary hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+									<div class="flex items-center gap-4 flex-1 min-w-0">
+										<img src={ opt.Logo } alt={ opt.Label } class="w-8 h-8 object-contain flex-shrink-0"/>
+										<span class="text-lg truncate">{ opt.Label }</span>
 									</div>
-								}
-							</div>
-							<div class="card-actions justify-end mt-6">
-								<button type="submit" id="continue-btn" class="btn btn-primary w-full md:w-auto" disabled>
-									Continue to Next Page
-									@IconArrowRight("w-5 h-5")
-								</button>
-							</div>
-						</form>
-						<script>
-						// Restore selections and handle form submission
-						!function(){const e=document.querySelectorAll('.game-checkbox'),t=sessionStorage.getItem('selectedGameOptions');if(t)try{JSON.parse(t).forEach(t=>{e.forEach(e=>{e.value===t&&(e.checked=!0)})})}catch{}const n=document.getElementById('continue-btn'),o=document.getElementById('game-form');n.disabled=!document.querySelectorAll('.game-checkbox:checked').length,o.addEventListener('submit',async t=>{t.preventDefault();const s=Array.from(e).filter(e=>e.checked).map(e=>e.value);sessionStorage.setItem('selectedGameOptions',JSON.stringify(s));try{const e=await fetch('/lts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({options:s})});if(e.ok){const t=await e.text();document.open(),document.write(t),document.close(),window.history.pushState({},'','/lts'),document.title='Leagues & Teams - EsportsCalendar'}else alert('Request failed: '+e.statusText)}catch(e){alert('Error: '+e.message)}}),document.addEventListener('keydown',e=>{'Enter'===e.key&&!n.disabled&&(e.preventDefault(),o.requestSubmit(n))})}();
-					</script>
-					</div>
+									<input
+										type="checkbox"
+										name="options"
+										value={ opt.ID }
+										class="checkbox checkbox-primary game-checkbox flex-shrink-0"
+										if opt.Checked {
+											checked
+										}
+									/>
+								</label>
+							}
+						</div>
+						<div class="card-actions justify-end mt-6">
+							<button type="submit" id="continue-btn" class="btn btn-primary w-full md:w-auto" disabled>
+								Continue to Next Page
+								@IconArrowRight("w-5 h-5")
+							</button>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div>
-	}
+	</div>
+	<script src="/static/js/index.js"></script>
 }

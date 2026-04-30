@@ -1,82 +1,106 @@
-document.addEventListener('DOMContentLoaded', function() {
-  // Custom HTMX event handlers
-  document.body.addEventListener('htmx:afterRequest', function(event) {
-    // Add fade-in animation to newly loaded content
-    const target = event.detail.target;
-    if (target) {
-      target.classList.add('fade-in');
-    }
-  });
+// Shared site bootstrap. Loaded on every page (defer).
 
-  // Add loading indicator
-  document.body.addEventListener('htmx:beforeRequest', function(event) {
-    const trigger = event.detail.elt;
-    if (trigger && trigger.tagName === 'BUTTON') {
-      trigger.classList.add('loading');
-    }
-  });
-
-  document.body.addEventListener('htmx:afterRequest', function(event) {
-    const trigger = event.detail.elt;
-    if (trigger && trigger.tagName === 'BUTTON') {
-      trigger.classList.remove('loading');
-    }
-  });
-
-  // Custom checkbox behavior
-  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-      // Add visual feedback
-      const label = this.closest('label');
-      if (this.checked) {
-        label.classList.add('label-checked');
-      } else {
-        label.classList.remove('label-checked');
-      }
-    });
-
-    // Initialize checked state on page load
-    const label = checkbox.closest('label');
-    if (checkbox.checked) {
-      label.classList.add('label-checked');
-    }
-  });
-
-  // Add smooth scrolling
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  });
-});
-
-// Theme toggle initialization for use after dynamic page loads (like preview page)
-function initThemeToggle() {
-  const themeToggle = document.getElementById('theme-toggle');
-  const currentTheme = localStorage.getItem('theme') || 'dark';
-
-  if (themeToggle) {
-    // Set checkbox state
-    if (currentTheme === 'light') {
-      themeToggle.checked = true;
-    } else {
-      themeToggle.checked = false;
-    }
-
-    // Add event listener
-    themeToggle.addEventListener('change', function() {
-      if (this.checked) {
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    });
-  }
+function applyLabelCheckedState(checkbox) {
+	const label = checkbox.closest('label');
+	if (!label) return;
+	label.classList.toggle('label-checked', checkbox.checked);
 }
+
+// Re-execute <script> tags inside a container after an innerHTML swap.
+// innerHTML insertion does not run scripts (per HTML spec), so we have to
+// recreate each script element to trigger evaluation.
+//
+// Defense-in-depth: only inline scripts and same-origin /static/ scripts are
+// re-evaluated. A compromised template that injected a third-party src would
+// be silently dropped here.
+window.executeScriptsIn = function executeScriptsIn(container) {
+	if (!container) return;
+	container.querySelectorAll('script').forEach((oldScript) => {
+		const src = oldScript.getAttribute('src');
+		if (src) {
+			let url;
+			try {
+				url = new URL(src, window.location.origin);
+			} catch {
+				oldScript.remove();
+				return;
+			}
+			const sameOrigin = url.origin === window.location.origin;
+			const allowedPath = url.pathname.startsWith('/static/');
+			if (!sameOrigin || !allowedPath) {
+				oldScript.remove();
+				return;
+			}
+		}
+		const newScript = document.createElement('script');
+		for (const attr of oldScript.attributes) {
+			newScript.setAttribute(attr.name, attr.value);
+		}
+		newScript.textContent = oldScript.textContent;
+		oldScript.parentNode.replaceChild(newScript, oldScript);
+	});
+};
+
+// Show/hide a small spinner inside a button while an async action is pending.
+// DaisyUI v5 expects a `.loading` span inside the button rather than a class
+// on the button itself.
+window.setButtonLoading = function setButtonLoading(btn, isLoading) {
+	if (!btn) return;
+	if (isLoading) {
+		if (!btn.dataset.originalContent) {
+			btn.dataset.originalContent = btn.innerHTML;
+		}
+		btn.disabled = true;
+		btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+	} else {
+		if (btn.dataset.originalContent) {
+			btn.innerHTML = btn.dataset.originalContent;
+			delete btn.dataset.originalContent;
+		}
+		btn.disabled = false;
+	}
+};
+
+function bindCheckboxLabels(root) {
+	root.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+		applyLabelCheckedState(cb);
+		cb.addEventListener('change', () => applyLabelCheckedState(cb));
+	});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	bindCheckboxLabels(document);
+
+	if (typeof htmx === 'undefined') return;
+
+	htmx.config.defaultSwapStyle = 'innerHTML';
+	// Disable HTMX history cache. Restoring a stale full-body snapshot on top
+	// of a fresh swap was causing duplicate footers/navs after navigation.
+	htmx.config.historyCacheSize = 0;
+	htmx.config.refreshOnHistoryMiss = true;
+	try {
+		sessionStorage.removeItem('htmx-history-cache');
+	} catch {}
+
+	htmx.on('htmx:afterSwap', (e) => {
+		const target = e.detail.target;
+		if (target) {
+			target.classList.add('fade-in');
+			bindCheckboxLabels(target);
+		}
+	});
+
+	htmx.on('htmx:responseError', (e) => {
+		const status = e.detail.xhr ? e.detail.xhr.status : '?';
+		window.showToast?.(`Request failed (${status}). Please try again.`, 'error');
+	});
+
+	htmx.on('htmx:sendError', () => {
+		window.showToast?.('Network error. Please check your connection.', 'error');
+	});
+
+	htmx.on('page:title', (e) => {
+		const t = e.detail && e.detail.title;
+		if (t) document.title = t;
+	});
+});

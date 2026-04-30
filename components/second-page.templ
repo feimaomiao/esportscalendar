@@ -2,13 +2,18 @@ package components
 
 templ SecondPage(selectedOptions []Option) {
 	@BaseLayout("Leagues & Teams - EsportsCalendar") {
-		@ProgressIndicator(2)
-		<div class="container mx-auto p-4">
-			<div class="max-w-5xl mx-auto">
-				@SecondPageContent(selectedOptions)
-			</div>
-		</div>
+		@SecondPageInner(selectedOptions)
 	}
+}
+
+templ SecondPageInner(selectedOptions []Option) {
+	@ProgressIndicator(2)
+	<div class="container mx-auto p-4">
+		<div class="max-w-5xl mx-auto">
+			@SecondPageContent(selectedOptions)
+		</div>
+	</div>
+	<script src="/static/js/lts.js"></script>
 }
 
 templ SecondPageContent(selectedOptions []Option) {
@@ -24,90 +29,35 @@ templ SecondPageContent(selectedOptions []Option) {
 						}
 					</div>
 				</div>
-				<script>
-					// Initialize all game cards
-					(function() {
-						console.log('Initialization script executing...');
-
-						function initializeCards() {
-							const gameCards = document.querySelectorAll('[data-game-id]');
-							console.log('Found', gameCards.length, 'game cards to initialize');
-
-							if (gameCards.length === 0) {
-								console.error('No game cards found!');
-								return;
-							}
-
-							gameCards.forEach(function(card) {
-								const gameId = card.getAttribute('data-game-id');
-								console.log('Initializing game card with ID:', gameId, 'Type:', typeof gameId);
-								if (gameId && typeof initGameSelection === 'function') {
-									initGameSelection(gameId);
-								} else {
-									console.error('Cannot initialize card. GameId:', gameId, 'initGameSelection available:', typeof initGameSelection);
-								}
-							});
-
-							// Check button state after a delay to allow async loading of leagues/teams
-							setTimeout(function() {
-								if (typeof checkAndUpdateSubmitButton === 'function') {
-									console.log('Checking submit button state after initialization');
-									checkAndUpdateSubmitButton();
-								}
-							}, 1000);
-						}
-
-						// Load the game-selection script if not already loaded
-						if (typeof initGameSelection !== 'function') {
-							console.log('Loading game-selection.js...');
-							var script = document.createElement('script');
-							script.src = '/static/js/game-selection.js';
-							script.onload = function() {
-								console.log('game-selection.js loaded successfully');
-								initializeCards();
-							};
-							script.onerror = function() {
-								console.error('Failed to load game-selection.js');
-							};
-							document.head.appendChild(script);
-						} else {
-							console.log('initGameSelection already available');
-							initializeCards();
-						}
-					})();
-				</script>
 			} else {
-				<div class="alert alert-warning">
-					<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<div class="alert alert-warning alert-soft" role="alert">
+					<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
 					</svg>
 					<span>No options were selected. Please go back and select at least one option.</span>
 				</div>
 			}
 			<div class="card-actions flex-col md:flex-row md:justify-between gap-4 mt-6">
-				<a href="/" id="back-to-options-btn" class="btn btn-outline w-full md:w-auto">
+				<button
+					type="button"
+					id="back-to-options-btn"
+					class="btn btn-outline w-full md:w-auto"
+				>
 					@IconArrowLeft("w-5 h-5")
 					Back to Options
-				</a>
+				</button>
 				<div class="flex flex-col items-stretch md:items-end gap-2 w-full md:w-auto">
-					<div class="form-control">
-						<label class="label cursor-pointer gap-2 justify-center md:justify-end">
-							<input type="checkbox" id="hide-scores-checkbox" class="checkbox checkbox-primary"/>
-							<span class="label-text">Spoiler Block</span>
-						</label>
-					</div>
-					<button type="button" id="submit-selection-btn" class="btn btn-primary w-full md:w-auto" onclick="submitPreview()" disabled>
+					<label class="flex items-center gap-2 cursor-pointer justify-center md:justify-end">
+						<input type="checkbox" id="hide-scores-checkbox" class="checkbox checkbox-primary"/>
+						<span class="text-sm">Spoiler Block</span>
+					</label>
+					<button type="button" id="submit-selection-btn" class="btn btn-primary w-full md:w-auto" disabled>
 						Submit Selection for Preview
 						@IconArrowRight("w-5 h-5")
 					</button>
 				</div>
 			</div>
-			<script>
-				function submitPreview(){const e=document.querySelectorAll('[data-game-id]'),t={};e.forEach(e=>{const a=e.getAttribute('data-game-id'),n=e.querySelector(`#selected-combined-${a}`);if(!n)return;const s=[],c=[];n.querySelectorAll('.badge').forEach(e=>{e.classList.contains('badge-primary')&&e.hasAttribute('data-league-id')?s.push(parseInt(e.getAttribute('data-league-id'))):e.classList.contains('badge-secondary')&&e.hasAttribute('data-team-id')&&c.push(parseInt(e.getAttribute('data-team-id')))});const d=sessionStorage.getItem('lts-selections-'+a);let r=2;if(d)try{const e=JSON.parse(d);void 0!==e.maxTier&&(r=e.maxTier)}catch{}(s.length>0||c.length>0)&&(s.sort((e,t)=>e-t),c.sort((e,t)=>e-t),t[a]={leagues:s,teams:c,maxTier:r})});const a={};if(Object.keys(t).sort((e,t)=>parseInt(e)-parseInt(t)).forEach(e=>{a[e]=t[e]}),0===Object.keys(a).length)return void alert('Please select at least one league or team before submitting.');const hideScores=document.getElementById('hide-scores-checkbox').checked;const payload={selections:a,hideScores:hideScores};sessionStorage.setItem('preview-selections',JSON.stringify(payload)),fetch('/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(e=>e.ok?e.text().then(e=>{document.open(),document.write(e),document.close(),history.pushState({},'','/preview')}):Promise.reject(e.statusText)).catch(e=>{console.error('Error:',e),alert('Error: '+e)})}document.addEventListener('keydown',e=>{'Enter'===e.key&&!document.getElementById('submit-selection-btn').disabled&&(['search-','search-teams-'].every(t=>!document.activeElement.id.startsWith(t))&&(e.preventDefault(),submitPreview()))});
-			</script>
-			<div id="result" class="mt-4">
-				<!-- Processing results would appear here -->
-			</div>
+			<div id="result" class="mt-4"></div>
 		</div>
 	</div>
 }
@@ -121,12 +71,11 @@ templ GameSelectionCard(option Option) {
 				</div>
 				<h4 class="card-title text-lg">{ option.Label }</h4>
 			</div>
-			<!-- Combined selected items display -->
 			<div class="mb-4">
 				<div class="flex justify-between items-center mb-2">
-					<span class="label-text font-medium">Selected Leagues & Teams:</span>
+					<span class="font-medium text-sm">Selected Leagues & Teams:</span>
 					<button type="button" id={ "deselect-all-" + option.ID } class="btn btn-ghost btn-sm">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
 						</svg>
 						Deselect All
@@ -134,70 +83,62 @@ templ GameSelectionCard(option Option) {
 				</div>
 				<div id={ "selected-combined-" + option.ID } class="selected-items-container"></div>
 			</div>
-			<!-- Search bars side by side on desktop -->
 			<div class="grid grid-cols-2 gap-4 items-start">
-				<!-- Leagues Section -->
 				<div>
 					<div class="mb-2">
 						<span class="font-medium">Search Leagues:</span>
 					</div>
-					<div class="relative">
-						<div class="dropdown dropdown-open w-full" id={ "dropdown-container-" + option.ID }>
-							<input
-								type="text"
-								id={ "search-" + option.ID }
-								placeholder="Type to search leagues..."
-								class="input input-bordered w-full"
-								autocomplete="off"
-							/>
-							<div class="dropdown-menu" id={ "dropdown-menu-" + option.ID }>
-								<div id={ "loading-" + option.ID } class="dropdown-loading">
-									<span class="loading loading-spinner loading-sm"></span>
-									<span class="ml-2">Loading leagues...</span>
-								</div>
-								<ul class="menu p-2 w-full hidden" id={ "league-list-" + option.ID }></ul>
-								<div class="dropdown-no-results" id={ "no-results-" + option.ID }>
-									No leagues found
-								</div>
+					<div class="relative w-full" id={ "dropdown-container-" + option.ID }>
+						<input
+							type="text"
+							id={ "search-" + option.ID }
+							placeholder="Type to search leagues..."
+							class="input input-bordered w-full"
+							autocomplete="off"
+						/>
+						<div class="dropdown-menu" id={ "dropdown-menu-" + option.ID }>
+							<div id={ "loading-" + option.ID } class="dropdown-loading">
+								<span class="loading loading-spinner loading-sm"></span>
+								<span class="ml-2">Loading leagues...</span>
+							</div>
+							<ul class="menu p-2 w-full hidden" id={ "league-list-" + option.ID }></ul>
+							<div class="dropdown-no-results" id={ "no-results-" + option.ID }>
+								No leagues found
 							</div>
 						</div>
 					</div>
 				</div>
-				<!-- Teams Section -->
 				<div>
 					<div class="mb-2">
 						<span class="font-medium">Search Teams:</span>
 					</div>
-					<div class="relative">
-						<div class="dropdown dropdown-open w-full" id={ "dropdown-teams-container-" + option.ID }>
-							<input
-								type="text"
-								id={ "search-teams-" + option.ID }
-								placeholder="Type to search teams..."
-								class="input input-bordered w-full"
-								autocomplete="off"
-							/>
-							<div class="dropdown-menu" id={ "dropdown-teams-menu-" + option.ID }>
-								<div id={ "loading-teams-" + option.ID } class="dropdown-loading">
-									<span class="loading loading-spinner loading-sm"></span>
-									<span class="ml-2">Loading teams...</span>
-								</div>
-								<ul class="menu p-2 w-full hidden" id={ "team-list-" + option.ID }></ul>
-								<div class="dropdown-no-results" id={ "no-teams-results-" + option.ID }>
-									No teams found
-								</div>
+					<div class="relative w-full" id={ "dropdown-teams-container-" + option.ID }>
+						<input
+							type="text"
+							id={ "search-teams-" + option.ID }
+							placeholder="Type to search teams..."
+							class="input input-bordered w-full"
+							autocomplete="off"
+						/>
+						<div class="dropdown-menu" id={ "dropdown-teams-menu-" + option.ID }>
+							<div id={ "loading-teams-" + option.ID } class="dropdown-loading">
+								<span class="loading loading-spinner loading-sm"></span>
+								<span class="ml-2">Loading teams...</span>
+							</div>
+							<ul class="menu p-2 w-full hidden" id={ "team-list-" + option.ID }></ul>
+							<div class="dropdown-no-results" id={ "no-teams-results-" + option.ID }>
+								No teams found
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<!-- Tournament Tier Filter -->
 			<div class="mt-4">
 				<div class="mb-2 flex items-center justify-between">
 					<div class="flex items-center gap-2">
 						<span class="font-medium">Minimum Tournament Tier:</span>
 						<div class="tooltip" data-tip="Different tiered tournaments may exist within the same league. Putting this slider to S will only show matches with an S tier tournament within the selected leagues.">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-info cursor-help">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-info cursor-help" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path>
 							</svg>
 						</div>
@@ -209,10 +150,11 @@ templ GameSelectionCard(option Option) {
 					min="1"
 					max="6"
 					value="2"
-					class="range range-primary"
+					class="range range-primary w-full"
 					id={ "tier-slider-" + option.ID }
+					aria-label="Minimum tournament tier"
 				/>
-				<div class="w-full flex justify-between text-xs px-2 mt-1">
+				<div class="w-full flex justify-between text-xs px-3 mt-2">
 					<span>S</span>
 					<span>A</span>
 					<span>B</span>
