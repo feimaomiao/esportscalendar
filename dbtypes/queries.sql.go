@@ -60,30 +60,40 @@ func (q *Queries) GetAllGames(ctx context.Context) ([]Game, error) {
 const getCalendarMatchesBySelections = `-- name: GetCalendarMatchesBySelections :many
 
 SELECT
-    m.id, m.name, m.slug, m.expected_start_time, m.finished,
-    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
-    m.game_id, m.league_id, m.series_id, m.tournament_id,
-    g.name AS game_name,
-    l.name AS league_name,
-    s.name AS series_name,
-    tour.name AS tournament_name,
-    tour.tier AS tournament_tier,
-    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
-    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
-FROM matches m
-JOIN games g ON m.game_id = g.id
-JOIN leagues l ON m.league_id = l.id
-JOIN series s ON m.series_id = s.id
-JOIN tournaments tour ON m.tournament_id = tour.id
-LEFT JOIN teams t1 ON m.team1_id = t1.id
-LEFT JOIN teams t2 ON m.team2_id = t2.id
-WHERE m.expected_start_time >= NOW() - INTERVAL '3 days'
-    AND m.game_id = ANY($1::int[])
-    AND (
-        (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
-    )
-ORDER BY m.expected_start_time ASC
+    id, name, slug, expected_start_time, finished,
+    team1_id, team2_id, team1_score, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id,
+    game_name, league_name, series_name, tournament_name, tournament_tier,
+    team1_name, team1_acronym, team1_image,
+    team2_name, team2_acronym, team2_image
+FROM (
+    SELECT
+        m.id, m.name, m.slug, m.expected_start_time, m.finished,
+        m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+        m.game_id, m.league_id, m.series_id, m.tournament_id,
+        g.name AS game_name,
+        l.name AS league_name,
+        s.name AS series_name,
+        tour.name AS tournament_name,
+        tour.tier AS tournament_tier,
+        t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+        t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image,
+        ROW_NUMBER() OVER (PARTITION BY m.game_id ORDER BY m.expected_start_time DESC) AS rn
+    FROM matches m
+    JOIN games g ON m.game_id = g.id
+    JOIN leagues l ON m.league_id = l.id
+    JOIN series s ON m.series_id = s.id
+    JOIN tournaments tour ON m.tournament_id = tour.id
+    LEFT JOIN teams t1 ON m.team1_id = t1.id
+    LEFT JOIN teams t2 ON m.team2_id = t2.id
+    WHERE m.game_id = ANY($1::int[])
+        AND (
+            (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        )
+) ranked
+WHERE rn <= 1000
+ORDER BY expected_start_time ASC
 `
 
 type GetCalendarMatchesBySelectionsParams struct {

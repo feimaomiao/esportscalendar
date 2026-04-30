@@ -169,7 +169,7 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 		zap.Int32("max_tier", maxTier),
 		zap.Bool("hide_scores", hideScores))
 
-	// Fetch matches from database (14 days old and future, filtered by tier)
+	// Fetch matches from database (all-time, capped at 1000 most recent per game, filtered by tier)
 	var matches []dbtypes.GetCalendarMatchesBySelectionsRow
 	if len(gameIDs) > 0 {
 		matches, err = m.DBConn.GetCalendarMatchesBySelections(m.Context, dbtypes.GetCalendarMatchesBySelectionsParams{
