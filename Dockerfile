@@ -19,7 +19,7 @@ RUN mkdir -p ./public/static/css
 RUN npx @tailwindcss/cli -i input.css -o ./public/static/css/tw.css --minify
 
 # Go build stage
-FROM golang:1.23.3-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Install build dependencies including templ and sqlc
 RUN apk add --no-cache git ca-certificates tzdata
