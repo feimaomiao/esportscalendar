@@ -109,7 +109,7 @@ func AboutPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "&gt; View on GitHub</a> <a href=\"https://github.com/feimaomiao/esportscalendar/issues\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-outline\">Report an Issue</a></div></section><section class=\"mb-4\"><h2 class=\"hud-section-heading text-lg mb-3\">Support</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">Hosting and the data API both cost something. If the tool is useful to you, the coffee link helps cover that. No obligation.</p><a href=\"https://www.buymeacoffee.com/feimaomiao\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-accent\">☕ Buy Me a Coffee</a></section><div class=\"card-actions justify-start mt-8\"><a href=\"/\" class=\"btn btn-ghost\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "&gt; View on GitHub</a> <a href=\"https://github.com/feimaomiao/esportscalendar/issues\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-outline\">Report an Issue</a></div></section><section class=\"mb-4\"><h2 class=\"hud-section-heading text-lg mb-3\">Support</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">Hosting and developing costs something. If the tool is useful to you, the coffee link helps cover that. No obligation.</p><a href=\"https://www.buymeacoffee.com/feimaomiao\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-accent\">☕ Buy Me a Coffee</a></section><div class=\"card-actions justify-start mt-8\"><a href=\"/\" class=\"btn btn-ghost\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
