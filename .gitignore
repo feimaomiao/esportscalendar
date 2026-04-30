@@ -39,4 +39,6 @@ tmp/esportscalendar
 esportscalendar
 tmp/
 
+node_modules/.serena
 node_modules/
+.serena/

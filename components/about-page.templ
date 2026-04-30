@@ -4,95 +4,100 @@ templ AboutPage() {
 	@BaseLayout("About - EsportsCalendar") {
 		<div class="container mx-auto p-4">
 			<div class="max-w-4xl mx-auto">
-				<div class="card bg-base-100 shadow-xl">
+				<div class="card bg-base-100 border border-base-300">
 					<div class="card-body">
-						<h1 class="card-title text-3xl mb-6">About EsportsCalendar</h1>
-						<!-- What is this -->
-						<section class="mb-8">
-							<h2 class="text-2xl font-bold mb-3">What is EsportsCalendar?</h2>
-							<p class="text-base-content/80 leading-relaxed">
-								EsportsCalendar is a free tool that helps esports fans track upcoming matches across multiple games and leagues.
-								Simply select your favorite games, teams, and leagues, and export a personalized calendar that syncs with your
-								favorite calendar app (Google Calendar, Apple Calendar, Outlook, etc.).
+						<div class="flex items-baseline justify-between mb-1">
+							<span class="hud-label">{ "// system.info" }</span>
+							<span class="hud-label hud-bracket">about</span>
+						</div>
+						<h1 class="hud-display text-3xl mb-6">EsportsCalendar</h1>
+						<section class="mb-8 space-y-4 text-base-content/80 leading-relaxed">
+							<p>
+								Most esports schedules live on one page per game, each with their own format and timezone. EsportsCalendar collapses everything you follow into a single calendar feed.
+							</p>
+							<p>
+								You subscribe to it once in Google Calendar, Apple Calendar, or Outlook, and matches show up alongside the rest of your schedule. The feed updates on its own as new tournaments are announced, so you don't have to come back here every week.
 							</p>
 						</section>
-						<!-- Features -->
 						<section class="mb-8">
-							<h2 class="text-2xl font-bold mb-3">Features</h2>
-							<ul class="list-disc list-inside space-y-2 text-base-content/80">
-								<li>Support for multiple popular esports titles</li>
-								<li>Filter by specific leagues, teams, and tournament tiers</li>
-								<li>Automatic timezone conversion to your local time</li>
-								<li>Standard .ics calendar format for universal compatibility</li>
-								<li>Dark mode support for comfortable viewing</li>
-								<li>No account required - completely free to use</li>
+							<h2 class="hud-section-heading text-lg mb-3">What's in it</h2>
+							<ul class="space-y-2 text-base-content/80">
+								<li class="flex gap-3">
+									<span class="hud-mono text-primary text-xs mt-1">›</span>
+									<span>LoL, Counter-Strike, Dota 2, Valorant, Rocket League, R6 Siege, MLBB, and a few more</span>
+								</li>
+								<li class="flex gap-3">
+									<span class="hud-mono text-primary text-xs mt-1">›</span>
+									<span>Filter by league, by team, or by minimum tournament tier so the lower-stakes qualifiers stay out of the feed</span>
+								</li>
+								<li class="flex gap-3">
+									<span class="hud-mono text-primary text-xs mt-1">›</span>
+									<span>Match times convert to your local timezone automatically</span>
+								</li>
+								<li class="flex gap-3">
+									<span class="hud-mono text-primary text-xs mt-1">›</span>
+									<span>Standard .ics. Works with any app that subscribes to a calendar URL</span>
+								</li>
+								<li class="flex gap-3">
+									<span class="hud-mono text-primary text-xs mt-1">›</span>
+									<span>No account, no login, nothing to pay</span>
+								</li>
 							</ul>
 						</section>
-						<!-- Data Source -->
 						<section class="mb-8">
-							<h2 class="text-2xl font-bold mb-3">Data Source</h2>
-							<p class="text-base-content/80 leading-relaxed mb-2">
-								Match data is sourced from PandaScore API, which provides comprehensive coverage of esports tournaments
-								and matches. The calendar automatically updates to reflect the latest schedule information.
+							<h2 class="hud-section-heading text-lg mb-3">Where the data comes from</h2>
+							<p class="text-base-content/80 leading-relaxed mb-3">
+								Match data comes from the PandaScore API. New matches and updates flow through automatically, so once you're subscribed there's nothing else to do on this end.
 							</p>
-							<div class="alert alert-info">
+							<div class="hud-alert hud-alert-info">
 								@IconInfo("stroke-current shrink-0 w-5 h-5")
-								<span>Once you export your calendar, it will automatically refresh with new matches and updates. Note that calendar apps may take some time to sync updates (typically a few hours to a day depending on your app settings).</span>
+								<span>Calendar apps poll subscribed feeds on their own schedule, usually a few hours to a day, so new matches don't always appear right away.</span>
 							</div>
 						</section>
-						<!-- How It Works -->
 						<section class="mb-8">
-							<h2 class="text-2xl font-bold mb-3">How It Works</h2>
-							<div class="steps steps-vertical lg:steps-horizontal">
-								<div class="step step-primary">
-									<div class="text-left ml-4">
-										<p class="font-semibold">Select Games</p>
-										<p class="text-sm text-base-content/60">Choose which esports you want to follow</p>
-									</div>
+							<h2 class="hud-section-heading text-lg mb-4">How It Works</h2>
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+								<div class="hud-flow-step">
+									<span class="hud-step-num">{ "[ 01 ]" }</span>
+									<p class="hud-mono uppercase tracking-wider text-sm font-bold mt-1">Select Games</p>
+									<p class="text-xs text-base-content/60 mt-1">Pick the titles you follow.</p>
 								</div>
-								<div class="step step-primary">
-									<div class="text-left ml-4">
-										<p class="font-semibold">Pick Teams & Leagues</p>
-										<p class="text-sm text-base-content/60">Filter by your favorite teams and leagues</p>
-									</div>
+								<div class="hud-flow-step">
+									<span class="hud-step-num">{ "[ 02 ]" }</span>
+									<p class="hud-mono uppercase tracking-wider text-sm font-bold mt-1">Pick Teams &amp; Leagues</p>
+									<p class="text-xs text-base-content/60 mt-1">Narrow down by team or league, or leave it open and get everything.</p>
 								</div>
-								<div class="step step-primary">
-									<div class="text-left ml-4">
-										<p class="font-semibold">Export Calendar</p>
-										<p class="text-sm text-base-content/60">Get a link to add to your calendar app</p>
-									</div>
+								<div class="hud-flow-step">
+									<span class="hud-step-num">{ "[ 03 ]" }</span>
+									<p class="hud-mono uppercase tracking-wider text-sm font-bold mt-1">Export</p>
+									<p class="text-xs text-base-content/60 mt-1">Copy the feed URL and subscribe in your calendar app.</p>
 								</div>
 							</div>
 						</section>
-						<!-- Open Source -->
 						<section class="mb-8">
-							<h2 class="text-2xl font-bold mb-3">Open Source</h2>
+							<h2 class="hud-section-heading text-lg mb-3">Open Source</h2>
 							<p class="text-base-content/80 leading-relaxed mb-4">
-								EsportsCalendar is open source and built with modern technologies including Go, templ, HTMX, and DaisyUI.
-								Contributions, bug reports, and feature requests are welcome on GitHub.
+								The whole thing is on GitHub. Go on the backend, templ for the HTML, HTMX for the partial page swaps, and Tailwind plus DaisyUI for styling. Issues and pull requests are welcome: bug reports, feature ideas, leagues that aren't covered, all of it.
 							</p>
-							<div class="flex gap-3">
+							<div class="flex flex-col sm:flex-row gap-3">
 								<a href="https://github.com/feimaomiao/esportscalendar" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
 									@IconGitHub("w-5 h-5")
-									View on GitHub
+									&gt; View on GitHub
 								</a>
 								<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
 									Report an Issue
 								</a>
 							</div>
 						</section>
-						<!-- Support -->
 						<section class="mb-4">
-							<h2 class="text-2xl font-bold mb-3">Support the Project</h2>
+							<h2 class="hud-section-heading text-lg mb-3">Support</h2>
 							<p class="text-base-content/80 leading-relaxed mb-4">
-								EsportsCalendar is free to use and will always be free. If you find it useful, consider supporting
-								the project to help cover server costs and ongoing development.
+								Hosting and developing costs something. If the tool is useful to you, the coffee link helps cover that. No obligation.
 							</p>
 							<a href="https://www.buymeacoffee.com/feimaomiao" target="_blank" rel="noopener noreferrer" class="btn btn-accent">
 								☕ Buy Me a Coffee
 							</a>
 						</section>
-						<!-- Back Button -->
 						<div class="card-actions justify-start mt-8">
 							<a href="/" class="btn btn-ghost">
 								@IconArrowLeft("w-5 h-5")

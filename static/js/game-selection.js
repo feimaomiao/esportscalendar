@@ -19,9 +19,6 @@ function checkAndUpdateSubmitButton() {
 
 // Game selection - League and Team management
 function initGameSelection(gameId) {
-	console.log('initGameSelection called with gameId:', gameId, 'type:', typeof gameId);
-
-	// Validate gameId
 	if (!gameId || gameId === 'null' || gameId === 'undefined') {
 		console.error('Invalid gameId:', gameId);
 		return;
@@ -33,15 +30,6 @@ function initGameSelection(gameId) {
 	const leagueList = document.getElementById('league-list-' + gameId);
 	const noResults = document.getElementById('no-results-' + gameId);
 	const selectedCombinedContainer = document.getElementById('selected-combined-' + gameId);
-
-	console.log('Elements found:', {
-		searchInput: !!searchInput,
-		dropdownMenu: !!dropdownMenu,
-		loadingElement: !!loadingElement,
-		leagueList: !!leagueList,
-		noResults: !!noResults,
-		selectedCombinedContainer: !!selectedCombinedContainer
-	});
 
 	if (!searchInput || !dropdownMenu || !loadingElement) {
 		console.error('Required elements not found for gameId:', gameId);
@@ -60,7 +48,6 @@ function initGameSelection(gameId) {
 	if (savedData) {
 		try {
 			const parsed = JSON.parse(savedData);
-			console.log('Restoring saved selections for game', gameId, ':', parsed);
 			if (parsed.leagues && Array.isArray(parsed.leagues)) {
 				parsed.leagues.forEach(id => selectedLeagues.add(id));
 				hasSavedSelections = true;
@@ -75,7 +62,6 @@ function initGameSelection(gameId) {
 
 	// Fetch leagues from API
 	const apiUrl = '/api/league-options/' + gameId;
-	console.log('Fetching leagues from:', apiUrl);
 	fetch(apiUrl)
 		.then(response => response.json())
 		.then(data => {
@@ -95,7 +81,6 @@ function initGameSelection(gameId) {
 							selectedLeagues.add(league.id);
 						}
 					});
-					// Save the auto-selected tier 1 leagues
 					if (selectedLeagues.size > 0) {
 						saveSelections();
 					}
@@ -116,13 +101,13 @@ function initGameSelection(gameId) {
 			console.error('Error fetching leagues:', error);
 		});
 
-	// Render leagues list - optimized
+	// Render leagues list
 	let highlightedLeagueIndex = -1;
 	function renderLeagues(leagues) {
 		const html = leagues.map((league, index) => `
 			<li data-index="${index}">
 				<label class="label cursor-pointer justify-start gap-2 p-2">
-					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedLeagues.has(league.id) ? 'checked' : ''} onchange="toggleLeague(${league.id})">
+					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedLeagues.has(league.id) ? 'checked' : ''}>
 					<div class="item-icon-container">
 						<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon" onerror="this.src='/static/images/default-logo.png'">
 					</div>
@@ -132,7 +117,6 @@ function initGameSelection(gameId) {
 		`).join('');
 		leagueList.innerHTML = html;
 		highlightedLeagueIndex = -1;
-		// Re-bind toggle functions
 		leagueList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
 			cb.addEventListener('change', () => toggleLeague(leagues[i]));
 		});
@@ -145,7 +129,6 @@ function initGameSelection(gameId) {
 			teams: Array.from(selectedTeams),
 			maxTier: maxTier
 		};
-		console.log('Saving selections for game', gameId, ':', data);
 		sessionStorage.setItem(savedKey, JSON.stringify(data));
 	}
 
@@ -168,7 +151,6 @@ function initGameSelection(gameId) {
 		);
 	}
 
-	// Search input event
 	searchInput.addEventListener('input', (e) => {
 		const filtered = filterLeagues(e.target.value);
 		currentFilteredLeagues = filtered;
@@ -183,15 +165,12 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Handle arrow keys and Enter for keyboard navigation
 	function highlightLeagueItem(index) {
 		const items = leagueList.querySelectorAll('li');
 		items.forEach((item, i) => {
-			if (i === index) {
-				item.querySelector('label').style.backgroundColor = 'oklch(var(--b3))';
-			} else {
-				item.querySelector('label').style.backgroundColor = '';
-			}
+			const label = item.querySelector('label');
+			if (!label) return;
+			label.classList.toggle('dropdown-item-highlight', i === index);
 		});
 	}
 
@@ -233,20 +212,16 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Show dropdown on focus
 	searchInput.addEventListener('focus', () => {
 		dropdownMenu.style.display = 'block';
 	});
 
-	// Hide dropdown on blur (when losing focus)
 	searchInput.addEventListener('blur', () => {
-		// Use setTimeout to allow click events on dropdown items to register first
 		setTimeout(() => {
 			dropdownMenu.style.display = 'none';
 		}, 200);
 	});
 
-	// Hide dropdown when clicking outside
 	document.addEventListener('click', (e) => {
 		if (!searchInput.contains(e.target) && !dropdownMenu.contains(e.target)) {
 			dropdownMenu.style.display = 'none';
@@ -260,19 +235,10 @@ function initGameSelection(gameId) {
 	const teamList = document.getElementById('team-list-' + gameId);
 	const noTeamsResults = document.getElementById('no-teams-results-' + gameId);
 
-	console.log('Team elements found:', {
-		searchTeamsInput: !!searchTeamsInput,
-		dropdownTeamsMenu: !!dropdownTeamsMenu,
-		loadingTeamsElement: !!loadingTeamsElement,
-		teamList: !!teamList,
-		noTeamsResults: !!noTeamsResults
-	});
-
 	let allTeams = [];
 	let selectedTeams = new Set();
 	let currentFilteredTeams = [];
 
-	// Restore saved team selections from sessionStorage
 	if (savedData) {
 		try {
 			const parsed = JSON.parse(savedData);
@@ -284,9 +250,7 @@ function initGameSelection(gameId) {
 		}
 	}
 
-	// Fetch teams from API
 	const teamApiUrl = '/api/team-options/' + gameId;
-	console.log('Fetching teams from:', teamApiUrl);
 	fetch(teamApiUrl)
 		.then(response => response.json())
 		.then(data => {
@@ -313,7 +277,6 @@ function initGameSelection(gameId) {
 			console.error('Error fetching teams:', error);
 		});
 
-	// Render teams list - optimized
 	let highlightedTeamIndex = -1;
 	function renderTeams(teams) {
 		const html = teams.map((team, index) => `
@@ -329,13 +292,11 @@ function initGameSelection(gameId) {
 		`).join('');
 		teamList.innerHTML = html;
 		highlightedTeamIndex = -1;
-		// Re-bind toggle functions
 		teamList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
 			cb.addEventListener('change', () => toggleTeam(teams[i]));
 		});
 	}
 
-	// Toggle team selection
 	function toggleTeam(team) {
 		if (selectedTeams.has(team.id)) {
 			selectedTeams.delete(team.id);
@@ -346,35 +307,28 @@ function initGameSelection(gameId) {
 		updateCombinedDisplay();
 	}
 
-	// Update combined display - optimized with template literals
 	function updateCombinedDisplay() {
 		const leagueHTML = allLeagues.filter(l => selectedLeagues.has(l.id)).map(league => `
-			<div class="badge badge-primary badge-lg gap-2 rounded-md py-3" data-league-id="${league.id}">
-				<div class="item-icon-container">
-					<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
-				</div>
-				<span class="text-sm">${league.name}</span>
-				<button class="btn btn-ghost btn-xs btn-circle ml-1" onclick="removeLeague(${league.id})">✕</button>
+			<div class="badge badge-primary rounded-md inline-flex items-center gap-1.5" data-league-id="${league.id}">
+				<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
+				<span>${league.name}</span>
+				<button type="button" class="cursor-pointer leading-none opacity-70 hover:opacity-100" onclick="removeLeague(${league.id})" aria-label="Remove ${league.name}">✕</button>
 			</div>
 		`).join('');
 
 		const teamHTML = allTeams.filter(t => selectedTeams.has(t.id)).map(team => `
-			<div class="badge badge-secondary badge-lg gap-2 rounded-md py-3" data-team-id="${team.id}">
-				<div class="item-icon-container">
-					<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
-				</div>
-				<span class="text-sm">${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
-				<button class="btn btn-ghost btn-xs btn-circle ml-1" onclick="removeTeam(${team.id})">✕</button>
+			<div class="badge badge-secondary rounded-md inline-flex items-center gap-1.5" data-team-id="${team.id}">
+				<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
+				<span>${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
+				<button type="button" class="cursor-pointer leading-none opacity-70 hover:opacity-100" onclick="removeTeam(${team.id})" aria-label="Remove ${team.name}">✕</button>
 			</div>
 		`).join('');
 
 		selectedCombinedContainer.innerHTML = leagueHTML + teamHTML;
 
-		// Update submit button state
 		checkAndUpdateSubmitButton();
 	}
 
-	// Helper functions for removal
 	window.removeLeague = function(id) {
 		const league = allLeagues.find(l => l.id === id);
 		if (league) {
@@ -395,7 +349,6 @@ function initGameSelection(gameId) {
 		}
 	};
 
-	// Filter teams based on search input
 	function filterTeams(query) {
 		const lowerQuery = query.toLowerCase();
 		return allTeams.filter(team =>
@@ -404,7 +357,6 @@ function initGameSelection(gameId) {
 		);
 	}
 
-	// Search input event for teams
 	searchTeamsInput.addEventListener('input', (e) => {
 		const filtered = filterTeams(e.target.value);
 		currentFilteredTeams = filtered;
@@ -419,15 +371,12 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Handle arrow keys and Enter for keyboard navigation in teams
 	function highlightTeamItem(index) {
 		const items = teamList.querySelectorAll('li');
 		items.forEach((item, i) => {
-			if (i === index) {
-				item.querySelector('label').style.backgroundColor = 'oklch(var(--b3))';
-			} else {
-				item.querySelector('label').style.backgroundColor = '';
-			}
+			const label = item.querySelector('label');
+			if (!label) return;
+			label.classList.toggle('dropdown-item-highlight', i === index);
 		});
 	}
 
@@ -469,39 +418,32 @@ function initGameSelection(gameId) {
 		}
 	});
 
-	// Show dropdown on focus for teams
 	searchTeamsInput.addEventListener('focus', () => {
 		dropdownTeamsMenu.style.display = 'block';
 	});
 
-	// Hide dropdown on blur for teams (when losing focus)
 	searchTeamsInput.addEventListener('blur', () => {
-		// Use setTimeout to allow click events on dropdown items to register first
 		setTimeout(() => {
 			dropdownTeamsMenu.style.display = 'none';
 		}, 200);
 	});
 
-	// Hide dropdown when clicking outside for teams
 	document.addEventListener('click', (e) => {
 		if (!searchTeamsInput.contains(e.target) && !dropdownTeamsMenu.contains(e.target)) {
 			dropdownTeamsMenu.style.display = 'none';
 		}
 	});
 
-	// Setup tier slider
 	function setupTierSlider() {
 		const tierSlider = document.getElementById('tier-slider-' + gameId);
 		const tierValue = document.getElementById('tier-value-' + gameId);
 
-		// Function to convert tier number to letter
 		function getTierLabel(tier) {
 			const tierMap = { 1: 'S', 2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'All' };
 			return tierMap[tier] || tier;
 		}
 
 		if (tierSlider && tierValue) {
-			// Restore saved tier value
 			tierSlider.value = maxTier;
 			tierValue.textContent = getTierLabel(maxTier);
 
@@ -513,23 +455,16 @@ function initGameSelection(gameId) {
 		}
 	}
 
-	// Deselect all button - needs to reference both leagues and teams
 	function setupDeselectAllButton() {
 		const deselectAllBtn = document.getElementById('deselect-all-' + gameId);
 		if (deselectAllBtn) {
 			deselectAllBtn.addEventListener('click', () => {
-				console.log('Deselect all clicked for game:', gameId);
-				console.log('Before clear - Leagues:', selectedLeagues.size, 'Teams:', selectedTeams.size);
-
 				selectedLeagues.clear();
 				selectedTeams.clear();
-
-				console.log('After clear - Leagues:', selectedLeagues.size, 'Teams:', selectedTeams.size);
 
 				saveSelections();
 				updateCombinedDisplay();
 
-				// Re-render both lists to update checkboxes
 				if (allLeagues.length > 0) {
 					renderLeagues(searchInput.value ? filterLeagues(searchInput.value) : allLeagues);
 				}
@@ -540,7 +475,6 @@ function initGameSelection(gameId) {
 		}
 	}
 
-	// Call setup after a brief delay to ensure both lists are loaded
 	setTimeout(() => {
 		setupDeselectAllButton();
 		setupTierSlider();

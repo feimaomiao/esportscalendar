@@ -3,28 +3,31 @@ package components
 // ProgressIndicator shows the current step in the calendar creation flow
 // currentStep: 1 = Select Games, 2 = Select Leagues/Teams, 3 = Preview/Export
 templ ProgressIndicator(currentStep int) {
-	<div class="w-full bg-base-100 py-4 mb-6">
-		<div class="container mx-auto px-4">
-			<ul class="steps w-full">
-				<li class={ "step", templ.KV("step-primary", currentStep >= 1) }>
-					<div class="flex flex-col items-center">
-						<span class="font-semibold text-sm md:text-base">Select Games</span>
-						<span class="text-xs text-base-content/60 hidden md:block">Choose esports to follow</span>
+	<div class="w-full bg-base-200 mb-6">
+		<div class="container mx-auto px-2 md:px-4">
+			<div class="hud-steps">
+				<div class={ "hud-step", templ.KV("is-active", currentStep == 1), templ.KV("is-done", currentStep > 1) }>
+					<span class="hud-step-num">{ "[ 01 ]" }</span>
+					<div class="flex flex-col leading-tight">
+						<span class="hud-step-label">Select</span>
+						<span class="hud-step-sub">Choose esports</span>
 					</div>
-				</li>
-				<li class={ "step", templ.KV("step-primary", currentStep >= 2) }>
-					<div class="flex flex-col items-center">
-						<span class="font-semibold text-sm md:text-base">Leagues & Teams</span>
-						<span class="text-xs text-base-content/60 hidden md:block">Filter your selections</span>
+				</div>
+				<div class={ "hud-step", templ.KV("is-active", currentStep == 2), templ.KV("is-done", currentStep > 2) }>
+					<span class="hud-step-num">{ "[ 02 ]" }</span>
+					<div class="flex flex-col leading-tight">
+						<span class="hud-step-label">Tune</span>
+						<span class="hud-step-sub">Filter selections</span>
 					</div>
-				</li>
-				<li class={ "step", templ.KV("step-primary", currentStep >= 3) }>
-					<div class="flex flex-col items-center">
-						<span class="font-semibold text-sm md:text-base">Export</span>
-						<span class="text-xs text-base-content/60 hidden md:block">Get your calendar</span>
+				</div>
+				<div class={ "hud-step", templ.KV("is-active", currentStep == 3), templ.KV("is-done", currentStep > 3) }>
+					<span class="hud-step-num">{ "[ 03 ]" }</span>
+					<div class="flex flex-col leading-tight">
+						<span class="hud-step-label">Export</span>
+						<span class="hud-step-sub">Get calendar feed</span>
 					</div>
-				</li>
-			</ul>
+				</div>
+			</div>
 		</div>
 	</div>
 }

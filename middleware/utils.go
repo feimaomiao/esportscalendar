@@ -3,12 +3,29 @@ package middleware
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strconv"
 
 	"go.uber.org/zap"
 )
 
-const defaultMaxTier = 2 // Default to tier A (tier 2)
+var (
+	errEmptySelections = errors.New("no valid game selections")
+	errTooManyGames    = errors.New("too many games selected")
+	errTooManyLeagues  = errors.New("too many leagues selected")
+	errTooManyTeams    = errors.New("too many teams selected")
+)
+
+const (
+	defaultMaxTier = 2 // Default to tier A (tier 2)
+	minTier        = 1 // Tier S
+	maxTierBound   = 6 // "All"
+
+	// Per-request cardinality caps to bound DB query cost and reject abuse.
+	maxGamesPerRequest   = 50
+	maxLeaguesPerRequest = 1000
+	maxTeamsPerRequest   = 5000
+)
 
 // generateHash creates a consistent hash from the selections JSON.
 func generateHash(data []byte) string {
@@ -18,6 +35,8 @@ func generateHash(data []byte) string {
 }
 
 // parseSelections extracts game IDs, league IDs, team IDs, and max tier from selections JSON.
+//
+//nolint:gocognit // Complexity comes from defensively traversing untyped JSON.
 func parseSelections(
 	selections map[string]any,
 	logger *zap.Logger,
@@ -31,6 +50,9 @@ func parseSelections(
 			logger.Warn("Invalid game ID", zap.String("game_id_str", gameIDStr), zap.Error(parseErr))
 			continue
 		}
+		if gameID <= 0 {
+			continue
+		}
 		gameIDs = append(gameIDs, int32(gameID))
 
 		selectionMap, ok := selectionData.(map[string]any)
@@ -41,35 +63,63 @@ func parseSelections(
 		// Extract league IDs
 		if leagues, leaguesOk := selectionMap["leagues"].([]any); leaguesOk {
 			for _, league := range leagues {
-				if leagueID, leagueOk := league.(float64); leagueOk {
-					leagueIDs = append(leagueIDs, int32(leagueID))
+				leagueID, leagueOk := league.(float64)
+				if !leagueOk {
+					continue
 				}
+				if leagueID <= 0 || leagueID > 2_147_483_647 {
+					continue
+				}
+				leagueIDs = append(leagueIDs, int32(leagueID))
 			}
 		}
 
 		// Extract team IDs
 		if teams, teamsOk := selectionMap["teams"].([]any); teamsOk {
 			for _, team := range teams {
-				if teamID, teamOk := team.(float64); teamOk {
-					teamIDs = append(teamIDs, int32(teamID))
+				teamID, teamOk := team.(float64)
+				if !teamOk {
+					continue
 				}
+				if teamID <= 0 || teamID > 2_147_483_647 {
+					continue
+				}
+				teamIDs = append(teamIDs, int32(teamID))
 			}
 		}
 
-		// Extract max tier (use the maximum across all games to be most inclusive)
+		// Extract max tier — clamp to the valid range [1, 6].
 		if tierValue, tierOk := selectionMap["maxTier"].(float64); tierOk {
 			tier := int32(tierValue)
-			logger.Debug("Tier selection for game",
-				zap.Int32("game_id", int32(gameID)),
-				zap.Int32("selected_tier", tier),
-				zap.Int32("current_max_tier", maxTier))
+			if tier < minTier {
+				tier = minTier
+			}
+			if tier > maxTierBound {
+				tier = maxTierBound
+			}
 			if tier > maxTier {
 				maxTier = tier
-				logger.Debug("Updated maxTier", zap.Int32("new_max_tier", maxTier))
 			}
 		}
 	}
 
-	logger.Debug("Final tier selection", zap.Int32("max_tier", maxTier))
 	return gameIDs, leagueIDs, teamIDs, maxTier
+}
+
+// validateSelections enforces per-request cardinality caps. Call after
+// parseSelections to bound DB query cost.
+func validateSelections(gameIDs, leagueIDs, teamIDs []int32) error {
+	if len(gameIDs) == 0 {
+		return errEmptySelections
+	}
+	if len(gameIDs) > maxGamesPerRequest {
+		return errTooManyGames
+	}
+	if len(leagueIDs) > maxLeaguesPerRequest {
+		return errTooManyLeagues
+	}
+	if len(teamIDs) > maxTeamsPerRequest {
+		return errTooManyTeams
+	}
+	return nil
 }

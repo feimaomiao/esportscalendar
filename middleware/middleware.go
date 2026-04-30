@@ -23,10 +23,26 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 	logger.Info("Initializing middleware with database connection")
 	ctx := context.Background()
 
-	connStr := fmt.Sprintf("host=postgres port=5432 user=%s password=%s dbname=esports sslmode=disable",
-		os.Getenv("postgres_user"),
-		os.Getenv("postgres_password"))
-	conn, err := pgxpool.New(ctx, connStr)
+	pgHost := os.Getenv("POSTGRES_HOST")
+	if pgHost == "" {
+		pgHost = "postgres"
+	}
+	pgPort := os.Getenv("POSTGRES_PORT")
+	if pgPort == "" {
+		pgPort = "5432"
+	}
+	// Build the pool config from a sanitized base string (no password) and
+	// set the password on the struct directly so it never appears in any
+	// format-string buffer that could end up in a log.
+	baseConnStr := fmt.Sprintf("host=%s port=%s user=%s dbname=esports sslmode=disable",
+		pgHost, pgPort,
+		os.Getenv("postgres_user"))
+	pgxCfg, err := pgxpool.ParseConfig(baseConnStr)
+	if err != nil {
+		panic(err)
+	}
+	pgxCfg.ConnConfig.Password = os.Getenv("postgres_password")
+	conn, err := pgxpool.NewWithConfig(ctx, pgxCfg)
 	if err != nil {
 		panic(err)
 	}

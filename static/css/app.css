@@ -1,52 +1,896 @@
+/* ============================================================================
+   Tournament HUD — broadcast / console UI aesthetic
+   Display & UI numerics: JetBrains Mono.  Body prose: IBM Plex Sans.
+   Loaded via <link> in layout.templ (Google Fonts) — these stacks are the
+   fallback chain.
+   ============================================================================ */
 
 :root {
-  --primary-color: #570df8;
-  --secondary-color: #f000b8;
-  --accent-color: #37cdbe;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* HUD signature glow (uses theme accent — falls back to electric cyan) */
+  --hud-glow: 0 0 0 1px var(--color-primary), 0 0 24px -4px var(--color-primary);
+  --hud-glow-soft: 0 0 16px -2px color-mix(in oklch, var(--color-primary) 60%, transparent);
 }
 
-/* Custom animations */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+html {
+  scroll-behavior: smooth;
 }
 
-/* Card animations */
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Atmospheric grid background — fixed to viewport so the HUD feel persists
+   across scroll. Two stacked layers: a fine grid + a wider crosshair grid. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--color-base-content) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--color-base-content) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in oklch, var(--color-base-content) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--color-base-content) 8%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 192px 192px, 192px 192px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 40%, transparent 100%);
+}
+
+/* Mono utility — applied to numerics, badges, headings */
+.hud-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "zero", "ss20";
+  letter-spacing: 0.02em;
+}
+
+.hud-display {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+/* Bracketed labels — [ TARGET ] — used on selection chrome */
+.hud-bracket::before { content: "[ "; opacity: 0.4; }
+.hud-bracket::after  { content: " ]"; opacity: 0.4; }
+
+/* Blinking caret — for terminal-style headings */
+.hud-caret::after {
+  content: "_";
+  display: inline-block;
+  margin-left: 0.15em;
+  color: var(--color-primary);
+  animation: hud-blink 1.05s steps(2, end) infinite;
+}
+@keyframes hud-blink { 50% { opacity: 0; } }
+
+/* ----------------------------------------------------------------------------
+   Card / surface treatments — sharp corners, hairline borders, no lift.
+   ---------------------------------------------------------------------------- */
+
 .card {
-  animation: slideIn 0.3s ease-out;
+  animation: hud-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0.25rem;
 }
 
-/* Checkbox custom styling */
-.checkbox:checked {
-  animation: pulse 0.5s ease-in-out;
+@keyframes hud-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-/* Button hover effects */
+/* Buttons — kill the universal lift, replace with crisp accent ring on hover.
+   Primary buttons gain a faint glow + caret prefix on hover. */
 .btn {
-  transition: all 0.3s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  border-radius: 0.125rem;
 }
-
 .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  transform: none;
+  box-shadow: none;
+}
+.btn-primary {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: var(--hud-glow-soft);
+}
+.btn-primary:disabled {
+  opacity: 0.35;
 }
 
-/* Custom utility classes */
+/* Checkbox: hide DaisyUI's pulse */
+.checkbox:checked { animation: none; }
+
+/* ----------------------------------------------------------------------------
+   Homepage — target select
+   ---------------------------------------------------------------------------- */
+
+.hud-target-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 4.5rem;
+  padding: 0.75rem 1rem 0.75rem 1.5rem;
+  background-color: var(--color-base-100);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0.125rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+  overflow: hidden;
+}
+.hud-target-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: color-mix(in oklch, var(--color-base-content) 18%, transparent);
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+.hud-target-row:hover {
+  border-color: color-mix(in oklch, var(--color-primary) 60%, transparent);
+}
+.hud-target-row:hover::before {
+  background-color: color-mix(in oklch, var(--color-primary) 80%, transparent);
+}
+.hud-target-row:has(:checked) {
+  border-color: var(--color-primary);
+  background-color: color-mix(in oklch, var(--color-primary) 8%, var(--color-base-100));
+}
+.hud-target-row:has(:checked)::before {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 12px -2px var(--color-primary);
+}
+
+.hud-target-label {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-counter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* ----------------------------------------------------------------------------
+   Match card — broadcast lower-third
+   ---------------------------------------------------------------------------- */
+
+.hud-match {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.875rem 1rem 0.875rem 1.25rem;
+  background-color: var(--color-base-100);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border-radius: 0.125rem;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+.hud-match::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: color-mix(in oklch, var(--color-base-content) 25%, transparent);
+}
+.hud-match:hover {
+  border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+}
+.hud-match[data-status="upcoming"]::before {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 10px -1px color-mix(in oklch, var(--color-primary) 70%, transparent);
+}
+.hud-match[data-status="finished"]::before {
+  background-color: var(--color-accent);
+}
+.hud-match[data-status="live"]::before {
+  background-color: var(--color-secondary);
+  animation: hud-pulse 1.4s ease-in-out infinite;
+}
+@keyframes hud-pulse {
+  0%, 100% { box-shadow: 0 0 8px -1px var(--color-secondary); }
+  50%      { box-shadow: 0 0 22px 0  var(--color-secondary); }
+}
+
+.hud-match-game {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  border-radius: 0.125rem;
+  color: var(--color-base-content);
+  flex-shrink: 0;
+}
+
+.hud-team-name {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-vs {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+}
+
+.hud-time {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  font-feature-settings: "tnum";
+}
+.hud-time .hud-time-date {
+  opacity: 0.6;
+}
+.hud-time .hud-time-hour {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.hud-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.125rem;
+  border: 1px solid currentColor;
+}
+.hud-status::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hud-status-upcoming { color: var(--color-primary); }
+.hud-status-finished { color: var(--color-accent); }
+.hud-status-live     { color: var(--color-secondary); }
+.hud-status-live::before { animation: hud-blink 1s steps(2, end) infinite; }
+
+.hud-meta {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.4rem;
+  margin-top: 0.1rem;
+  border-top: 1px dashed color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+
+/* ----------------------------------------------------------------------------
+   Section headings — terminal style with leading slash
+   ---------------------------------------------------------------------------- */
+
+.hud-section-heading {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.hud-section-heading::before {
+  content: "//";
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+/* ----------------------------------------------------------------------------
+   Broadcast logo tile — keeps team/league/game PNGs visible against any bg.
+   Light theme keeps the artwork transparent (PNGs assume light backgrounds).
+   Dark theme places artwork on a near-white plate, the way every esports
+   broadcast overlay handles team logos.
+   ---------------------------------------------------------------------------- */
+
+.hud-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-radius: 0.125rem;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease;
+}
+.hud-logo > img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+[data-theme="dark"] .hud-logo {
+  background: #e8edf2;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.15rem;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Pre-sized variants to keep call-sites tidy */
+.hud-logo-sm { width: 1.75rem; height: 1.75rem; }   /* match teams */
+.hud-logo-md { width: 2.25rem; height: 2.25rem; }   /* homepage rows */
+.hud-logo-lg { width: 4rem;    height: 4rem;    }   /* second-page game header */
+.hud-logo-xs { width: 1.25rem; height: 1.25rem; }   /* selected pills */
+
+/* ----------------------------------------------------------------------------
+   Terminal-style text inputs — sharp corners, mono caret, accent on focus
+   ---------------------------------------------------------------------------- */
+
+.hud-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  border-radius: 0.125rem;
+  padding: 0.55rem 0.75rem 0.55rem 1.75rem;
+  caret-color: var(--color-primary);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+.hud-input::placeholder {
+  color: color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+.hud-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--hud-glow-soft);
+  background: var(--color-base-100);
+}
+
+.hud-input-wrap {
+  position: relative;
+  width: 100%;
+}
+.hud-input-wrap::before {
+  content: ">";
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   HUD slider — flat track, sharp thumb, tick scale below
+   ---------------------------------------------------------------------------- */
+
+.hud-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 0.25rem;
+  background: color-mix(in oklch, var(--color-base-content) 18%, transparent);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+.hud-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.875rem;
+  height: 1.25rem;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary-content);
+  border-radius: 0;
+  cursor: grab;
+  box-shadow: 0 0 12px -2px var(--color-primary);
+}
+.hud-slider::-moz-range-thumb {
+  width: 0.875rem;
+  height: 1.25rem;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary-content);
+  border-radius: 0;
+  cursor: grab;
+  box-shadow: 0 0 12px -2px var(--color-primary);
+}
+.hud-slider:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-primary) 30%, transparent);
+}
+
+.hud-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+
+/* ----------------------------------------------------------------------------
+   Selected-item pill — terminal-style, with status dot
+   ---------------------------------------------------------------------------- */
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.55rem;
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
+  border-radius: 0.125rem;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.hud-pill::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hud-pill button.hud-pill-remove {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-left: 0.15rem;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 1;
+}
+.hud-pill button.hud-pill-remove:hover { opacity: 1; color: var(--color-secondary); }
+
+/* ----------------------------------------------------------------------------
+   Step indicator — bracketed counter, no DaisyUI .steps dependency
+   ---------------------------------------------------------------------------- */
+
+.hud-steps {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  gap: 0;
+  font-family: var(--font-mono);
+  border-top: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+.hud-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.9rem;
+  position: relative;
+  border-right: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+.hud-step:last-child { border-right: 0; }
+.hud-step-num {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: color-mix(in oklch, var(--color-base-content) 45%, transparent);
+}
+.hud-step-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.hud-step-sub {
+  display: none;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+}
+@media (min-width: 768px) {
+  .hud-step-sub { display: inline; }
+  .hud-step { gap: 0.85rem; padding: 0.9rem 1.1rem; }
+}
+.hud-step.is-active .hud-step-num,
+.hud-step.is-done .hud-step-num { color: var(--color-primary); }
+.hud-step.is-active .hud-step-label { color: var(--color-primary); }
+.hud-step.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 14px -1px var(--color-primary);
+}
+
+/* Flow step block — used on the about page */
+.hud-flow-step {
+  position: relative;
+  padding: 0.85rem 1rem;
+  background: var(--color-base-200);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0.125rem;
+}
+.hud-flow-step::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--color-primary);
+}
+
+/* ----------------------------------------------------------------------------
+   Collapse / disclosure (used on how-to-use)
+   ---------------------------------------------------------------------------- */
+
+.hud-collapse {
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0.125rem;
+  background: var(--color-base-200);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+.hud-collapse > input[type="checkbox"] { display: none; }
+.hud-collapse > .hud-collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+.hud-collapse > .hud-collapse-title::before {
+  content: "+";
+  width: 1.25rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  text-align: center;
+  transition: transform 0.18s ease;
+}
+.hud-collapse > input[type="checkbox"]:checked ~ .hud-collapse-title::before {
+  content: "−";
+}
+.hud-collapse > .hud-collapse-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+  padding: 0 1rem;
+}
+.hud-collapse > input[type="checkbox"]:checked ~ .hud-collapse-content {
+  max-height: 32rem;
+  padding: 0.25rem 1rem 1rem 1rem;
+  border-top: 1px dashed color-mix(in oklch, var(--color-base-content) 12%, transparent);
+}
+
+/* ----------------------------------------------------------------------------
+   Inline alerts (replaces DaisyUI .alert chrome — keep accessible role)
+   ---------------------------------------------------------------------------- */
+
+.hud-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.125rem;
+  border: 1px solid currentColor;
+  background: color-mix(in oklch, currentColor 8%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+.hud-alert > * { color: var(--color-base-content); }
+.hud-alert > svg, .hud-alert > .hud-alert-icon { color: currentColor; flex-shrink: 0; }
+.hud-alert-info    { color: var(--color-info); }
+.hud-alert-success { color: var(--color-success); }
+.hud-alert-warning { color: var(--color-warning); }
+.hud-alert-error   { color: var(--color-error); }
+
+/* ----------------------------------------------------------------------------
+   Tooltip — HUD chrome (DaisyUI .tooltip uses ::before for bubble, ::after for arrow)
+   ---------------------------------------------------------------------------- */
+
+.tooltip {
+  --tt-bg: var(--color-neutral);
+  --tt-color: var(--color-neutral-content);
+}
+.tooltip::before {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background-color: var(--tt-bg);
+  color: var(--tt-color);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 50%, transparent);
+  border-radius: 0.125rem;
+  padding: 0.5rem 0.65rem;
+  max-width: 22rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.4;
+  box-shadow: 0 8px 22px -6px rgba(0, 0, 0, 0.5);
+}
+.tooltip::after {
+  border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+}
+
+/* ----------------------------------------------------------------------------
+   Loading spinner — HUD scanning ring (overrides DaisyUI .loading-spinner)
+   ---------------------------------------------------------------------------- */
+
+.loading.loading-spinner,
+.loading-spinner {
+  -webkit-mask-image: none;
+          mask-image: none;
+  background: none !important;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid color-mix(in oklch, var(--color-base-content) 18%, transparent);
+  border-top-color: var(--color-primary);
+  border-right-color: var(--color-primary);
+  border-radius: 0;
+  animation: hud-spin 0.85s linear infinite;
+  display: inline-block;
+  position: relative;
+}
+.loading.loading-sm,
+.loading-spinner.loading-sm { width: 0.85rem; height: 0.85rem; border-width: 1.5px; }
+.loading.loading-lg,
+.loading-spinner.loading-lg { width: 1.6rem; height: 1.6rem; border-width: 2px; }
+@keyframes hud-spin { to { transform: rotate(360deg); } }
+
+/* ----------------------------------------------------------------------------
+   Checkbox — sharp square, accent fill, mono check
+   ---------------------------------------------------------------------------- */
+
+.checkbox {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  background: var(--color-base-100);
+  border: 1.5px solid color-mix(in oklch, var(--color-base-content) 35%, transparent);
+  border-radius: 0.125rem;
+  cursor: pointer;
+  margin: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.checkbox:hover {
+  border-color: var(--color-primary);
+}
+.checkbox:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 12px -2px var(--color-primary);
+  animation: none;
+}
+.checkbox:checked::after {
+  content: "✕";
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--color-primary-content);
+}
+.checkbox:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+.checkbox.checkbox-sm { width: 1rem; height: 1rem; }
+.checkbox.checkbox-sm:checked::after { font-size: 0.7rem; }
+.checkbox.checkbox-lg { width: 1.5rem; height: 1.5rem; }
+.checkbox.checkbox-lg:checked::after { font-size: 1rem; }
+
+/* ----------------------------------------------------------------------------
+   Dropdown menu items — mono treatment for the league/team lists
+   ---------------------------------------------------------------------------- */
+
+.dropdown-menu .menu {
+  padding: 0.25rem !important;
+  background: transparent;
+}
+.dropdown-menu .menu li > label,
+.dropdown-menu .menu li > a {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.125rem;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.dropdown-menu .menu li > label:hover,
+.dropdown-menu .menu li > a:hover,
+.dropdown-menu .menu li > label.dropdown-item-highlight {
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+}
+
+/* Navbar menu — uppercase mono, tight letterspacing, accent on hover */
+.navbar .menu li > a {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  border-radius: 0.125rem;
+}
+.navbar .menu li > a:hover {
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+/* Mobile dropdown menu inside navbar */
+.navbar .dropdown-content {
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0.125rem;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.4);
+}
+
+/* ----------------------------------------------------------------------------
+   Navbar / footer — hairline borders, no shadow, mono signaling
+   ---------------------------------------------------------------------------- */
+
+.navbar {
+  background-color: color-mix(in oklch, var(--color-base-100) 92%, transparent) !important;
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+  border-bottom: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  box-shadow: none !important;
+}
+
+footer.footer {
+  background-color: var(--color-base-200) !important;
+  border-top: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+footer.footer a.link-hover {
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+footer.footer a.link-hover:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* ----------------------------------------------------------------------------
+   Toast — HUD chrome
+   ---------------------------------------------------------------------------- */
+
+#toast-host .alert {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 0.125rem;
+  border-width: 1px;
+  border-style: solid;
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ----------------------------------------------------------------------------
+   Existing modal / dropdown / game selection styles — preserved
+   ---------------------------------------------------------------------------- */
+
+.label-checked {
+  opacity: 1;
+  font-weight: 600;
+}
+
+dialog.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box, 0.25rem);
+  padding: 1.5rem;
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+  max-height: calc(100vh - 2rem);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+dialog.modal .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+dialog.modal .modal-backdrop button {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: transparent;
+}
+
+dialog.modal .modal-box {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  width: 100%;
+}
+
 .fade-in {
   animation: fadeIn 0.5s ease-in;
 }
@@ -56,190 +900,108 @@
   to { opacity: 1; }
 }
 
-/* Alert custom styles */
-.alert {
-  border-left: 4px solid currentColor;
-}
-
-/* Stats card enhancement */
-.stats {
-  background: #667eea;
-  color: white;
-}
-
-.stat-title {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.stat-value {
-  color: white !important;
-}
-
-/* Form control spacing */
-.form-control + .form-control {
-  margin-top: 0.5rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .container {
-    padding: 1rem;
-  }
-  
-  .card-body {
-    padding: 1.5rem;
-  }
-}
-
 /* HTMX loading states */
-.htmx-request .htmx-indicator {
-  display: inline-block;
-}
-
-.htmx-indicator {
-  display: none;
-}
-
-/* Loading spinner */
+.htmx-request .htmx-indicator { display: inline-block; }
+.htmx-indicator { display: none; }
 .htmx-indicator::after {
   content: '';
   display: inline-block;
   width: 1rem;
   height: 1rem;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid var(--primary-color);
+  border: 2px solid color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  border-top: 2px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Option box styling */
-.form-control .label {
-  background-color: var(--color-base-100);
-  border: 2px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.3s ease;
-  justify-content: space-between !important;
-  min-height: 4rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.form-control .label:hover {
-  border-color: var(--color-primary);
-  background-color: oklch(var(--b3));
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-}
-
-.form-control .label.label-checked {
-  border-color: var(--color-primary);
-  background-color: color-mix(in srgb, var(--color-primary) 10%, var(--color-base-100));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Left side content (logo and text) */
-.option-content {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1rem;
-  flex: 1;
-}
-
-.option-content .label-text {
-  text-align: left;
-  flex: 1;
-}
-
-/* Checkbox positioning on the right */
-.form-control .checkbox {
-  order: 2;
-  margin-left: auto;
-}
-
-/* Game icon containers */
-.game-icon-container {
-  border-radius: 0.25rem;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  min-height: 2rem;
-  width: 2rem;
-  height: 2rem;
-  max-width: 2rem;
-  max-height: 2rem;
-  flex-shrink: 0;
+/* HUD game module — top-level container on second-page (filter/tune) */
+.hud-game-module {
+  position: relative;
+  background-color: var(--color-base-200);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  border-radius: 0.125rem;
   overflow: hidden;
 }
-
-.game-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  object-fit: contain;
+.hud-game-module::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--color-primary);
+  opacity: 0.7;
 }
-
-.game-icon-large-container {
-  border-radius: 0.25rem;
-  padding: 0.5rem;
+.hud-game-module-head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  background: color-mix(in oklch, var(--color-base-content) 4%, var(--color-base-200));
+}
+.hud-game-module-body {
+  padding: 1rem;
 }
 
-.game-icon-large {
-  width: 4rem;
-  height: 4rem;
-  object-fit: contain;
-}
+/* Legacy aliases — preserved in case anything still references */
+.game-icon-large-container { border-radius: 0.125rem; padding: 0; }
+.game-icon-large { width: 4rem; height: 4rem; object-fit: contain; }
+.game-header { display: flex; align-items: center; gap: 0.75rem; }
 
-/* Game header */
-.game-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-/* Selected items container */
+/* Selected pill row — HUD treatment, JS still emits .badge.badge-primary[data-league-id] */
 .selected-items-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  min-height: 2rem;
-  padding: 0.5rem;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.4rem;
   background-color: var(--color-base-100);
-  border-radius: var(--radius-box);
+  border-radius: 0.125rem;
+  border: 1px dashed color-mix(in oklch, var(--color-base-content) 14%, transparent);
 }
 
-/* Dropdown menu */
+.selected-items-container .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--color-base-200) !important;
+  color: var(--color-base-content) !important;
+  border: 1px solid currentColor !important;
+  border-radius: 0.125rem !important;
+  height: auto;
+  line-height: 1;
+}
+.selected-items-container .badge.badge-primary { color: var(--color-primary) !important; }
+.selected-items-container .badge.badge-secondary { color: var(--color-secondary) !important; }
+.selected-items-container .badge > span:not(.item-icon-container) {
+  color: var(--color-base-content);
+}
+.selected-items-container .badge button {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: inherit;
+}
+
 .dropdown-menu {
   position: absolute;
   z-index: 10;
   width: 100%;
-  background-color: oklch(var(--b1));
-  border-radius: var(--rounded-box, 0.5rem);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid oklch(var(--bc) / 0.2);
+  background-color: var(--color-base-100);
+  border-radius: 0.125rem;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 18%, transparent);
   margin-top: 0.25rem;
   display: none;
   max-height: 16rem;
   overflow-y: auto;
 }
-
-.dropdown-loading {
-  padding: 1rem;
-  text-align: center;
-}
-
+.dropdown-loading { padding: 1rem; text-align: center; }
 .dropdown-no-results {
   padding: 1rem;
   text-align: center;
@@ -247,39 +1009,44 @@
   opacity: 0.7;
   display: none;
 }
+.dropdown-item-highlight { background-color: var(--color-base-300); }
 
-/* League/Team item styling */
 .item-icon-container {
-  border-radius: 0.25rem;
-  padding: 0.25rem;
-  display: flex;
+  border-radius: 0.125rem;
+  padding: 0;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+.item-icon { width: 1.5rem; height: 1.5rem; object-fit: contain; border-radius: 0.125rem; }
+.item-icon-badge { width: 1rem; height: 1rem; object-fit: contain; border-radius: 0.125rem; }
 
-.item-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  object-fit: contain;
+/* Broadcast plate for dynamically-injected dropdown / badge icons in dark mode */
+[data-theme="dark"] .item-icon,
+[data-theme="dark"] .item-icon-badge {
+  background: #e8edf2;
+  padding: 0.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.item-icon-badge {
-  width: 1rem;
-  height: 1rem;
-  object-fit: contain;
-}
-
-/* Badge styling */
 .badge-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  border-radius: 0.375rem;
+  border-radius: 0.125rem;
 }
 
-/* Add more padding to badges so the colored container is larger than the icon */
 .selected-items-container .badge {
-  padding: 1rem 1.25rem;
-  font-size: 1rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.selected-items-container .badge .item-icon-container { padding: 0; }
+.selected-items-container .badge .item-icon-badge { width: 0.95rem; height: 0.95rem; }
+
+@media (max-width: 640px) {
+  .container { padding: 1rem; }
+  .card-body { padding: 1.25rem; }
 }

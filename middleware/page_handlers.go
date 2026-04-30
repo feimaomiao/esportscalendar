@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 	"github.com/gin-gonic/gin"
@@ -90,11 +91,37 @@ func (m *Middleware) IndexHandler(c *gin.Context) {
 		c.Header("X-Cache", "MISS")
 	}
 
+	if isHTMXRequest(c) {
+		setHTMXTitle(c, "Select Games - EsportsCalendar")
+		component := components.IndexInner(options)
+		if err := component.Render(m.Context, c.Writer); err != nil {
+			m.Logger.Error("Failed to render index inner", zap.Error(err))
+			c.String(http.StatusInternalServerError, "Failed to render page")
+		}
+		return
+	}
+
 	component := components.Index(options)
 	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render index", zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
+}
+
+// isHTMXRequest reports whether the incoming request was issued by HTMX.
+func isHTMXRequest(c *gin.Context) bool {
+	return c.Request.Header.Get("Hx-Request") == "true"
+}
+
+// setHTMXTitle sets the HX-Trigger header so the client updates document.title.
+func setHTMXTitle(c *gin.Context, title string) {
+	payload, err := json.Marshal(map[string]any{
+		"page:title": map[string]string{"title": title},
+	})
+	if err != nil {
+		return
+	}
+	c.Header("HX-Trigger", string(payload))
 }
 
 func (m *Middleware) HowToUseHandler(c *gin.Context) {
@@ -120,44 +147,6 @@ func (m *Middleware) AboutHandler(c *gin.Context) {
 	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render about page", zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to render page")
-	}
-}
-
-func (m *Middleware) renderLoadingPage(c *gin.Context) {
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if _, err := c.Writer.Write([]byte(`<!DOCTYPE html>
-<html>
-<head>
-	<title>Loading - EsportsCalendar</title>
-	<script>
-		const savedGameOptions = sessionStorage.getItem('selectedGameOptions');
-		if (savedGameOptions) {
-			const gameIds = JSON.parse(savedGameOptions);
-			fetch('/lts', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ options: gameIds })
-			}).then(response => response.text())
-			  .then(html => {
-				document.open();
-				document.write(html);
-				document.close();
-				// Update title after document is rewritten
-				document.title = 'Leagues & Teams - EsportsCalendar';
-			  });
-		} else {
-			// No saved selections, redirect to home
-			window.location.href = '/';
-		}
-	</script>
-</head>
-<body>
-	<p>Loading...</p>
-</body>
-</html>`)); err != nil {
-		m.Logger.Error("Failed to write response", zap.Error(err))
 	}
 }
 
@@ -187,9 +176,26 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 		}
 	}
 
-	// If GET request with no options, render a page that checks sessionStorage
+	// GET with no options: either an HTMX-driven flow that lost state or a
+	// browser reload of /lts. For HTMX we still bounce home; for a full GET
+	// we render the rehydration shell so the browser's sessionStorage can
+	// rebuild the POST payload and swap the real page in.
 	if c.Request.Method == http.MethodGet && len(selectedOptionIDs) == 0 {
-		m.renderLoadingPage(c)
+		if isHTMXRequest(c) {
+			c.Header("HX-Redirect", "/")
+			c.Status(http.StatusOK)
+			return
+		}
+		component := components.RehydratePage(
+			"selectedGameOptions",
+			"/lts",
+			"form-options",
+			"Leagues & Teams - EsportsCalendar",
+		)
+		if err := component.Render(m.Context, c.Writer); err != nil {
+			m.Logger.Error("Failed to render lts rehydrate", zap.Error(err))
+			c.String(http.StatusInternalServerError, "Failed to render page")
+		}
 		return
 	}
 
@@ -267,10 +273,11 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	}
 
 	// For HTMX partial updates
-	if c.Request.Header.Get("Hx-Request") == "true" {
-		component := components.SecondPageContent(selectedOptions)
+	if isHTMXRequest(c) {
+		setHTMXTitle(c, "Leagues & Teams - EsportsCalendar")
+		component := components.SecondPageInner(selectedOptions)
 		if err := component.Render(m.Context, c.Writer); err != nil {
-			m.Logger.Error("Failed to render second page content", zap.Error(err))
+			m.Logger.Error("Failed to render second page inner", zap.Error(err))
 			c.String(http.StatusInternalServerError, "Failed to render page")
 		}
 		return
@@ -280,6 +287,28 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	component := components.SecondPage(selectedOptions)
 	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render second page", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to render page")
+	}
+}
+
+// PreviewRehydrateHandler serves GET /preview with a small "restoring
+// session" shell. JS reads the prior selections payload from sessionStorage
+// (key: preview-selections) and POSTs it to /preview. If sessionStorage is
+// empty the client redirects to /.
+func (m *Middleware) PreviewRehydrateHandler(c *gin.Context) {
+	m.Logger.Info("Handler",
+		zap.String("handler", "PreviewRehydrateHandler"),
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+
+	component := components.RehydratePage(
+		"preview-selections",
+		"/preview",
+		"json",
+		"Preview - EsportsCalendar",
+	)
+	if err := component.Render(m.Context, c.Writer); err != nil {
+		m.Logger.Error("Failed to render preview rehydrate", zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
@@ -330,6 +359,13 @@ func (m *Middleware) PreviewHandler(c *gin.Context) {
 
 	// Extract game IDs, league IDs, team IDs, and max tier from selections
 	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	if err := validateSelections(gameIDs, leagueIDs, teamIDs); err != nil {
+		m.Logger.Warn("Invalid preview selections",
+			zap.String("request_id", requestID),
+			zap.Error(err))
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
 	m.Logger.Info("Preview request parsed",
 		zap.String("request_id", requestID),
 		zap.Int("num_games", len(gameIDs)),
@@ -362,7 +398,13 @@ func (m *Middleware) PreviewHandler(c *gin.Context) {
 
 	// Render the preview page with matches
 	renderStart := time.Now()
-	component := components.PreviewPage(matches, showingPast, hideScores)
+	var component templ.Component
+	if isHTMXRequest(c) {
+		setHTMXTitle(c, "Preview - EsportsCalendar")
+		component = components.PreviewInner(matches, showingPast, hideScores)
+	} else {
+		component = components.PreviewPage(matches, showingPast, hideScores)
+	}
 	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 		m.Logger.Error("Failed to render preview page",
 			zap.String("request_id", requestID),

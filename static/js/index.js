@@ -1,85 +1,45 @@
-// Index page form submission logic
-(function() {
-	const continueBtn = document.getElementById('continue-btn');
-	const checkboxes = document.querySelectorAll('.game-checkbox');
+// Bootstraps the "Select games" page. Re-runs each time the inner partial is
+// loaded (whether via initial page render or HTMX swap).
+(function init() {
 	const form = document.getElementById('game-form');
+	if (!form) return;
+
+	const continueBtn = form.querySelector('#continue-btn');
+	const checkboxes = form.querySelectorAll('.game-checkbox');
+	const counter = document.getElementById('game-counter');
 
 	function updateButtonState() {
-		const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-		continueBtn.disabled = !anyChecked;
+		const checkedCount = Array.from(checkboxes).filter((cb) => cb.checked).length;
+		continueBtn.disabled = checkedCount === 0;
+		if (counter) counter.textContent = String(checkedCount).padStart(2, '0');
 	}
 
-	// Restore previously selected options from sessionStorage
-	const savedSelections = sessionStorage.getItem('selectedGameOptions');
-	if (savedSelections) {
-		const selectedIds = JSON.parse(savedSelections);
-		checkboxes.forEach(cb => {
-			if (selectedIds.includes(cb.value)) {
-				cb.checked = true;
-			}
-		});
-	}
+	try {
+		const saved = sessionStorage.getItem('selectedGameOptions');
+		if (saved) {
+			const ids = JSON.parse(saved);
+			checkboxes.forEach((cb) => {
+				if (ids.includes(cb.value)) cb.checked = true;
+			});
+		}
+	} catch {}
 
-	// Update button state on checkbox change
-	checkboxes.forEach(cb => {
-		cb.addEventListener('change', updateButtonState);
-	});
-
-	// Initial check
+	checkboxes.forEach((cb) => cb.addEventListener('change', updateButtonState));
 	updateButtonState();
 
-	// Handle Enter key to submit form if any checkbox is checked
-	document.addEventListener('keydown', (e) => {
-		if (e.key === 'Enter' && !continueBtn.disabled) {
-			e.preventDefault();
-			form.requestSubmit();
-		}
+	// Save selections to sessionStorage before HTMX submits, so the user can
+	// hit "Back to Options" later and see them restored.
+	form.addEventListener('htmx:configRequest', () => {
+		const selected = Array.from(checkboxes)
+			.filter((cb) => cb.checked)
+			.map((cb) => cb.value);
+		sessionStorage.setItem('selectedGameOptions', JSON.stringify(selected));
 	});
 
-	// Handle form submission
-	form.addEventListener('submit', async (e) => {
+	// Enter inside the form submits when at least one option is checked.
+	form.addEventListener('keydown', (e) => {
+		if (e.key !== 'Enter' || continueBtn.disabled) return;
 		e.preventDefault();
-
-		// Get selected options
-		const selectedOptions = Array.from(checkboxes)
-			.filter(cb => cb.checked)
-			.map(cb => cb.value);
-
-		// Save selections to sessionStorage
-		sessionStorage.setItem('selectedGameOptions', JSON.stringify(selectedOptions));
-
-		console.log('Submitting with options:', selectedOptions);
-
-		// Send POST request with JSON body
-		try {
-			const response = await fetch('/lts', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ options: selectedOptions })
-			});
-
-			console.log('Response status:', response.status);
-
-			if (response.ok) {
-				const html = await response.text();
-
-				// Replace entire page to update progress indicator
-				document.open();
-				document.write(html);
-				document.close();
-
-				// Update URL and title after document rewrite
-				window.history.pushState({}, '', '/lts');
-				document.title = 'Leagues & Teams - EsportsCalendar';
-			} else {
-				console.error('Request failed:', response.statusText);
-				alert('Request failed: ' + response.statusText);
-			}
-		} catch (error) {
-			console.error('Error:', error);
-			alert('Error: ' + error.message);
-		}
+		form.requestSubmit(continueBtn);
 	});
 })();
