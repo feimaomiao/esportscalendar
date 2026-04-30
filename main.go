@@ -82,6 +82,7 @@ func main() {
 	// Routes
 	router.GET("/", mw.IndexHandler)
 	router.Any("/lts", mw.SecondPageHandler)
+	router.GET("/preview", mw.PreviewRehydrateHandler)
 	router.POST("/preview", mw.PreviewHandler)
 	router.POST("/export", mw.ExportHandler)
 	router.GET("/how-to-use", mw.HowToUseHandler)

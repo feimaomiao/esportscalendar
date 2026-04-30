@@ -22,7 +22,10 @@ templ BaseLayout(title string) {
 			<meta name="twitter:title" content="EsportsCalendar - Never Miss an Esports Match"/>
 			<meta name="twitter:description" content="Create personalized calendar feeds for your favorite esports matches. Track League of Legends, CS:GO, Dota 2, Valorant, and more - all in one place."/>
 			<meta name="twitter:image" content="https://esportscalendar.app/static/images/og-image.png"/>
-			<meta name="theme-color" content="#4F46E5"/>
+			<meta name="theme-color" content="#0d1117"/>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 			<link rel="stylesheet" href="/static/css/tw.css"/>
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			<script src="/static/js/vendor/htmx.min.js" defer></script>
@@ -44,13 +47,13 @@ templ BaseLayout(title string) {
 							<li><a href="/about">About</a></li>
 						</ul>
 					</div>
-					<a href="/" class="btn btn-ghost text-xl font-bold text-primary flex items-center gap-2">
-						<img src="/static/images/calendar-logo.svg" alt="" class="w-8 h-8" aria-hidden="true"/>
-						<span class="hidden sm:inline">EsportsCalendar</span>
+					<a href="/" class="btn btn-ghost text-lg flex items-center gap-2 hud-display text-primary">
+						<img src="/static/images/calendar-logo.svg" alt="" class="w-7 h-7" aria-hidden="true"/>
+						<span class="hidden sm:inline">ESPORTS<span class="opacity-50">/</span>CAL</span>
 					</a>
 				</div>
 				<div class="navbar-center hidden lg:flex">
-					<ul class="menu menu-horizontal px-1">
+					<ul class="menu menu-horizontal px-1 hud-mono uppercase tracking-widest text-xs">
 						<li><a href="/how-to-use">How to Use</a></li>
 						<li><a href="/about">About</a></li>
 					</ul>

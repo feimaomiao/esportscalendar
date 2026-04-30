@@ -20,129 +20,134 @@ templ PreviewInner(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPas
 }
 
 templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
-	<div class="card bg-base-100 shadow-xl">
+	<div class="card bg-base-100 border border-base-300">
 		<div class="card-body">
-			<h2 class="card-title text-2xl mb-4">Here's what your calendar would look like</h2>
-			<div class="alert alert-info alert-soft mb-4" role="status">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5" aria-hidden="true">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-				</svg>
-				<span>All times are displayed in your <strong>local timezone</strong></span>
+			<div class="flex items-baseline justify-between mb-1">
+				<span class="hud-label">{ "// channel.03" }</span>
+				<span class="hud-label hud-bracket">feed preview</span>
 			</div>
-			<div id="preview-content" class="mt-4">
+			<h2 class="hud-display text-2xl mb-2">Calendar feed</h2>
+			<p class="hud-mono text-xs opacity-60 mb-4">
+				All times displayed in your local timezone.
+			</p>
+			<div id="preview-content" class="mt-2">
 				if len(matches) == 0 {
-					<div class="alert alert-warning alert-soft" role="alert">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+					<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-warning shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
 						</svg>
-						<span>No matches found for your selections.</span>
+						<span class="hud-mono text-sm">No matches found for current selection.</span>
 					</div>
 				} else {
 					<div class="flex flex-col gap-2">
 						for _, match := range matches {
-							<div class="bg-base-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3">
-								<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-									<!-- Game badge (always) -->
-									<span class="badge badge-primary badge-sm flex-shrink-0" title={ match.GameName }>{ match.GameName }</span>
-									<!-- Teams (always) — claims the bulk of horizontal space -->
-									<div class="flex items-center gap-2 flex-1 min-w-[12rem]">
-										<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
-											<span class="font-semibold text-sm truncate">
-												if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
-													{ match.Team1Acronym.String }
-												} else if match.Team1Name.Valid {
-													{ match.Team1Name.String }
-												} else {
-													TBD
-												}
-											</span>
-											if match.Team1Image.Valid && match.Team1Image.String != "" {
-												if match.Team1Name.Valid {
-													<img src={ match.Team1Image.String } alt={ match.Team1Name.String } class="w-7 h-7 rounded flex-shrink-0"/>
-												} else {
-													<img src={ match.Team1Image.String } alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
-												}
-											} else {
-												<img src="/static/images/default-logo.png" alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
-											}
-										</div>
-										<span class="text-xs text-gray-500 font-bold flex-shrink-0">VS</span>
-										<div class="flex items-center gap-2 flex-1 min-w-0">
-											if match.Team2Image.Valid && match.Team2Image.String != "" {
-												if match.Team2Name.Valid {
-													<img src={ match.Team2Image.String } alt={ match.Team2Name.String } class="w-7 h-7 rounded flex-shrink-0"/>
-												} else {
-													<img src={ match.Team2Image.String } alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
-												}
-											} else {
-												<img src="/static/images/default-logo.png" alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
-											}
-											<span class="font-semibold text-sm truncate">
-												if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
-													{ match.Team2Acronym.String }
-												} else if match.Team2Name.Valid {
-													{ match.Team2Name.String }
-												} else {
-													TBD
-												}
-											</span>
-										</div>
-									</div>
-									<!-- Time (always) -->
-									<div class="flex items-center gap-1 text-xs flex-shrink-0">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-										</svg>
-										if match.ExpectedStartTime.Valid {
-											<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
-												<span class="font-mono match-date">{ match.ExpectedStartTime.Time.Format("Jan 02, 2006") }</span>
-												<span class="font-mono font-semibold match-hour ml-1">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
-											</span>
-										} else {
-											<span class="text-gray-500">TBD</span>
-										}
-									</div>
-									<!-- Status (always) -->
-									<div class="flex-shrink-0">
-										if match.Finished {
-											if hideScores {
-												<span class="badge badge-success badge-sm">Finished</span>
-											} else {
-												<span class="badge badge-success badge-sm whitespace-nowrap">
-													{ fmt.Sprintf("%d-%d", match.Team1Score, match.Team2Score) }
-												</span>
-											}
-										} else {
-											<span class="badge badge-info badge-sm">Upcoming</span>
-										}
-									</div>
-									<!-- Secondary line: match name (md+) and league (lg+) — wraps below -->
-									<div class="basis-full hidden md:flex items-center gap-3 text-xs text-base-content/60 mt-1">
-										<span class="truncate" title={ match.Name }>{ match.Name }</span>
-										<span class="hidden lg:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
-									</div>
-								</div>
-							</div>
+							@HUDMatchRow(match, hideScores)
 						}
 					</div>
 				}
 			</div>
 			<div class="card-actions flex-col md:flex-row md:justify-between gap-4 mt-6">
-					<button
+				<button
 					type="button"
 					id="back-to-selection-btn"
 					class="btn btn-outline w-full md:w-auto"
 				>
 					@IconArrowLeft("w-5 h-5")
-					Back to Selection
+					Back
 				</button>
 				<button type="button" id="export-calendar-btn" class="btn btn-primary w-full md:w-auto">
-					Export Calendar
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+					&gt; Export Calendar
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
 					</svg>
 				</button>
 			</div>
 		</div>
 	</div>
+}
+
+templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
+	<div class="hud-match" data-status={ matchStatus(match) }>
+		<span class="hud-match-game" title={ match.GameName }>{ match.GameName }</span>
+		<div class="flex items-center gap-3 flex-1 min-w-[14rem]">
+			<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+				<span class="hud-team-name truncate">
+					if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
+						{ match.Team1Acronym.String }
+					} else if match.Team1Name.Valid {
+						{ match.Team1Name.String }
+					} else {
+						TBD
+					}
+				</span>
+				<span class="hud-logo hud-logo-sm">
+					if match.Team1Image.Valid && match.Team1Image.String != "" {
+						if match.Team1Name.Valid {
+							<img src={ match.Team1Image.String } alt={ match.Team1Name.String }/>
+						} else {
+							<img src={ match.Team1Image.String } alt="TBD"/>
+						}
+					} else {
+						<img src="/static/images/default-logo.png" alt="TBD"/>
+					}
+				</span>
+			</div>
+			<span class="hud-vs">VS</span>
+			<div class="flex items-center gap-2 flex-1 min-w-0">
+				<span class="hud-logo hud-logo-sm">
+					if match.Team2Image.Valid && match.Team2Image.String != "" {
+						if match.Team2Name.Valid {
+							<img src={ match.Team2Image.String } alt={ match.Team2Name.String }/>
+						} else {
+							<img src={ match.Team2Image.String } alt="TBD"/>
+						}
+					} else {
+						<img src="/static/images/default-logo.png" alt="TBD"/>
+					}
+				</span>
+				<span class="hud-team-name truncate">
+					if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
+						{ match.Team2Acronym.String }
+					} else if match.Team2Name.Valid {
+						{ match.Team2Name.String }
+					} else {
+						TBD
+					}
+				</span>
+			</div>
+		</div>
+		<div class="hud-time flex items-center gap-2 flex-shrink-0">
+			if match.ExpectedStartTime.Valid {
+				<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
+					<span class="hud-time-date match-date">{ match.ExpectedStartTime.Time.Format("Jan 02") }</span>
+					<span class="hud-time-hour match-hour ml-1">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
+				</span>
+			} else {
+				<span class="opacity-50">— : —</span>
+			}
+		</div>
+		<div class="flex-shrink-0">
+			if match.Finished {
+				if hideScores {
+					<span class="hud-status hud-status-finished">Final</span>
+				} else {
+					<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
+				}
+			} else {
+				<span class="hud-status hud-status-upcoming">Upcoming</span>
+			}
+		</div>
+		<div class="hud-meta">
+			<span class="truncate" title={ match.Name }>{ match.Name }</span>
+			<span class="hidden md:inline opacity-50">·</span>
+			<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
+		</div>
+	</div>
+}
+
+func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) string {
+	if match.Finished {
+		return "finished"
+	}
+	return "upcoming"
 }

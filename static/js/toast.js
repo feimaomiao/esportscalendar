@@ -6,6 +6,13 @@ window.showToast = function showToast(message, kind) {
 		error: 'alert-error',
 	})[kind] || 'alert-info';
 
+	const tag = ({
+		info: '[ INFO ]',
+		success: '[ OK ]',
+		warning: '[ WARN ]',
+		error: '[ ERR ]',
+	})[kind] || '[ INFO ]';
+
 	let host = document.getElementById('toast-host');
 	if (!host) {
 		host = document.createElement('div');
@@ -17,7 +24,17 @@ window.showToast = function showToast(message, kind) {
 	const node = document.createElement('div');
 	node.className = `alert ${variant} shadow-lg`;
 	node.setAttribute('role', kind === 'error' ? 'alert' : 'status');
-	node.textContent = message;
+
+	const tagEl = document.createElement('span');
+	tagEl.style.opacity = '0.75';
+	tagEl.style.marginRight = '0.5rem';
+	tagEl.textContent = tag;
+	node.appendChild(tagEl);
+
+	const msgEl = document.createElement('span');
+	msgEl.textContent = message;
+	node.appendChild(msgEl);
+
 	host.appendChild(node);
 
 	setTimeout(() => {

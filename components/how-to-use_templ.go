@@ -41,55 +41,96 @@ func HowToUsePage() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto p-4\"><div class=\"max-w-4xl mx-auto\"><div class=\"card bg-base-100 shadow-xl\"><div class=\"card-body\"><h1 class=\"card-title text-3xl mb-6\">How to Use EsportsCalendar</h1><div class=\"space-y-8\"><!-- Introduction --><div><p class=\"text-lg\">EsportsCalendar helps you stay updated on your favorite esports matches by generating a personalized calendar feed that you can subscribe to in your calendar app.</p></div><!-- Step 1 --><div class=\"card bg-base-200\"><div class=\"card-body\"><h2 class=\"card-title text-2xl\"><span class=\"badge badge-primary badge-lg mr-2\">Step 1</span> Select Games</h2><p class=\"mt-2\">On the first page, choose which games you want to track. You can select one or multiple games that you're interested in following individually.</p><div class=\"alert alert-info alert-soft mt-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto p-4\"><div class=\"max-w-4xl mx-auto\"><div class=\"card bg-base-100 border border-base-300\"><div class=\"card-body\"><div class=\"flex items-baseline justify-between mb-1\"><span class=\"hud-label\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconInfo("stroke-current shrink-0 w-6 h-6").Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("// manual")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/how-to-use.templ`, Line: 10, Col: 44}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<span>Select only the games you actively follow to keep your calendar focused.</span></div></div></div><!-- Step 2 --><div class=\"card bg-base-200\"><div class=\"card-body\"><h2 class=\"card-title text-2xl\"><span class=\"badge badge-primary badge-lg mr-2\">Step 2</span> Choose Leagues & Teams</h2><p class=\"mt-2\">For each selected game, specify which leagues and teams you want to follow. You can also filter matches by tournament tier to exclude lower-tier games that may not interest you.</p><div class=\"mt-4 space-y-2\"><div class=\"flex items-start gap-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">how to use</span></div><h1 class=\"hud-display text-3xl mb-4\">Operations</h1><p class=\"hud-mono text-sm opacity-60 mb-6\">Generate a personalized calendar feed and subscribe to it in your calendar app.</p><div class=\"space-y-6\"><!-- Step 1 --><div class=\"hud-game-module\"><div class=\"hud-game-module-head\"><span class=\"hud-step-num\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5").Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var4 string
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("[ 01 ]")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/how-to-use.templ`, Line: 21, Col: 46}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div><strong>Search Leagues:</strong> Find specific leagues you want to track</div></div><div class=\"flex items-start gap-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span><h2 class=\"hud-display text-lg\">Select Games</h2></div><div class=\"hud-game-module-body\"><p>Choose which games to track. You can pick one or many.</p><div class=\"hud-alert hud-alert-info mt-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = IconInfo("stroke-current shrink-0 w-5 h-5").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div><strong>Search Teams:</strong> Follow your favorite teams across all tournaments</div></div><div class=\"flex items-start gap-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<span>Select only the games you actively follow to keep your calendar focused.</span></div></div></div><!-- Step 2 --><div class=\"hud-game-module\"><div class=\"hud-game-module-head\"><span class=\"hud-step-num\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconCheckCircle("h-6 w-6 text-primary flex-shrink-0 mt-0.5").Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var5 string
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("[ 02 ]")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/how-to-use.templ`, Line: 37, Col: 46}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div><strong>Tournament Tier Filter:</strong> Set the maximum tier to filter out lower-tier games. Tier 1 is the highest (major tournaments), while Tier 6 includes all games.</div></div></div></div></div><!-- Step 3 --><div class=\"card bg-base-200\"><div class=\"card-body\"><h2 class=\"card-title text-2xl\"><span class=\"badge badge-primary badge-lg mr-2\">Step 3</span> Preview & Export</h2><p class=\"mt-2\">Preview the matches that will appear in your calendar based on your selections. If everything looks good, click \"Export Calendar\" to generate your personalized calendar link.</p><div class=\"alert alert-success alert-soft mt-4\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span><h2 class=\"hud-display text-lg\">Choose Leagues &amp; Teams</h2></div><div class=\"hud-game-module-body\"><p>For each game, pick which leagues and teams to follow. Filter by tournament tier to exclude lower-stakes matches.</p><ul class=\"mt-3 space-y-2\"><li class=\"flex items-start gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span><div><strong class=\"hud-mono uppercase tracking-wider text-sm\">Search Leagues</strong> — find specific leagues to track</div></li><li class=\"flex items-start gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span><div><strong class=\"hud-mono uppercase tracking-wider text-sm\">Search Teams</strong> — follow your favorite teams across all tournaments</div></li><li class=\"flex items-start gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span><div><strong class=\"hud-mono uppercase tracking-wider text-sm\">Tier Filter</strong> — Tier S is highest, \"All\" includes everything</div></li></ul></div></div><!-- Step 3 --><div class=\"hud-game-module\"><div class=\"hud-game-module-head\"><span class=\"hud-step-num\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconCheckCircle("stroke-current shrink-0 w-6 h-6").Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("[ 03 ]")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/how-to-use.templ`, Line: 63, Col: 46}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span>The preview shows a sample of upcoming matches. Your calendar will automatically update with new matches as they're scheduled!</span></div></div></div><!-- Step 4 --><div class=\"card bg-base-200\"><div class=\"card-body\"><h2 class=\"card-title text-2xl\"><span class=\"badge badge-primary badge-lg mr-2\">Step 4</span> Subscribe to Calendar</h2><p class=\"mt-2\">After generating your calendar link, you'll need to subscribe to it in your calendar application. This creates a live feed that automatically updates with new matches.</p><div class=\"mt-4\"><h3 class=\"font-bold text-lg mb-3\">How to Subscribe:</h3><!-- Apple Calendar --><div class=\"collapse collapse-arrow bg-base-300 mb-2\"><input type=\"checkbox\"><div class=\"collapse-title font-medium\">📅 Apple Calendar (macOS/iOS)</div><div class=\"collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2\"><li>Copy the generated calendar link</li><li>Open Calendar app</li><li>Go to <strong>File → New Calendar Subscription</strong> (macOS) or <strong>Settings → Accounts → Add Account → Other → Add Subscribed Calendar</strong> (iOS)</li><li>Paste the calendar URL</li><li>Click Subscribe and customize the name/color if desired</li></ol></div></div><!-- Google Calendar --><div class=\"collapse collapse-arrow bg-base-300 mb-2\"><input type=\"checkbox\"><div class=\"collapse-title font-medium\">📆 Google Calendar</div><div class=\"collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2\"><li>Copy the generated calendar link</li><li>Open Google Calendar on web</li><li>Click the <strong>+</strong> next to \"Other calendars\"</li><li>Select <strong>\"From URL\"</strong></li><li>Paste the calendar URL</li><li>Click <strong>Add calendar</strong></li></ol></div></div><!-- Outlook --><div class=\"collapse collapse-arrow bg-base-300 mb-2\"><input type=\"checkbox\"><div class=\"collapse-title font-medium\">📧 Outlook</div><div class=\"collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2\"><li>Copy the generated calendar link</li><li>Open Outlook Calendar</li><li>Go to <strong>Add Calendar → Subscribe from web</strong></li><li>Paste the calendar URL</li><li>Name your calendar and click <strong>Import</strong></li></ol></div></div></div></div></div><!-- Additional Info --><div class=\"card bg-base-200\"><div class=\"card-body\"><h2 class=\"card-title text-xl\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span><h2 class=\"hud-display text-lg\">Preview &amp; Export</h2></div><div class=\"hud-game-module-body\"><p>Preview the matches that will appear in your feed. If they look right, hit Export to generate your calendar URL.</p><div class=\"hud-alert hud-alert-success mt-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = IconInfo("h-6 w-6 stroke-current").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = IconCheckCircle("stroke-current shrink-0 w-5 h-5").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Additional Information</h2><div class=\"mt-2 space-y-2\"><p>⏰ <strong>Time Zone:</strong> All match times are displayed in UTC (Coordinated Universal Time). Your calendar app will convert them to your local timezone.</p><p>🔄 <strong>Updates:</strong> The calendar feed automatically updates, so new matches will appear without needing to regenerate the link. Note that calendar apps may take some time to sync updates (typically a few hours to a day depending on your app settings).</p><p>🎮 <strong>Multiple Games:</strong> You can select multiple games and they'll all be included in a single calendar feed.</p></div></div></div><!-- Get Started Button --><div class=\"card-actions justify-center mt-6\"><a href=\"/\" class=\"btn btn-primary btn-lg\">Get Started")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span>The preview shows upcoming matches. Your calendar updates automatically as new matches are scheduled.</span></div></div></div><!-- Step 4 --><div class=\"hud-game-module\"><div class=\"hud-game-module-head\"><span class=\"hud-step-num\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("[ 04 ]")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/how-to-use.templ`, Line: 79, Col: 46}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</span><h2 class=\"hud-display text-lg\">Subscribe to Calendar</h2></div><div class=\"hud-game-module-body\"><p class=\"mb-4\">After generating your feed URL, subscribe to it in your calendar app. This creates a live feed that auto-updates.</p><label class=\"hud-collapse\"><input type=\"checkbox\"> <span class=\"hud-collapse-title\">Apple Calendar (macOS / iOS)</span><div class=\"hud-collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2 text-sm\"><li>Copy the generated calendar link</li><li>Open Calendar app</li><li>Go to <strong>File → New Calendar Subscription</strong> (macOS) or <strong>Settings → Accounts → Add Account → Other → Add Subscribed Calendar</strong> (iOS)</li><li>Paste the calendar URL</li><li>Click Subscribe and customize the name/color if desired</li></ol></div></label> <label class=\"hud-collapse\"><input type=\"checkbox\"> <span class=\"hud-collapse-title\">Google Calendar</span><div class=\"hud-collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2 text-sm\"><li>Copy the generated calendar link</li><li>Open Google Calendar on web</li><li>Click the <strong>+</strong> next to \"Other calendars\"</li><li>Select <strong>\"From URL\"</strong></li><li>Paste the calendar URL</li><li>Click <strong>Add calendar</strong></li></ol></div></label> <label class=\"hud-collapse\"><input type=\"checkbox\"> <span class=\"hud-collapse-title\">Outlook</span><div class=\"hud-collapse-content\"><ol class=\"list-decimal list-inside space-y-2 mt-2 text-sm\"><li>Copy the generated calendar link</li><li>Open Outlook Calendar</li><li>Go to <strong>Add Calendar → Subscribe from web</strong></li><li>Paste the calendar URL</li><li>Name your calendar and click <strong>Import</strong></li></ol></div></label></div></div><!-- Additional Info --><div class=\"hud-game-module\"><div class=\"hud-game-module-head\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = IconInfo("h-5 w-5 stroke-current text-primary").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<h2 class=\"hud-display text-lg\">Notes</h2></div><div class=\"hud-game-module-body\"><div class=\"space-y-2 text-sm\"><p><strong class=\"hud-mono uppercase tracking-wider text-xs\">Time Zone:</strong> Match times are stored in UTC. Your calendar app converts them to your local timezone automatically.</p><p><strong class=\"hud-mono uppercase tracking-wider text-xs\">Updates:</strong> The feed auto-updates. Calendar apps may take a few hours to a day to sync, depending on settings.</p><p><strong class=\"hud-mono uppercase tracking-wider text-xs\">Multiple Games:</strong> Multiple games are bundled into a single calendar feed.</p></div></div></div><div class=\"card-actions justify-center mt-2\"><a href=\"/\" class=\"btn btn-primary btn-lg\">&gt; Get Started")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -97,7 +138,7 @@ func HowToUsePage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</a></div></div></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</a></div></div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

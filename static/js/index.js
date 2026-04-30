@@ -6,10 +6,12 @@
 
 	const continueBtn = form.querySelector('#continue-btn');
 	const checkboxes = form.querySelectorAll('.game-checkbox');
+	const counter = document.getElementById('game-counter');
 
 	function updateButtonState() {
-		const anyChecked = Array.from(checkboxes).some((cb) => cb.checked);
-		continueBtn.disabled = !anyChecked;
+		const checkedCount = Array.from(checkboxes).filter((cb) => cb.checked).length;
+		continueBtn.disabled = checkedCount === 0;
+		if (counter) counter.textContent = String(checkedCount).padStart(2, '0');
 	}
 
 	try {

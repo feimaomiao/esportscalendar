@@ -176,15 +176,26 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 		}
 	}
 
-	// If GET with no options: HTMX flow lost state — redirect to home.
-	// (Non-HTMX direct URL hit also redirects to home.)
+	// GET with no options: either an HTMX-driven flow that lost state or a
+	// browser reload of /lts. For HTMX we still bounce home; for a full GET
+	// we render the rehydration shell so the browser's sessionStorage can
+	// rebuild the POST payload and swap the real page in.
 	if c.Request.Method == http.MethodGet && len(selectedOptionIDs) == 0 {
 		if isHTMXRequest(c) {
 			c.Header("HX-Redirect", "/")
 			c.Status(http.StatusOK)
 			return
 		}
-		c.Redirect(http.StatusFound, "/")
+		component := components.RehydratePage(
+			"selectedGameOptions",
+			"/lts",
+			"form-options",
+			"Leagues & Teams - EsportsCalendar",
+		)
+		if err := component.Render(m.Context, c.Writer); err != nil {
+			m.Logger.Error("Failed to render lts rehydrate", zap.Error(err))
+			c.String(http.StatusInternalServerError, "Failed to render page")
+		}
 		return
 	}
 
@@ -276,6 +287,28 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	component := components.SecondPage(selectedOptions)
 	if err := component.Render(m.Context, c.Writer); err != nil {
 		m.Logger.Error("Failed to render second page", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to render page")
+	}
+}
+
+// PreviewRehydrateHandler serves GET /preview with a small "restoring
+// session" shell. JS reads the prior selections payload from sessionStorage
+// (key: preview-selections) and POSTs it to /preview. If sessionStorage is
+// empty the client redirects to /.
+func (m *Middleware) PreviewRehydrateHandler(c *gin.Context) {
+	m.Logger.Info("Handler",
+		zap.String("handler", "PreviewRehydrateHandler"),
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+
+	component := components.RehydratePage(
+		"preview-selections",
+		"/preview",
+		"json",
+		"Preview - EsportsCalendar",
+	)
+	if err := component.Render(m.Context, c.Writer); err != nil {
+		m.Logger.Error("Failed to render preview rehydrate", zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to render page")
 	}
 }
