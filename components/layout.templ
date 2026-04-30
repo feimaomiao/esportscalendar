@@ -5,51 +5,37 @@ templ BaseLayout(title string) {
 	<html lang="en">
 		<head>
 			<script>
-			// Theme initialization - MUST be blocking to prevent flash
-			!function(){try{const t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}}();
-		</script>
+				// Blocking theme init — must run before paint to avoid FOUC.
+				!function(){try{const t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch{document.documentElement.setAttribute('data-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}}();
+			</script>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title }</title>
-			<!-- Favicon -->
 			<link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg"/>
-			<!-- Open Graph / Discord Preview -->
 			<meta property="og:type" content="website"/>
 			<meta property="og:site_name" content="EsportsCalendar"/>
 			<meta property="og:title" content="EsportsCalendar - Never Miss an Esports Match"/>
 			<meta property="og:description" content="Create personalized calendar feeds for your favorite esports matches. Track League of Legends, CS:GO, Dota 2, Valorant, and more - all in one place."/>
 			<meta property="og:image" content="https://esportscalendar.app/static/images/og-image.png"/>
 			<meta property="og:url" content="https://esportscalendar.app"/>
-			<!-- Twitter Card -->
 			<meta name="twitter:card" content="summary_large_image"/>
 			<meta name="twitter:title" content="EsportsCalendar - Never Miss an Esports Match"/>
 			<meta name="twitter:description" content="Create personalized calendar feeds for your favorite esports matches. Track League of Legends, CS:GO, Dota 2, Valorant, and more - all in one place."/>
 			<meta name="twitter:image" content="https://esportscalendar.app/static/images/og-image.png"/>
-			<!-- Theme Color -->
 			<meta name="theme-color" content="#4F46E5"/>
-			<!-- DaisyUI and Tailwind CSS -->
-			<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.24/dist/full.min.css" rel="stylesheet"/>
-			<script src="https://cdn.tailwindcss.com"></script>
-			<!-- HTMX -->
-			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-			<script>
-			// HTMX global config
-			htmx.config.defaultSwapStyle='innerHTML';
-			htmx.on('htmx:afterSwap',e=>e.detail.target.classList.add('fade-in'));
-			htmx.on('htmx:beforeRequest',e=>{if(e.detail.elt.tagName==='BUTTON')e.detail.elt.classList.add('loading')});
-			htmx.on('htmx:afterRequest',e=>{if(e.detail.elt.tagName==='BUTTON')e.detail.elt.classList.remove('loading')});
-		</script>
-			<!-- Custom CSS -->
+			<link rel="stylesheet" href="/static/css/tw.css"/>
 			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/js/vendor/htmx.min.js" defer></script>
+			<script src="/static/js/toast.js" defer></script>
+			<script src="/static/js/theme.js" defer></script>
+			<script src="/static/js/app.js" defer></script>
 		</head>
 		<body>
-			<!-- Navigation Bar -->
 			<nav class="navbar bg-base-100 shadow-lg fixed top-0 left-0 right-0 z-50">
 				<div class="navbar-start">
-					<!-- Mobile Hamburger Menu -->
 					<div class="dropdown lg:hidden">
-						<label tabindex="0" class="btn btn-ghost btn-circle">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<label tabindex="0" class="btn btn-ghost btn-circle" aria-label="Open menu">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
 							</svg>
 						</label>
@@ -59,7 +45,7 @@ templ BaseLayout(title string) {
 						</ul>
 					</div>
 					<a href="/" class="btn btn-ghost text-xl font-bold text-primary flex items-center gap-2">
-						<img src="/static/images/calendar-logo.svg" alt="Calendar Logo" class="w-8 h-8"/>
+						<img src="/static/images/calendar-logo.svg" alt="" class="w-8 h-8" aria-hidden="true"/>
 						<span class="hidden sm:inline">EsportsCalendar</span>
 					</a>
 				</div>
@@ -70,28 +56,24 @@ templ BaseLayout(title string) {
 					</ul>
 				</div>
 				<div class="navbar-end gap-2">
-					<!-- Theme Toggle -->
-					<label class="swap swap-rotate btn btn-ghost btn-circle">
+					<label class="swap swap-rotate btn btn-ghost btn-circle" aria-label="Toggle theme">
 						<input type="checkbox" id="theme-toggle"/>
-						<!-- Sun icon -->
-						<svg class="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+						<svg class="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
 							<path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"></path>
 						</svg>
-						<!-- Moon icon -->
-						<svg class="swap-on fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+						<svg class="swap-on fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
 							<path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"></path>
 						</svg>
 					</label>
-					<a href="https://github.com/feimaomiao/esportscalendar" target="_blank" class="btn btn-ghost btn-circle" title="GitHub Repository">
+					<a href="https://github.com/feimaomiao/esportscalendar" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-circle" title="GitHub Repository" aria-label="GitHub Repository">
 						@IconGitHub("w-5 h-5")
 					</a>
 				</div>
 			</nav>
-			<div class="min-h-screen bg-base-200 pt-16 pb-24 md:pb-16">
+			<div id="page-content" class="min-h-[calc(100vh-4rem)] bg-base-200 pt-16 pb-6">
 				{ children... }
 			</div>
-			<!-- Footer -->
-			<footer class="footer p-2 md:p-4 bg-base-300 text-base-content fixed bottom-0 left-0 right-0 z-50 text-xs md:text-base">
+			<footer class="footer footer-horizontal items-center p-2 md:p-3 bg-base-300 text-base-content text-xs md:text-sm">
 				<aside class="pl-1 md:pl-4">
 					<p>
 						<a href="https://icons8.com" target="_blank" rel="noopener noreferrer" class="link link-hover">Icons by Icons8</a>
@@ -104,19 +86,6 @@ templ BaseLayout(title string) {
 					<a href="https://github.com/feimaomiao/esportscalendar/issues" target="_blank" rel="noopener noreferrer" class="link link-hover">Issues</a>
 				</nav>
 			</footer>
-			<style>
-			/* Smooth scroll for anchor links */
-			html { scroll-behavior: smooth; }
-			/* HTMX fade-in animation */
-			.fade-in { animation: fadeIn 0.3s ease-in; }
-			@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-			/* Checkbox label visual feedback */
-			.label-checked { opacity: 1; font-weight: 600; }
-		</style>
-			<script>
-			// Theme toggle - consolidated and minified
-			!function(){const t=document.getElementById('theme-toggle');if(t){const e=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');t.checked='light'===e,t.onchange=()=>{const e=t.checked?'light':'dark';document.documentElement.setAttribute('data-theme',e),localStorage.setItem('theme',e)}}}();
-		</script>
 		</body>
 	</html>
 }

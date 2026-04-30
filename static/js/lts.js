@@ -1,154 +1,153 @@
-// LTS page - Submit selection for preview
-(function() {
-	console.log('lts.js loaded');
+// Bootstraps the "Leagues & Teams" page. Initializes each game card and wires
+// up the submit-for-preview button. Re-runs when the inner partial is swapped.
+(function init() {
+	const cards = document.querySelectorAll('[data-game-id]');
+	if (cards.length === 0) return;
 
-	function setupSubmitButton() {
-		const submitBtn = document.getElementById('submit-selection-btn');
-		console.log('Looking for submit button...', submitBtn);
+	// Each IIFE invocation owns its event listeners. Aborting any prior
+	// controller cleans up listeners attached on a previous swap.
+	if (window.__ltsAbort) window.__ltsAbort.abort();
+	const controller = new AbortController();
+	window.__ltsAbort = controller;
+	const { signal } = controller;
 
-		if (!submitBtn) {
-			console.error('Submit button not found');
-			// Try again after a short delay
-			setTimeout(setupSubmitButton, 100);
+	function ensureGameSelectionThen(callback) {
+		if (typeof initGameSelection === 'function') {
+			callback();
 			return;
 		}
+		const script = document.createElement('script');
+		script.src = '/static/js/game-selection.js';
+		script.onload = callback;
+		script.onerror = () => {
+			window.showToast?.('Failed to load selection module.', 'error');
+		};
+		document.head.appendChild(script);
+	}
 
-		console.log('Submit button found, attaching event listener');
+	ensureGameSelectionThen(() => {
+		cards.forEach((card) => {
+			const gameId = card.getAttribute('data-game-id');
+			if (gameId) initGameSelection(gameId);
+		});
+		// Allow the async league/team fetches a moment to settle before checking
+		// whether the submit button should enable.
+		setTimeout(() => {
+			if (typeof checkAndUpdateSubmitButton === 'function') {
+				checkAndUpdateSubmitButton();
+			}
+		}, 1000);
+	});
 
-		// Handle keyboard events
-		document.addEventListener('keydown', (e) => {
-			const activeElement = document.activeElement;
-			const isSearchInput = activeElement && (
-				activeElement.id && (
-					activeElement.id.startsWith('search-') ||
-					activeElement.id.startsWith('search-teams-')
-				)
-			);
+	const backBtn = document.getElementById('back-to-options-btn');
+	if (backBtn) {
+		backBtn.addEventListener('click', () => {
+			// Hard nav — full page reload to "/" — the only reliable way to
+			// guarantee a clean DOM state. Cheap on localhost; small payload.
+			window.location.assign('/');
+		}, { signal });
+	}
 
-			// Enter key to submit (only when NOT focused on search boxes)
-			if (e.key === 'Enter' && !submitBtn.disabled && !isSearchInput) {
-				e.preventDefault();
-				submitBtn.click();
+	const submitBtn = document.getElementById('submit-selection-btn');
+	if (!submitBtn) return;
+
+	function collectSelections() {
+		const selections = {};
+		document.querySelectorAll('[data-game-id]').forEach((card) => {
+			const gameId = card.getAttribute('data-game-id');
+			const container = card.querySelector(`#selected-combined-${gameId}`);
+			if (!container) return;
+
+			const leagues = [];
+			const teams = [];
+			container.querySelectorAll('.badge').forEach((badge) => {
+				if (badge.classList.contains('badge-primary') && badge.hasAttribute('data-league-id')) {
+					leagues.push(parseInt(badge.getAttribute('data-league-id'), 10));
+				} else if (badge.classList.contains('badge-secondary') && badge.hasAttribute('data-team-id')) {
+					teams.push(parseInt(badge.getAttribute('data-team-id'), 10));
+				}
+			});
+
+			let maxTier = 2;
+			try {
+				const raw = sessionStorage.getItem('lts-selections-' + gameId);
+				if (raw) {
+					const parsed = JSON.parse(raw);
+					if (parsed && typeof parsed.maxTier === 'number') maxTier = parsed.maxTier;
+				}
+			} catch {}
+
+			if (leagues.length > 0 || teams.length > 0) {
+				leagues.sort((a, b) => a - b);
+				teams.sort((a, b) => a - b);
+				selections[gameId] = { leagues, teams, maxTier };
 			}
 		});
 
-		submitBtn.addEventListener('click', async (e) => {
-			console.log('Submit button clicked', e);
-			e.preventDefault();
+		// Sort by gameId for stable cache keys.
+		const sorted = {};
+		Object.keys(selections)
+			.sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+			.forEach((k) => { sorted[k] = selections[k]; });
+		return sorted;
+	}
 
-			// Collect all selections from all game cards
-			const gameCards = document.querySelectorAll('[data-game-id]');
-			const selections = {};
+	async function submitPreview() {
+		const selections = collectSelections();
+		if (Object.keys(selections).length === 0) {
+			window.showToast?.('Please select at least one league or team before submitting.', 'warning');
+			return;
+		}
 
-			gameCards.forEach(card => {
-				const gameId = card.getAttribute('data-game-id');
-				const selectedContainer = card.querySelector(`#selected-combined-${gameId}`);
+		const hideScores = !!document.getElementById('hide-scores-checkbox')?.checked;
+		const payload = { selections, hideScores };
+		sessionStorage.setItem('preview-selections', JSON.stringify(payload));
 
-				if (!selectedContainer) {
-					console.error('Selected container not found for game:', gameId);
-					return;
-				}
+		window.setButtonLoading?.(submitBtn, true);
 
-				// Get all badges (leagues and teams)
-				const badges = selectedContainer.querySelectorAll('.badge');
-				const leagues = [];
-				const teams = [];
-
-				badges.forEach(badge => {
-					// Check if it's a league (badge-primary) or team (badge-secondary)
-					if (badge.classList.contains('badge-primary') && badge.hasAttribute('data-league-id')) {
-						const leagueId = parseInt(badge.getAttribute('data-league-id'));
-						leagues.push(leagueId);
-					} else if (badge.classList.contains('badge-secondary') && badge.hasAttribute('data-team-id')) {
-						const teamId = parseInt(badge.getAttribute('data-team-id'));
-						teams.push(teamId);
-					}
-				});
-
-				// Get tier value from sessionStorage
-				const savedKey = 'lts-selections-' + gameId;
-				const savedData = sessionStorage.getItem(savedKey);
-				let maxTier = 2; // Default to tier A (tier 2)
-				if (savedData) {
-					try {
-						const parsed = JSON.parse(savedData);
-						if (parsed.maxTier !== undefined) {
-							maxTier = parsed.maxTier;
-						}
-					} catch (e) {
-						console.error('Failed to parse saved tier:', e);
-					}
-				}
-
-				if (leagues.length > 0 || teams.length > 0) {
-					// Sort leagues and teams numerically
-					leagues.sort((a, b) => a - b);
-					teams.sort((a, b) => a - b);
-
-					selections[gameId] = {
-						leagues: leagues,
-						teams: teams,
-						maxTier: maxTier
-					};
-				}
+		try {
+			const response = await fetch('/preview', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'HX-Request': 'true',
+					'HX-Target': 'page-content',
+				},
+				body: JSON.stringify(payload),
 			});
 
-			// Sort game IDs and create a sorted selections object
-			const sortedSelections = {};
-			Object.keys(selections).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
-				sortedSelections[key] = selections[key];
-			});
-
-			console.log('Collected selections:', sortedSelections);
-
-			// Check if any selections were made
-			if (Object.keys(sortedSelections).length === 0) {
-				alert('Please select at least one league or team before submitting.');
+			if (!response.ok) {
+				window.showToast?.(`Preview failed (${response.status}).`, 'error');
 				return;
 			}
 
-			// Save selections to sessionStorage before navigating
-			sessionStorage.setItem('preview-selections', JSON.stringify(sortedSelections));
+			const html = await response.text();
+			const target = document.getElementById('page-content');
+			target.innerHTML = html;
+			target.classList.add('fade-in');
+			window.executeScriptsIn?.(target);
+			if (typeof htmx !== 'undefined') htmx.process(target);
 
-			// Send POST request to /preview
-			try {
-				const response = await fetch('/preview', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(sortedSelections)
-				});
-
-				console.log('Response status:', response.status);
-
-				if (response.ok) {
-					const html = await response.text();
-
-					// Store current theme before replacing document
-					const currentTheme = localStorage.getItem('theme') || 'dark';
-					console.log('Current theme before navigation:', currentTheme);
-
-					// Replace entire page content
-					document.open();
-					document.write(html);
-					document.close();
-
-					// The BaseLayout's inline script will handle theme initialization
-					// We don't need to do anything here
-
-					window.history.pushState({}, '', '/preview');
-				} else {
-					console.error('Request failed:', response.statusText);
-					alert('Failed to submit selections: ' + response.statusText);
-				}
-			} catch (error) {
-				console.error('Error:', error);
-				alert('Error: ' + error.message);
-			}
-		}, false);
+			history.pushState({}, '', '/preview');
+			document.title = 'Preview - EsportsCalendar';
+		} catch (err) {
+			window.showToast?.('Network error: ' + err.message, 'error');
+		} finally {
+			window.setButtonLoading?.(submitBtn, false);
+		}
 	}
 
-	// Call setup immediately and also wait for DOM ready
-	setupSubmitButton();
+	submitBtn.addEventListener('click', submitPreview, { signal });
+
+	// Enter on this page submits unless focus is inside a search input (where
+	// Enter is used to toggle the highlighted dropdown row). Auto-removed on
+	// next swap via the abort controller.
+	document.addEventListener('keydown', (e) => {
+		if (e.key !== 'Enter') return;
+		if (submitBtn.disabled) return;
+		const id = (document.activeElement && document.activeElement.id) || '';
+		if (id.startsWith('search-') || id.startsWith('search-teams-')) return;
+		e.preventDefault();
+		submitPreview();
+	}, { signal });
 })();

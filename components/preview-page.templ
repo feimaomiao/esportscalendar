@@ -5,56 +5,48 @@ import "fmt"
 
 templ PreviewPage(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
 	@BaseLayout("Preview - EsportsCalendar") {
-		@ProgressIndicator(3)
-		<div class="container mx-auto p-4">
-			<div class="max-w-5xl mx-auto">
-				@PreviewPageContent(matches, showingPast, hideScores)
-			</div>
-		</div>
+		@PreviewInner(matches, showingPast, hideScores)
 	}
+}
+
+templ PreviewInner(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
+	@ProgressIndicator(3)
+	<div class="container mx-auto p-4">
+		<div class="max-w-5xl mx-auto">
+			@PreviewPageContent(matches, showingPast, hideScores)
+		</div>
+	</div>
+	<script src="/static/js/preview.js"></script>
 }
 
 templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
 	<div class="card bg-base-100 shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">Here's what your calendar would look like</h2>
-			<div class="alert alert-info mb-4">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
+			<div class="alert alert-info alert-soft mb-4" role="status">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5" aria-hidden="true">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 				</svg>
 				<span>All times are displayed in your <strong>local timezone</strong></span>
 			</div>
 			<div id="preview-content" class="mt-4">
 				if len(matches) == 0 {
-					<div class="alert alert-warning">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+					<div class="alert alert-warning alert-soft" role="alert">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
 						</svg>
 						<span>No matches found for your selections.</span>
 					</div>
 				} else {
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					<div class="flex flex-col gap-2">
 						for _, match := range matches {
-							<div class="card bg-base-200 shadow-md hover:shadow-xl transition-shadow">
-								<div class="card-body p-4">
-									<!-- Game Badge -->
-									<div class="mb-2">
-										<span class="badge badge-primary badge-sm">{ match.GameName }</span>
-									</div>
-									<!-- Match Name -->
-									<h3 class="card-title text-base mb-2">{ match.Name }</h3>
-									<!-- Teams -->
-									<div class="flex items-center justify-between gap-2 mb-3">
-										<div class="flex items-center gap-2 flex-1">
-											if match.Team1Image.Valid && match.Team1Image.String != "" {
-												if match.Team1Name.Valid {
-													<img src={ match.Team1Image.String } alt={ match.Team1Name.String } class="w-8 h-8 rounded"/>
-												} else {
-													<img src={ match.Team1Image.String } alt="TBD" class="w-8 h-8 rounded"/>
-												}
-											} else {
-												<img src="/static/images/default-logo.png" alt="TBD" class="w-8 h-8 rounded"/>
-											}
+							<div class="bg-base-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3">
+								<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+									<!-- Game badge (always) -->
+									<span class="badge badge-primary badge-sm flex-shrink-0" title={ match.GameName }>{ match.GameName }</span>
+									<!-- Teams (always) — claims the bulk of horizontal space -->
+									<div class="flex items-center gap-2 flex-1 min-w-[12rem]">
+										<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
 											<span class="font-semibold text-sm truncate">
 												if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
 													{ match.Team1Acronym.String }
@@ -64,9 +56,27 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 													TBD
 												}
 											</span>
+											if match.Team1Image.Valid && match.Team1Image.String != "" {
+												if match.Team1Name.Valid {
+													<img src={ match.Team1Image.String } alt={ match.Team1Name.String } class="w-7 h-7 rounded flex-shrink-0"/>
+												} else {
+													<img src={ match.Team1Image.String } alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
+												}
+											} else {
+												<img src="/static/images/default-logo.png" alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
+											}
 										</div>
-										<span class="text-xs text-gray-500 font-bold">VS</span>
-										<div class="flex items-center gap-2 flex-1 justify-end">
+										<span class="text-xs text-gray-500 font-bold flex-shrink-0">VS</span>
+										<div class="flex items-center gap-2 flex-1 min-w-0">
+											if match.Team2Image.Valid && match.Team2Image.String != "" {
+												if match.Team2Name.Valid {
+													<img src={ match.Team2Image.String } alt={ match.Team2Name.String } class="w-7 h-7 rounded flex-shrink-0"/>
+												} else {
+													<img src={ match.Team2Image.String } alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
+												}
+											} else {
+												<img src="/static/images/default-logo.png" alt="TBD" class="w-7 h-7 rounded flex-shrink-0"/>
+											}
 											<span class="font-semibold text-sm truncate">
 												if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
 													{ match.Team2Acronym.String }
@@ -76,52 +86,40 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 													TBD
 												}
 											</span>
-											if match.Team2Image.Valid && match.Team2Image.String != "" {
-												if match.Team2Name.Valid {
-													<img src={ match.Team2Image.String } alt={ match.Team2Name.String } class="w-8 h-8 rounded"/>
-												} else {
-													<img src={ match.Team2Image.String } alt="TBD" class="w-8 h-8 rounded"/>
-												}
-											} else {
-												<img src="/static/images/default-logo.png" alt="TBD" class="w-8 h-8 rounded"/>
-											}
 										</div>
 									</div>
-									<!-- Expected Start Time -->
-									<div class="flex items-center gap-2 text-sm">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<!-- Time (always) -->
+									<div class="flex items-center gap-1 text-xs flex-shrink-0">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 										</svg>
 										if match.ExpectedStartTime.Valid {
-											<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
-												<span class="font-mono match-date">
-													{ match.ExpectedStartTime.Time.Format("Jan 02, 2006") }
-												</span>
-												<span class="font-mono font-semibold match-hour">
-													{ match.ExpectedStartTime.Time.Format("15:04") }
-												</span>
+											<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
+												<span class="font-mono match-date">{ match.ExpectedStartTime.Time.Format("Jan 02, 2006") }</span>
+												<span class="font-mono font-semibold match-hour ml-1">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
 											</span>
 										} else {
 											<span class="text-gray-500">TBD</span>
 										}
 									</div>
-									<!-- League -->
-									<div class="text-xs text-gray-500 mt-2 truncate">
-										{ match.LeagueName }
-									</div>
-									<!-- Status Badge -->
-									<div class="card-actions justify-end mt-2">
+									<!-- Status (always) -->
+									<div class="flex-shrink-0">
 										if match.Finished {
 											if hideScores {
 												<span class="badge badge-success badge-sm">Finished</span>
 											} else {
-												<span class="badge badge-success badge-sm">
+												<span class="badge badge-success badge-sm whitespace-nowrap">
 													{ fmt.Sprintf("%d-%d", match.Team1Score, match.Team2Score) }
 												</span>
 											}
 										} else {
 											<span class="badge badge-info badge-sm">Upcoming</span>
 										}
+									</div>
+									<!-- Secondary line: match name (md+) and league (lg+) — wraps below -->
+									<div class="basis-full hidden md:flex items-center gap-3 text-xs text-base-content/60 mt-1">
+										<span class="truncate" title={ match.Name }>{ match.Name }</span>
+										<span class="hidden lg:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
 									</div>
 								</div>
 							</div>
@@ -130,138 +128,21 @@ templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, show
 				}
 			</div>
 			<div class="card-actions flex-col md:flex-row md:justify-between gap-4 mt-6">
-				<a href="/lts" id="back-to-selection-btn" class="btn btn-outline w-full md:w-auto">
+					<button
+					type="button"
+					id="back-to-selection-btn"
+					class="btn btn-outline w-full md:w-auto"
+				>
 					@IconArrowLeft("w-5 h-5")
 					Back to Selection
-				</a>
+				</button>
 				<button type="button" id="export-calendar-btn" class="btn btn-primary w-full md:w-auto">
 					Export Calendar
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
 					</svg>
 				</button>
 			</div>
-			<script>
-				// Convert UTC times to local timezone
-				(function() {
-					const matchTimes = document.querySelectorAll('.match-time');
-					matchTimes.forEach(timeElement => {
-						const utcTimeStr = timeElement.getAttribute('data-utc-time');
-						if (!utcTimeStr) return;
-
-						const utcDate = new Date(utcTimeStr);
-						if (isNaN(utcDate.getTime())) return;
-
-						// Format date
-						const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };
-						const localDateStr = utcDate.toLocaleDateString('en-US', dateOptions);
-
-						// Format time
-						const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-						const localTimeStr = utcDate.toLocaleTimeString('en-US', timeOptions);
-
-						// Update the display
-						const dateSpan = timeElement.querySelector('.match-date');
-						const hourSpan = timeElement.querySelector('.match-hour');
-
-						if (dateSpan) dateSpan.textContent = localDateStr;
-						if (hourSpan) hourSpan.textContent = localTimeStr;
-					});
-				})();
-
-				// Handle keyboard events
-				document.addEventListener('keydown', (e) => {
-					// Enter key to trigger export
-					if (e.key === 'Enter') {
-						e.preventDefault();
-						const exportBtn = document.getElementById('export-calendar-btn');
-						if (exportBtn && !exportBtn.disabled) {
-							exportBtn.click();
-						}
-					}
-				});
-
-				// Handle back to selection with saved game options
-				document.getElementById('back-to-selection-btn').addEventListener('click', async (e) => {
-					e.preventDefault();
-					// Just navigate to /lts - the page will restore selections from sessionStorage
-					window.location.href = '/lts';
-				});
-
-				// Handle export calendar button
-				document.getElementById('export-calendar-btn').addEventListener('click', async (e) => {
-					e.preventDefault();
-					const btn = e.currentTarget;
-
-					// Get selections from sessionStorage
-					const previewSelections = sessionStorage.getItem('preview-selections');
-					if (!previewSelections) {
-						alert('No selections found. Please go back and make your selections again.');
-						return;
-					}
-
-					// Disable button and show loading state
-					btn.disabled = true;
-					btn.classList.add('loading');
-
-					try {
-						const response = await fetch('/export', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: previewSelections
-						});
-
-						if (response.ok) {
-							const data = await response.json();
-
-							// Try to copy to clipboard
-							try {
-								await navigator.clipboard.writeText(data.url);
-								alert('Calendar link created and copied to clipboard!\n\n' + data.url);
-							} catch (err) {
-								// Show modal with selectable text input
-								const modal = document.createElement('div');
-								modal.className = 'modal modal-open';
-								modal.innerHTML = `
-									<div class="modal-box">
-										<h3 class="font-bold text-lg mb-4">Calendar Link Created!</h3>
-										<p class="mb-4">Copy the link below:</p>
-										<input type="text" readonly value="${data.url}"
-											class="input input-bordered w-full font-mono text-sm"
-											id="calendar-url-input"
-											onclick="this.select()">
-										<div class="modal-action">
-											<button class="btn" onclick="this.closest('.modal').remove()">Close</button>
-										</div>
-									</div>
-								`;
-								document.body.appendChild(modal);
-
-								// Auto-select the text
-								setTimeout(() => {
-									const input = document.getElementById('calendar-url-input');
-									if (input) {
-										input.focus();
-										input.select();
-									}
-								}, 100);
-							}
-						} else {
-							const errorData = await response.json();
-							alert('Failed to export calendar: ' + (errorData.error || 'Unknown error'));
-						}
-					} catch (error) {
-						console.error('Error exporting calendar:', error);
-						alert('Error exporting calendar: ' + error.message);
-					} finally {
-						// Re-enable button
-						btn.disabled = false;
-						btn.classList.remove('loading');
-					}
-				});
-			</script>
 		</div>
 	</div>
 }

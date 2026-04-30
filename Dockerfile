@@ -9,14 +9,15 @@ COPY package.json package-lock.json ./
 # Install npm dependencies
 RUN npm ci
 
-# Copy input CSS and config
-COPY input.css tailwind.config.js ./
+# Copy input CSS and templates (templates are scanned by Tailwind via @source)
+COPY input.css ./
+COPY components ./components
 
 # Create output directory
-RUN mkdir -p ./public/static/css
+RUN mkdir -p ./static/css
 
 # Build Tailwind CSS
-RUN npx @tailwindcss/cli -i input.css -o ./public/static/css/tw.css --minify
+RUN npx @tailwindcss/cli -i input.css -o ./static/css/tw.css --minify
 
 # Go build stage
 FROM golang:1.26-alpine AS builder
@@ -48,7 +49,7 @@ RUN sqlc generate
 RUN templ generate
 
 # Copy built CSS from css-builder stage
-COPY --from=css-builder /build/public/static/css/tw.css ./static/css/tw.css
+COPY --from=css-builder /build/static/css/tw.css ./static/css/tw.css
 
 # Build the application
 # CGO_ENABLED=0 for static binary

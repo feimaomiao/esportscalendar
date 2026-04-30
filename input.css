@@ -1,35 +1,38 @@
 @import "tailwindcss" source(none);
 @plugin "@tailwindcss/typography";
-@source "./internal/views/**/*.templ";
+@source "./components/**/*.templ";
 @plugin "daisyui" {
 themes:
     light --default,
     dark;
 }
+
+/* Light theme — restores the DaisyUI v4 default purple palette
+   that the site was rendering when Tailwind CDN loaded v4 at runtime. */
 @plugin "daisyui/theme" {
 name: "light";
 default: true;
 prefersdark: false;
---color-base-100: oklch(92% 0 0);
---color-base-200: oklch(87% 0 0);
---color-base-300: oklch(70% 0 0);
---color-base-content: oklch(0% 0 0);
---color-primary: oklch(55% 0.135 66.442);
---color-primary-content: oklch(98% 0.018 155.826);
---color-secondary: oklch(53% 0.157 131.589);
---color-secondary-content: oklch(98% 0.031 120.757);
---color-accent: oklch(64% 0.222 41.116);
---color-accent-content: oklch(98% 0.016 73.684);
---color-neutral: oklch(43% 0 0);
---color-neutral-content: oklch(98% 0 0);
---color-info: oklch(52% 0.105 223.128);
---color-info-content: oklch(98% 0.019 200.873);
---color-success: oklch(50% 0.118 165.612);
---color-success-content: oklch(98% 0.018 155.826);
---color-warning: oklch(55% 0.195 38.402);
---color-warning-content: oklch(98% 0.016 73.684);
---color-error: oklch(52% 0.223 3.958);
---color-error-content: oklch(97% 0.014 343.198);
+--color-base-100: #ffffff;
+--color-base-200: #f2f2f2;
+--color-base-300: #e5e6e6;
+--color-base-content: #1f2937;
+--color-primary: #570df8;
+--color-primary-content: #ffffff;
+--color-secondary: #f000b8;
+--color-secondary-content: #ffffff;
+--color-accent: #37cdbe;
+--color-accent-content: #163835;
+--color-neutral: #2a323c;
+--color-neutral-content: #d6d3d1;
+--color-info: #3abff8;
+--color-info-content: #002b3d;
+--color-success: #36d399;
+--color-success-content: #003320;
+--color-warning: #fbbd23;
+--color-warning-content: #382800;
+--color-error: #f87272;
+--color-error-content: #470000;
 --radius-selector: 0.5rem;
 --radius-field: 0.5rem;
 --radius-box: 0.5rem;
@@ -39,30 +42,32 @@ prefersdark: false;
 --depth: 1;
 --noise: 0;
 }
+
+/* Dark theme — DaisyUI v4 default dark palette. */
 @plugin "daisyui/theme" {
 name: "dark";
 default: false;
 prefersdark: false;
---color-base-100: oklch(26% 0 0);
---color-base-200: oklch(20% 0 0);
---color-base-300: oklch(14% 0 0);
---color-base-content: oklch(97% 0 0);
---color-primary: oklch(79% 0.184 86.047);
---color-primary-content: oklch(28% 0.066 53.813);
---color-secondary: oklch(64% 0.2 131.684);
---color-secondary-content: oklch(98% 0.031 120.757);
---color-accent: oklch(64% 0.222 41.116);
---color-accent-content: oklch(98% 0.016 73.684);
---color-neutral: oklch(14% 0 0);
---color-neutral-content: oklch(98% 0 0);
---color-info: oklch(71% 0.143 215.221);
---color-info-content: oklch(98% 0.019 200.873);
---color-success: oklch(72% 0.219 149.579);
---color-success-content: oklch(98% 0.018 155.826);
---color-warning: oklch(70% 0.213 47.604);
---color-warning-content: oklch(98% 0.016 73.684);
---color-error: oklch(65% 0.241 354.308);
---color-error-content: oklch(97% 0.014 343.198);
+--color-base-100: #1d232a;
+--color-base-200: #191e24;
+--color-base-300: #15191e;
+--color-base-content: #a6adba;
+--color-primary: #793ef9;
+--color-primary-content: #ffffff;
+--color-secondary: #f471b5;
+--color-secondary-content: #1f0a17;
+--color-accent: #1fb2a6;
+--color-accent-content: #ffffff;
+--color-neutral: #2a323c;
+--color-neutral-content: #a6adba;
+--color-info: #3abff8;
+--color-info-content: #002b3d;
+--color-success: #36d399;
+--color-success-content: #003320;
+--color-warning: #fbbd23;
+--color-warning-content: #382800;
+--color-error: #f87272;
+--color-error-content: #470000;
 --radius-selector: 0.5rem;
 --radius-field: 0.5rem;
 --radius-box: 0.5rem;
