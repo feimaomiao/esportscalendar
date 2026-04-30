@@ -38,11 +38,11 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		endTime := startTime.Add(duration)
 
 		ics.WriteString("BEGIN:VEVENT\r\n")
-		ics.WriteString(fmt.Sprintf("UID:%d@%s\r\n", match.ID, baseURL))
-		ics.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
-		ics.WriteString(fmt.Sprintf("DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z")))
-		ics.WriteString(fmt.Sprintf("DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z")))
-		ics.WriteString(fmt.Sprintf("URL:%s\r\n", baseURL))
+		fmt.Fprintf(&ics, "UID:%d@%s\r\n", match.ID, baseURL)
+		fmt.Fprintf(&ics, "DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
+		fmt.Fprintf(&ics, "DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
+		fmt.Fprintf(&ics, "DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z"))
+		fmt.Fprintf(&ics, "URL:%s\r\n", baseURL)
 
 		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
 		// Add scores to title if match is finished and hideScores is false
@@ -54,7 +54,7 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 			// Add score to the title
 			summary = fmt.Sprintf("%s [%d-%d]", summary, match.Team1Score, match.Team2Score)
 		}
-		ics.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(summary)))
+		fmt.Fprintf(&ics, "SUMMARY:%s\r\n", escapeICS(summary))
 
 		// Build description with teams, league, tournament, and score for finished matches
 		description := fmt.Sprintf("%s vs %s - %s - %s (%s)",
@@ -86,7 +86,7 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 				)
 			}
 		}
-		ics.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(description)))
+		fmt.Fprintf(&ics, "DESCRIPTION:%s\r\n", escapeICS(description))
 
 		// Build location: League - Series (only include dash if both are non-empty)
 		location := ""
@@ -99,7 +99,7 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 			location = match.SeriesName
 		}
 		if location != "" {
-			ics.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICS(location)))
+			fmt.Fprintf(&ics, "LOCATION:%s\r\n", escapeICS(location))
 		}
 
 		// All matches are confirmed
