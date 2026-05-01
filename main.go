@@ -11,9 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/feimaomiao/esportscalendar/middleware"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/feimaomiao/esportscalendar/middleware"
 
 	// loads .env file automatically.
 	_ "github.com/joho/godotenv/autoload"
@@ -87,6 +88,8 @@ func main() {
 	router.POST("/export", mw.ExportHandler)
 	router.GET("/how-to-use", mw.HowToUseHandler)
 	router.GET("/about", mw.AboutHandler)
+	router.GET("/schedule", mw.ScheduleHandler)
+	router.POST("/api/schedule", mw.ScheduleAPIHandler)
 	router.GET("/api/league-options/*param", mw.LeagueOptionsHandler)
 	router.GET("/api/team-options/*param", mw.TeamOptionsHandler)
 

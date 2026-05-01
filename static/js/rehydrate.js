@@ -20,10 +20,10 @@
 			window.location.replace('/');
 		};
 
-		let saved = null;
+		let saved;
 		try {
 			saved = sessionStorage.getItem(sessionKey);
-		} catch (e) {
+		} catch {
 			return fail('sessionStorage unavailable');
 		}
 		if (!saved) return fail('no saved payload');
@@ -48,9 +48,7 @@
 			if (!Array.isArray(ids) || ids.length === 0) {
 				return fail('no options selected');
 			}
-			body = ids
-				.map((id) => 'options=' + encodeURIComponent(id))
-				.join('&');
+			body = ids.map((id) => 'options=' + encodeURIComponent(id)).join('&');
 			contentType = 'application/x-www-form-urlencoded';
 		} else {
 			return fail('unknown bodyMode: ' + bodyMode);

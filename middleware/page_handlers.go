@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/feimaomiao/esportscalendar/components"
-	"github.com/feimaomiao/esportscalendar/dbtypes"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/feimaomiao/esportscalendar/components"
+	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
+
+const allGamesCacheKey = "all-games"
 
 func (m *Middleware) IndexHandler(c *gin.Context) {
 	m.Logger.Info("IndexHandler", zap.String("method", c.Request.Method), zap.String("path", c.Request.URL.Path))
@@ -20,7 +23,7 @@ func (m *Middleware) IndexHandler(c *gin.Context) {
 	var cacheHit bool
 
 	// Check cache first
-	cacheKey := "all-games"
+	cacheKey := allGamesCacheKey
 	if m.RedisCache != nil {
 		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
 			//nolint:musttag // dbtypes.Game has json tags defined
@@ -150,6 +153,261 @@ func (m *Middleware) AboutHandler(c *gin.Context) {
 	}
 }
 
+// gameOptions returns the same Option list used by IndexHandler/SecondPageHandler:
+// all games minus the ignored set, with logo paths resolved.
+func (m *Middleware) gameOptions() ([]components.Option, error) {
+	var games []dbtypes.Game
+	cacheKey := allGamesCacheKey
+	if m.RedisCache != nil {
+		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if err := json.Unmarshal([]byte(cachedJSON), &games); err != nil {
+				m.Logger.Warn("Failed to unmarshal cached games", zap.Error(err))
+				games = nil
+			}
+		}
+	}
+	//nolint:nestif // Cache-then-DB pattern with optional re-cache, mirrors IndexHandler.
+	if games == nil {
+		var err error
+		games, err = m.DBConn.GetAllGames(m.Context)
+		if err != nil {
+			return nil, err
+		}
+		if m.RedisCache != nil {
+			//nolint:musttag // dbtypes.Game has json tags defined
+			if gamesJSON, marshalErr := json.Marshal(games); marshalErr == nil {
+				if cacheErr := m.RedisCache.SetData(cacheKey, string(gamesJSON)); cacheErr != nil {
+					m.Logger.Warn("Failed to cache games", zap.Error(cacheErr))
+				}
+			}
+		}
+	}
+
+	ignored := map[int]bool{20: true, 25: true, 27: true, 29: true, 30: true}
+	var options []components.Option
+	for _, game := range games {
+		if ignored[int(game.ID)] {
+			continue
+		}
+		logo := components.DefaultLogo()
+		if game.Slug.Valid {
+			logo = components.LogoPath(game.Slug.String) + ".png"
+		}
+		options = append(options, components.Option{
+			ID:      strconv.Itoa(int(game.ID)),
+			Label:   game.Name,
+			Logo:    logo,
+			Checked: false,
+		})
+	}
+	return options, nil
+}
+
+// scheduleDefaults builds the default selection set used to render the initial
+// match list server-side: every non-ignored game with its tier-1 leagues.
+// Mirrors what schedule.js + game-selection.js produce on a fresh client.
+func (m *Middleware) scheduleDefaults(options []components.Option) ([]int32, []int32) {
+	gameIDs := make([]int32, 0, len(options))
+	var leagueIDs []int32
+	for _, opt := range options {
+		gameID64, err := strconv.ParseInt(opt.ID, 10, 32)
+		if err != nil {
+			continue
+		}
+		gameID := int32(gameID64)
+		gameIDs = append(gameIDs, gameID)
+
+		leagues, leagueErr := m.DBConn.GetLeaguesByGameID(m.Context, gameID)
+		if leagueErr != nil {
+			m.Logger.Warn("Schedule defaults: failed to load leagues",
+				zap.Int32("game_id", gameID), zap.Error(leagueErr))
+			continue
+		}
+		for _, l := range leagues {
+			if isTier1League(l.MinTier) {
+				leagueIDs = append(leagueIDs, l.ID)
+			}
+		}
+	}
+	return gameIDs, leagueIDs
+}
+
+func isTier1League(minTier any) bool {
+	if minTier == nil {
+		return false
+	}
+	switch t := minTier.(type) {
+	case int32:
+		return t == 1
+	case int64:
+		return t == 1
+	}
+	return false
+}
+
+func (m *Middleware) ScheduleHandler(c *gin.Context) {
+	const scheduleHistory = 30
+	const scheduleHorizon = 30
+	const defaultMaxTier = 2
+	const defaultHideScores = true
+
+	m.Logger.Info("Handler",
+		zap.String("handler", "ScheduleHandler"),
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+
+	options, err := m.gameOptions()
+	if err != nil {
+		m.Logger.Error("Failed to fetch games", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to fetch games")
+		return
+	}
+
+	gameIDs, leagueIDs := m.scheduleDefaults(options)
+
+	var matches []dbtypes.GetFutureMatchesBySelectionsRow
+	nowIndex := -1
+	if len(gameIDs) > 0 && len(leagueIDs) > 0 {
+		pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+			GameIds:    gameIDs,
+			LeagueIds:  leagueIDs,
+			TeamIds:    nil,
+			MaxTier:    defaultMaxTier,
+			LimitCount: scheduleHistory,
+		})
+		if pastErr != nil {
+			m.Logger.Warn("Schedule defaults: past fetch failed", zap.Error(pastErr))
+		}
+		futureMatches, futureErr := m.DBConn.GetFutureMatchesBySelections(
+			m.Context,
+			dbtypes.GetFutureMatchesBySelectionsParams{
+				GameIds:    gameIDs,
+				LeagueIds:  leagueIDs,
+				TeamIds:    nil,
+				MaxTier:    defaultMaxTier,
+				LimitCount: scheduleHorizon,
+			},
+		)
+		if futureErr != nil {
+			m.Logger.Warn("Schedule defaults: future fetch failed", zap.Error(futureErr))
+		}
+		matches = make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
+		for _, pm := range pastMatches {
+			matches = append(matches, dbtypes.GetFutureMatchesBySelectionsRow(pm))
+		}
+		matches = append(matches, futureMatches...)
+		if len(pastMatches) > 0 && len(futureMatches) > 0 {
+			nowIndex = len(pastMatches)
+		}
+	}
+
+	// The page bakes in match data tied to wall-clock time (// now divider,
+	// upcoming list). Caching it would serve a stale "now" boundary on revisit.
+	c.Header("Cache-Control", "no-store")
+	if isHTMXRequest(c) {
+		setHTMXTitle(c, "Schedule - EsportsCalendar")
+		component := components.SchedulePageInner(options, matches, nowIndex, defaultHideScores)
+		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
+			m.Logger.Error("Failed to render schedule inner", zap.Error(renderErr))
+			c.String(http.StatusInternalServerError, "Failed to render page")
+		}
+		return
+	}
+
+	component := components.SchedulePage(options, matches, nowIndex, defaultHideScores)
+	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
+		m.Logger.Error("Failed to render schedule page", zap.Error(renderErr))
+		c.String(http.StatusInternalServerError, "Failed to render page")
+	}
+}
+
+// ScheduleAPIHandler accepts the same selections payload as /preview and returns
+// an HTML fragment with up to scheduleHistory past + scheduleHorizon future matches.
+func (m *Middleware) ScheduleAPIHandler(c *gin.Context) {
+	const scheduleHistory = 30
+	const scheduleHorizon = 30
+
+	m.Logger.Info("Handler",
+		zap.String("handler", "ScheduleAPIHandler"),
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path))
+
+	var requestBody map[string]any
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		m.Logger.Warn("Failed to parse schedule body", zap.Error(err))
+		c.String(http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	hideScores := false
+	if v, ok := requestBody["hideScores"].(bool); ok {
+		hideScores = v
+	}
+
+	selections, _ := requestBody["selections"].(map[string]any)
+	if selections == nil {
+		selections = requestBody
+	}
+
+	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	if err := validateSelections(gameIDs, leagueIDs, teamIDs); err != nil {
+		m.Logger.Warn("Invalid schedule selections", zap.Error(err))
+		// Empty list is fine — render the empty state component so the client
+		// still gets HTML to swap in.
+		component := components.ScheduleMatchList(nil, hideScores, -1)
+		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
+			c.String(http.StatusInternalServerError, "Failed to render page")
+		}
+		return
+	}
+
+	pastMatches, err := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+		GameIds:    gameIDs,
+		LeagueIds:  leagueIDs,
+		TeamIds:    teamIDs,
+		MaxTier:    maxTier,
+		LimitCount: scheduleHistory,
+	})
+	if err != nil {
+		m.Logger.Error("Failed to fetch past matches", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to fetch matches")
+		return
+	}
+
+	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
+		GameIds:    gameIDs,
+		LeagueIds:  leagueIDs,
+		TeamIds:    teamIDs,
+		MaxTier:    maxTier,
+		LimitCount: scheduleHorizon,
+	})
+	if err != nil {
+		m.Logger.Error("Failed to fetch future matches", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to fetch matches")
+		return
+	}
+
+	combined := make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
+	for _, pm := range pastMatches {
+		combined = append(combined, dbtypes.GetFutureMatchesBySelectionsRow(pm))
+	}
+	combined = append(combined, futureMatches...)
+
+	// nowIndex marks the boundary between past and future; -1 means no divider.
+	nowIndex := -1
+	if len(pastMatches) > 0 && len(futureMatches) > 0 {
+		nowIndex = len(pastMatches)
+	}
+
+	c.Header("Cache-Control", "no-store")
+	component := components.ScheduleMatchList(combined, hideScores, nowIndex)
+	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
+		m.Logger.Error("Failed to render schedule list", zap.Error(renderErr))
+		c.String(http.StatusInternalServerError, "Failed to render page")
+	}
+}
+
 //nolint:gocognit // Handler complexity is acceptable for this use case
 func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
@@ -202,7 +460,7 @@ func (m *Middleware) SecondPageHandler(c *gin.Context) {
 	// Fetch all games (check cache first)
 	var games []dbtypes.Game
 	var cacheHit bool
-	cacheKey := "all-games"
+	cacheKey := allGamesCacheKey
 	if m.RedisCache != nil {
 		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
 			//nolint:musttag // dbtypes.Game has json tags defined

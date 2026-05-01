@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/feimaomiao/esportscalendar/dbtypes"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
 func (m *Middleware) ExportHandler(c *gin.Context) {

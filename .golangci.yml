@@ -12,8 +12,14 @@
 
 version: "2"
 run:
-  tests: false 
+  tests: false
+  # node_modules ships some packages with their own Go source (e.g. flatted's
+  # `golang/` dir) which triggers lint on third-party code we don't own.
+  # tmp/ holds Air's build cache.
+  build-tags: []
 issues:
+  # Note: in golangci-lint v2 directory excludes live under `linters.exclusions.paths`
+  # below (see end of file), not at this level.
   # Maximum count of issues with the same text.
   # Set to 0 to disable.
   # Default: 3
@@ -31,6 +37,12 @@ formatters:
     ## disabled
     #- gofumpt # [replaced by goimports, gofumports is not available yet] checks if code and import statements are formatted, with additional rules
 
+  exclusions:
+    paths:
+      - node_modules
+      - tmp
+      - data
+
   # All settings can be found here https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml
   settings:
     goimports:
@@ -38,7 +50,7 @@ formatters:
       # with the given prefixes are grouped after 3rd-party packages.
       # Default: []
       local-prefixes:
-        - github.com/my/project
+        - github.com/feimaomiao/esportscalendar
 
     golines:
       # Target maximum line length.
@@ -408,6 +420,11 @@ linters:
     # Log a warning if an exclusion rule is unused.
     # Default: false
     warn-unused: true
+    # Skip vendored / third-party / build-cache directories.
+    paths:
+      - node_modules
+      - tmp
+      - data
     # Predefined exclusion rules.
     # Default: []
     presets:

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/feimaomiao/esportscalendar/dbtypes"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
+
+	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
 type Middleware struct {

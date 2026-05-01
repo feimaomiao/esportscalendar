@@ -1,8 +1,20 @@
 {
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write '**/*.{js,css,json,yml,yaml,md}'",
+    "format:check": "prettier --check '**/*.{js,css,json,yml,yaml,md}'"
+  },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/cli": "^4.1.13",
     "@tailwindcss/typography": "^0.5.18",
     "daisyui": "^5.1.13",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.5.0",
+    "prettier": "^3.8.3",
     "tailwindcss": "^4.1.13"
   }
 }

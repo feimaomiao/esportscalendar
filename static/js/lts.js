@@ -41,11 +41,15 @@
 
 	const backBtn = document.getElementById('back-to-options-btn');
 	if (backBtn) {
-		backBtn.addEventListener('click', () => {
-			// Hard nav — full page reload to "/" — the only reliable way to
-			// guarantee a clean DOM state. Cheap on localhost; small payload.
-			window.location.assign('/');
-		}, { signal });
+		backBtn.addEventListener(
+			'click',
+			() => {
+				// Hard nav — full page reload to "/" — the only reliable way to
+				// guarantee a clean DOM state. Cheap on localhost; small payload.
+				window.location.assign('/');
+			},
+			{ signal },
+		);
 	}
 
 	const submitBtn = document.getElementById('submit-selection-btn');
@@ -88,7 +92,9 @@
 		const sorted = {};
 		Object.keys(selections)
 			.sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
-			.forEach((k) => { sorted[k] = selections[k]; });
+			.forEach((k) => {
+				sorted[k] = selections[k];
+			});
 		return sorted;
 	}
 
@@ -142,12 +148,16 @@
 	// Enter on this page submits unless focus is inside a search input (where
 	// Enter is used to toggle the highlighted dropdown row). Auto-removed on
 	// next swap via the abort controller.
-	document.addEventListener('keydown', (e) => {
-		if (e.key !== 'Enter') return;
-		if (submitBtn.disabled) return;
-		const id = (document.activeElement && document.activeElement.id) || '';
-		if (id.startsWith('search-') || id.startsWith('search-teams-')) return;
-		e.preventDefault();
-		submitPreview();
-	}, { signal });
+	document.addEventListener(
+		'keydown',
+		(e) => {
+			if (e.key !== 'Enter') return;
+			if (submitBtn.disabled) return;
+			const id = (document.activeElement && document.activeElement.id) || '';
+			if (id.startsWith('search-') || id.startsWith('search-teams-')) return;
+			e.preventDefault();
+			submitPreview();
+		},
+		{ signal },
+	);
 })();

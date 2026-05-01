@@ -11,20 +11,14 @@
 	window.__previewAbort = controller;
 	const { signal } = controller;
 
-	// Convert UTC times to local timezone for display.
-	document.querySelectorAll('.match-time').forEach((el) => {
-		const utc = el.getAttribute('data-utc-time');
-		if (!utc) return;
-		const date = new Date(utc);
-		if (isNaN(date.getTime())) return;
-
-		const dateOpts = { month: 'short', day: '2-digit', year: 'numeric' };
-		const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
-		const dateSpan = el.querySelector('.match-date');
-		const hourSpan = el.querySelector('.match-hour');
-		if (dateSpan) dateSpan.textContent = date.toLocaleDateString('en-US', dateOpts);
-		if (hourSpan) hourSpan.textContent = date.toLocaleTimeString('en-US', timeOpts);
-	});
+	// app.js is deferred; on cold load convertMatchTimesIn isn't defined yet.
+	// htmx-driven swaps land here with readyState already 'complete'.
+	const localize = () => window.convertMatchTimesIn?.(document);
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', localize, { once: true, signal });
+	} else {
+		localize();
+	}
 
 	function showLinkModal(url, autoCopied) {
 		const dialog = document.createElement('dialog');
@@ -125,55 +119,63 @@
 	// & teams page is rebuilt server-side with the user's selections intact.
 	const backBtn = document.getElementById('back-to-selection-btn');
 	if (backBtn) {
-		backBtn.addEventListener('click', async () => {
-			let stored = [];
-			try {
-				const raw = sessionStorage.getItem('selectedGameOptions');
-				if (raw) stored = JSON.parse(raw);
-			} catch {}
+		backBtn.addEventListener(
+			'click',
+			async () => {
+				let stored = [];
+				try {
+					const raw = sessionStorage.getItem('selectedGameOptions');
+					if (raw) stored = JSON.parse(raw);
+				} catch {}
 
-			if (!Array.isArray(stored) || stored.length === 0) {
-				history.pushState({}, '', '/');
-				location.assign('/');
-				return;
-			}
-
-			backBtn.disabled = true;
-			try {
-				const response = await fetch('/lts', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'HX-Request': 'true',
-						'HX-Target': 'page-content',
-					},
-					body: JSON.stringify({ options: stored }),
-				});
-				if (!response.ok) {
-					window.showToast?.(`Navigation failed (${response.status}).`, 'error');
+				if (!Array.isArray(stored) || stored.length === 0) {
+					history.pushState({}, '', '/');
+					location.assign('/');
 					return;
 				}
-				const html = await response.text();
-				const target = document.getElementById('page-content');
-				target.innerHTML = html;
-				target.classList.add('fade-in');
-				window.executeScriptsIn?.(target);
-				if (typeof htmx !== 'undefined') htmx.process(target);
-				history.pushState({}, '', '/lts');
-				document.title = 'Leagues & Teams - EsportsCalendar';
-			} catch (err) {
-				window.showToast?.('Network error: ' + err.message, 'error');
-			} finally {
-				backBtn.disabled = false;
-			}
-		}, { signal });
+
+				backBtn.disabled = true;
+				try {
+					const response = await fetch('/lts', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'HX-Request': 'true',
+							'HX-Target': 'page-content',
+						},
+						body: JSON.stringify({ options: stored }),
+					});
+					if (!response.ok) {
+						window.showToast?.(`Navigation failed (${response.status}).`, 'error');
+						return;
+					}
+					const html = await response.text();
+					const target = document.getElementById('page-content');
+					target.innerHTML = html;
+					target.classList.add('fade-in');
+					window.executeScriptsIn?.(target);
+					if (typeof htmx !== 'undefined') htmx.process(target);
+					history.pushState({}, '', '/lts');
+					document.title = 'Leagues & Teams - EsportsCalendar';
+				} catch (err) {
+					window.showToast?.('Network error: ' + err.message, 'error');
+				} finally {
+					backBtn.disabled = false;
+				}
+			},
+			{ signal },
+		);
 	}
 
-	document.addEventListener('keydown', (e) => {
-		if (e.key !== 'Enter') return;
-		const tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
-		if (tag === 'input' || tag === 'textarea') return;
-		e.preventDefault();
-		exportCalendar();
-	}, { signal });
+	document.addEventListener(
+		'keydown',
+		(e) => {
+			if (e.key !== 'Enter') return;
+			const tag = ((document.activeElement && document.activeElement.tagName) || '').toLowerCase();
+			if (tag === 'input' || tag === 'textarea') return;
+			e.preventDefault();
+			exportCalendar();
+		},
+		{ signal },
+	);
 })();
