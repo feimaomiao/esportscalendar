@@ -81,7 +81,7 @@ func main() {
 	})
 
 	// Routes
-	router.GET("/", mw.IndexHandler)
+	router.GET("/", mw.CalendarHandler)
 	router.POST("/export", mw.ExportHandler)
 	router.GET("/how-to-use", mw.HowToUseHandler)
 	router.GET("/about", mw.AboutHandler)

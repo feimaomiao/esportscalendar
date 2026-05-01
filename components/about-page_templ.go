@@ -54,7 +54,7 @@ func AboutPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">about</span></div><h1 class=\"hud-display text-3xl mb-6\">EsportsCalendar</h1><section class=\"mb-8 space-y-4 text-base-content/80 leading-relaxed\"><p>Most esports schedules live on one page per game, each with their own format and timezone. EsportsCalendar collapses everything you follow into a single calendar feed.</p><p>You subscribe to it once in Google Calendar, Apple Calendar, or Outlook, and matches show up alongside the rest of your schedule. The feed updates on its own as new tournaments are announced, so you don't have to come back here every week.</p></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">What's in it</h2><ul class=\"space-y-2 text-base-content/80\"><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>LoL, Counter-Strike, Dota 2, Valorant, Rocket League, R6 Siege, MLBB, and a few more</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>Filter by league, by team, or by minimum tournament tier so the lower-stakes qualifiers stay out of the feed</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>Match times convert to your local timezone automatically</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>Standard .ics. Works with any app that subscribes to a calendar URL</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>No account, no login, nothing to pay</span></li></ul></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">Where the data comes from</h2><p class=\"text-base-content/80 leading-relaxed mb-3\">Match data comes from the PandaScore API. New matches and updates flow through automatically, so once you're subscribed there's nothing else to do on this end.</p><div class=\"hud-alert hud-alert-info\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">about</span></div><h1 class=\"hud-display text-3xl mb-6\">EsportsCalendar</h1><section class=\"mb-8 space-y-4 text-base-content/80 leading-relaxed\"><p>Esports schedules are scattered — one site per game, each with its own format and timezone. EsportsCalendar collapses everything you follow into a single calendar feed.</p><p>Subscribe to it once in Google Calendar, Apple Calendar, or Outlook, and matches show up alongside the rest of your week. The feed keeps itself current as new tournaments are announced, so there's nothing to come back for.</p></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">What's covered</h2><ul class=\"space-y-2 text-base-content/80\"><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>League of Legends, Counter-Strike, Dota 2, Valorant, Rocket League, Rainbow Six Siege, Mobile Legends, and a few more</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>Filter by league, by team, or by minimum tournament tier so qualifiers and lower brackets stay out</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>UTC under the hood; your calendar app handles local time</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>Plain .ics — works in any app that subscribes to a calendar URL</span></li><li class=\"flex gap-3\"><span class=\"hud-mono text-primary text-xs mt-1\">›</span> <span>No account, no login, no payment</span></li></ul></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">Where the data comes from</h2><p class=\"text-base-content/80 leading-relaxed mb-3\">Match data comes from the PandaScore API. New matches and schedule changes flow through automatically.</p><div class=\"hud-alert hud-alert-info\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -62,46 +62,7 @@ func AboutPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<span>Calendar apps poll subscribed feeds on their own schedule, usually a few hours to a day, so new matches don't always appear right away.</span></div></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-4\">How It Works</h2><div class=\"grid grid-cols-1 md:grid-cols-3 gap-3\"><div class=\"hud-flow-step\"><span class=\"hud-step-num\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("[ 01 ]")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/about-page.templ`, Line: 61, Col: 46}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span><p class=\"hud-mono uppercase tracking-wider text-sm font-bold mt-1\">Select Games</p><p class=\"text-xs text-base-content/60 mt-1\">Pick the titles you follow.</p></div><div class=\"hud-flow-step\"><span class=\"hud-step-num\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("[ 02 ]")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/about-page.templ`, Line: 66, Col: 46}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span><p class=\"hud-mono uppercase tracking-wider text-sm font-bold mt-1\">Pick Teams &amp; Leagues</p><p class=\"text-xs text-base-content/60 mt-1\">Narrow down by team or league, or leave it open and get everything.</p></div><div class=\"hud-flow-step\"><span class=\"hud-step-num\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("[ 03 ]")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/about-page.templ`, Line: 71, Col: 46}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span><p class=\"hud-mono uppercase tracking-wider text-sm font-bold mt-1\">Export</p><p class=\"text-xs text-base-content/60 mt-1\">Copy the feed URL and subscribe in your calendar app.</p></div></div></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">Open Source</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">The whole thing is on GitHub. Go on the backend, templ for the HTML, HTMX for the partial page swaps, and Tailwind plus DaisyUI for styling. Issues and pull requests are welcome: bug reports, feature ideas, leagues that aren't covered, all of it.</p><div class=\"flex flex-col sm:flex-row gap-3\"><a href=\"https://github.com/feimaomiao/esportscalendar\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-primary\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<span>Calendar apps poll subscribed feeds on their own clock, usually somewhere between an hour and a day, so a new match can take a while to appear.</span></div></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">Building a feed</h2><p class=\"text-base-content/80 leading-relaxed\">Switch on the games you follow, optionally tune leagues, teams, and tier in the side drawer, then hit Export to get a URL. The walkthrough is on <a href=\"/how-to-use\" class=\"link link-primary\">How to use</a>.</p></section><section class=\"mb-8\"><h2 class=\"hud-section-heading text-lg mb-3\">Open source</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">The whole thing is on GitHub — Go on the backend, templ for HTML, HTMX for partial swaps, Tailwind and DaisyUI for styling. Bug reports, feature ideas, and missing leagues are all fair game.</p><div class=\"flex flex-col sm:flex-row gap-3\"><a href=\"https://github.com/feimaomiao/esportscalendar\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-primary\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -109,7 +70,7 @@ func AboutPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "&gt; View on GitHub</a> <a href=\"https://github.com/feimaomiao/esportscalendar/issues\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-outline\">Report an Issue</a></div></section><section class=\"mb-4\"><h2 class=\"hud-section-heading text-lg mb-3\">Support</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">Hosting and developing costs something. If the tool is useful to you, the coffee link helps cover that. No obligation.</p><a href=\"https://www.buymeacoffee.com/feimaomiao\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-accent\">☕ Buy Me a Coffee</a></section><div class=\"card-actions justify-start mt-8\"><a href=\"/\" class=\"btn btn-ghost\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "&gt; View on GitHub</a> <a href=\"https://github.com/feimaomiao/esportscalendar/issues\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-outline\">Report an issue</a></div></section><section class=\"mb-4\"><h2 class=\"hud-section-heading text-lg mb-3\">Support</h2><p class=\"text-base-content/80 leading-relaxed mb-4\">Hosting and the PandaScore subscription cost money. If the tool earns its keep for you, the coffee link helps cover that. No obligation.</p><a href=\"https://www.buymeacoffee.com/feimaomiao\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"btn btn-accent\">Buy me a coffee</a></section><div class=\"card-actions justify-start mt-8\"><a href=\"/\" class=\"btn btn-ghost\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -117,7 +78,7 @@ func AboutPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Back to Home</a></div></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "Back to calendar</a></div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
