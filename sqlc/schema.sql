@@ -1,3 +1,12 @@
+-- =============================================================================
+-- Canonical schema for the shared esports DB.
+-- stalka writes the data and executes this file on startup
+-- (see stalka/main.go: db.Exec(ctx, schema)).
+-- esportscalendar reads the data and uses this file only for sqlc codegen.
+-- Keep stalka/static/schema.sql and esportscalendar/sqlc/schema.sql
+-- byte-identical, otherwise the two services drift.
+-- =============================================================================
+
 CREATE TABLE IF NOT EXISTS GAMES(
     id INTEGER PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -49,6 +58,8 @@ CREATE TABLE IF NOT EXISTS MATCHES(
     team2_id INT NOT NULL,
     team2_score INT NOT NULL,
     amount_of_games INT NOT NULL,
+    is_live BOOLEAN NOT NULL DEFAULT false,
+    stream_url TEXT,
     game_id INT NOT NULL,
     league_id INT NOT NULL,
     series_id INT NOT NULL,
@@ -75,4 +86,13 @@ CREATE TABLE IF NOT EXISTS URL_MAPPINGS(
     access_count INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     accessed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
+);
+
+-- =============================================================================
+-- Migration appendix: add columns to existing deployments that pre-date them.
+-- New deployments hit the CREATE TABLE definitions above and skip these.
+-- Append new ALTERs here when adding columns; never edit the CREATE TABLE
+-- alone or older databases will miss the column.
+-- =============================================================================
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS is_live BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS stream_url TEXT;
