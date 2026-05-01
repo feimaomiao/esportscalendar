@@ -2,6 +2,7 @@ package components
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 import "fmt"
+import "time"
 
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
 	<div class="hud-match" data-status={ matchStatus(match) }>
@@ -70,6 +71,8 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 				} else {
 					<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
 				}
+			} else if match.ExpectedStartTime.Valid && match.ExpectedStartTime.Time.Before(time.Now()) {
+				<span class="hud-status hud-status-ongoing">Ongoing</span>
 			} else {
 				<span class="hud-status hud-status-upcoming">Upcoming</span>
 			}
@@ -85,6 +88,9 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) string {
 	if match.Finished {
 		return "finished"
+	}
+	if match.ExpectedStartTime.Valid && match.ExpectedStartTime.Time.Before(time.Now()) {
+		return "ongoing"
 	}
 	return "upcoming"
 }

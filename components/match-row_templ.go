@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 import "fmt"
+import "time"
 
 func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -39,7 +40,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(matchStatus(match))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 7, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 8, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -52,7 +53,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(match.GameName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 8, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 9, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -65,7 +66,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(match.GameName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 8, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 9, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -79,7 +80,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Acronym.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 13, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 14, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -89,7 +90,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Name.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 15, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 16, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -114,7 +115,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Image.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 23, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 24, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -127,7 +128,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Name.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 23, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 24, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -145,7 +146,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team1Image.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 25, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 26, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -175,7 +176,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Image.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 37, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 38, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -188,7 +189,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Name.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 37, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 38, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -206,7 +207,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Image.String)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 39, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 40, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -231,7 +232,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Acronym.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 47, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 48, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -241,7 +242,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(match.Team2Name.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 49, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 50, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -265,7 +266,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 58, Col: 127}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 59, Col: 127}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -278,7 +279,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("Jan 02"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 59, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 60, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -291,7 +292,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(match.ExpectedStartTime.Time.Format("15:04"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 60, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 61, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -325,7 +326,7 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 71, Col: 110}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 72, Col: 110}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -336,65 +337,70 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 					return templ_7745c5c3_Err
 				}
 			}
+		} else if match.ExpectedStartTime.Valid && match.ExpectedStartTime.Time.Before(time.Now()) {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<span class=\"hud-status hud-status-ongoing\">Ongoing</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<span class=\"hud-status hud-status-upcoming\">Upcoming</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<span class=\"hud-status hud-status-upcoming\">Upcoming</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div><div class=\"hud-meta\"><span class=\"truncate\" title=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div><div class=\"hud-meta\"><span class=\"truncate\" title=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(match.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 78, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 81, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(match.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 78, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 81, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</span> <span class=\"hidden md:inline opacity-50\">·</span> <span class=\"hidden md:inline truncate\" title=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</span> <span class=\"hidden md:inline opacity-50\">·</span> <span class=\"hidden md:inline truncate\" title=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(match.LeagueName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 80, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 83, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(match.LeagueName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 80, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/match-row.templ`, Line: 83, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</span></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -405,6 +411,9 @@ func HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool)
 func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) string {
 	if match.Finished {
 		return "finished"
+	}
+	if match.ExpectedStartTime.Valid && match.ExpectedStartTime.Time.Before(time.Now()) {
+		return "ongoing"
 	}
 	return "upcoming"
 }

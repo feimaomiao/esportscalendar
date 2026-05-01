@@ -300,6 +300,82 @@ func isTier1League(minTier any) bool {
 	return false
 }
 
+func (m *Middleware) buildFixturesMatches(
+	gameIDs, leagueIDs []int32,
+	maxTier int32,
+	history, horizon int32,
+) ([]dbtypes.GetFutureMatchesBySelectionsRow, int, int) {
+	pastIndex := -1
+	ongoingIndex := -1
+
+	if len(gameIDs) == 0 || len(leagueIDs) == 0 {
+		return nil, pastIndex, ongoingIndex
+	}
+
+	pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
+		GameIds:    gameIDs,
+		LeagueIds:  leagueIDs,
+		TeamIds:    nil,
+		MaxTier:    maxTier,
+		LimitCount: history,
+	})
+	if pastErr != nil {
+		m.Logger.Warn("Fixtures defaults: past fetch failed", zap.Error(pastErr))
+	}
+
+	ongoingMatches, ongoingErr := m.DBConn.GetOngoingMatchesBySelections(
+		m.Context,
+		dbtypes.GetOngoingMatchesBySelectionsParams{
+			GameIds:    gameIDs,
+			LeagueIds:  leagueIDs,
+			TeamIds:    nil,
+			MaxTier:    maxTier,
+			LimitCount: horizon,
+		},
+	)
+	if ongoingErr != nil {
+		m.Logger.Warn("Fixtures defaults: ongoing fetch failed", zap.Error(ongoingErr))
+	}
+
+	futureMatches, futureErr := m.DBConn.GetFutureMatchesBySelections(
+		m.Context,
+		dbtypes.GetFutureMatchesBySelectionsParams{
+			GameIds:    gameIDs,
+			LeagueIds:  leagueIDs,
+			TeamIds:    nil,
+			MaxTier:    maxTier,
+			LimitCount: horizon,
+		},
+	)
+	if futureErr != nil {
+		m.Logger.Warn("Fixtures defaults: future fetch failed", zap.Error(futureErr))
+	}
+
+	matches := make(
+		[]dbtypes.GetFutureMatchesBySelectionsRow,
+		0,
+		len(pastMatches)+len(ongoingMatches)+len(futureMatches),
+	)
+	for _, pm := range pastMatches {
+		matches = append(matches, dbtypes.GetFutureMatchesBySelectionsRow(pm))
+	}
+	for _, om := range ongoingMatches {
+		matches = append(matches, dbtypes.GetFutureMatchesBySelectionsRow(om))
+	}
+	matches = append(matches, futureMatches...)
+
+	if len(pastMatches) > 0 {
+		pastIndex = len(pastMatches)
+		if len(ongoingMatches) > 0 {
+			ongoingIndex = len(pastMatches) + len(ongoingMatches)
+		}
+	} else if len(ongoingMatches) > 0 {
+		ongoingIndex = len(ongoingMatches)
+	}
+
+	return matches, pastIndex, ongoingIndex
+}
+
 func (m *Middleware) FixturesHandler(c *gin.Context) {
 	const fixturesHistory = 30
 	const fixturesHorizon = 30
@@ -320,48 +396,20 @@ func (m *Middleware) FixturesHandler(c *gin.Context) {
 
 	gameIDs, leagueIDs := m.fixturesDefaults(options)
 
-	var matches []dbtypes.GetFutureMatchesBySelectionsRow
-	nowIndex := -1
-	if len(gameIDs) > 0 && len(leagueIDs) > 0 {
-		pastMatches, pastErr := m.DBConn.GetPastMatchesBySelections(m.Context, dbtypes.GetPastMatchesBySelectionsParams{
-			GameIds:    gameIDs,
-			LeagueIds:  leagueIDs,
-			TeamIds:    nil,
-			MaxTier:    defaultMaxTier,
-			LimitCount: fixturesHistory,
-		})
-		if pastErr != nil {
-			m.Logger.Warn("Fixtures defaults: past fetch failed", zap.Error(pastErr))
-		}
-		futureMatches, futureErr := m.DBConn.GetFutureMatchesBySelections(
-			m.Context,
-			dbtypes.GetFutureMatchesBySelectionsParams{
-				GameIds:    gameIDs,
-				LeagueIds:  leagueIDs,
-				TeamIds:    nil,
-				MaxTier:    defaultMaxTier,
-				LimitCount: fixturesHorizon,
-			},
-		)
-		if futureErr != nil {
-			m.Logger.Warn("Fixtures defaults: future fetch failed", zap.Error(futureErr))
-		}
-		matches = make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
-		for _, pm := range pastMatches {
-			matches = append(matches, dbtypes.GetFutureMatchesBySelectionsRow(pm))
-		}
-		matches = append(matches, futureMatches...)
-		if len(pastMatches) > 0 && len(futureMatches) > 0 {
-			nowIndex = len(pastMatches)
-		}
-	}
+	matches, pastIndex, ongoingIndex := m.buildFixturesMatches(
+		gameIDs,
+		leagueIDs,
+		defaultMaxTier,
+		int32(fixturesHistory),
+		int32(fixturesHorizon),
+	)
 
-	// The page bakes in match data tied to wall-clock time (// now divider,
-	// upcoming list). Caching it would serve a stale "now" boundary on revisit.
+	// The page bakes in match data tied to wall-clock time (dividers,
+	// list order). Caching it would serve a stale state on revisit.
 	c.Header("Cache-Control", "no-store")
 	if isHTMXRequest(c) {
 		setHTMXTitle(c, "Fixtures - EsportsCalendar")
-		component := components.FixturesPageInner(options, matches, nowIndex, defaultHideScores)
+		component := components.FixturesPageInner(options, matches, pastIndex, ongoingIndex, defaultHideScores)
 		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 			m.Logger.Error("Failed to render fixtures inner", zap.Error(renderErr))
 			c.String(http.StatusInternalServerError, "Failed to render page")
@@ -369,7 +417,7 @@ func (m *Middleware) FixturesHandler(c *gin.Context) {
 		return
 	}
 
-	component := components.FixturesPage(options, matches, nowIndex, defaultHideScores)
+	component := components.FixturesPage(options, matches, pastIndex, ongoingIndex, defaultHideScores)
 	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 		m.Logger.Error("Failed to render fixtures page", zap.Error(renderErr))
 		c.String(http.StatusInternalServerError, "Failed to render page")
@@ -410,7 +458,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		m.Logger.Warn("Invalid fixtures selections", zap.Error(err))
 		// Empty list is fine — render the empty state component so the client
 		// still gets HTML to swap in.
-		component := components.FixturesMatchList(nil, hideScores, -1)
+		component := components.FixturesMatchList(nil, hideScores, -1, -1)
 		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 			c.String(http.StatusInternalServerError, "Failed to render page")
 		}
@@ -430,6 +478,22 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		return
 	}
 
+	ongoingMatches, err := m.DBConn.GetOngoingMatchesBySelections(
+		m.Context,
+		dbtypes.GetOngoingMatchesBySelectionsParams{
+			GameIds:    gameIDs,
+			LeagueIds:  leagueIDs,
+			TeamIds:    teamIDs,
+			MaxTier:    maxTier,
+			LimitCount: fixturesHorizon,
+		},
+	)
+	if err != nil {
+		m.Logger.Error("Failed to fetch ongoing matches", zap.Error(err))
+		c.String(http.StatusInternalServerError, "Failed to fetch matches")
+		return
+	}
+
 	futureMatches, err := m.DBConn.GetFutureMatchesBySelections(m.Context, dbtypes.GetFutureMatchesBySelectionsParams{
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
@@ -443,20 +507,34 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		return
 	}
 
-	combined := make([]dbtypes.GetFutureMatchesBySelectionsRow, 0, len(pastMatches)+len(futureMatches))
+	combined := make(
+		[]dbtypes.GetFutureMatchesBySelectionsRow,
+		0,
+		len(pastMatches)+len(ongoingMatches)+len(futureMatches),
+	)
 	for _, pm := range pastMatches {
 		combined = append(combined, dbtypes.GetFutureMatchesBySelectionsRow(pm))
 	}
+	for _, om := range ongoingMatches {
+		combined = append(combined, dbtypes.GetFutureMatchesBySelectionsRow(om))
+	}
 	combined = append(combined, futureMatches...)
 
-	// nowIndex marks the boundary between past and future; -1 means no divider.
-	nowIndex := -1
-	if len(pastMatches) > 0 && len(futureMatches) > 0 {
-		nowIndex = len(pastMatches)
+	// Indices mark boundaries: pastIndex separates past/ongoing, ongoingIndex separates ongoing/future.
+	// -1 means no divider.
+	pastIndex := -1
+	ongoingIndex := -1
+	if len(pastMatches) > 0 {
+		pastIndex = len(pastMatches)
+		if len(ongoingMatches) > 0 {
+			ongoingIndex = len(pastMatches) + len(ongoingMatches)
+		}
+	} else if len(ongoingMatches) > 0 {
+		ongoingIndex = len(ongoingMatches)
 	}
 
 	c.Header("Cache-Control", "no-store")
-	component := components.FixturesMatchList(combined, hideScores, nowIndex)
+	component := components.FixturesMatchList(combined, hideScores, pastIndex, ongoingIndex)
 	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
 		m.Logger.Error("Failed to render fixtures list", zap.Error(renderErr))
 		c.String(http.StatusInternalServerError, "Failed to render page")

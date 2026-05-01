@@ -459,6 +459,114 @@ func (q *Queries) GetMatchesInRangeBySelections(ctx context.Context, arg GetMatc
 	return items, nil
 }
 
+const getOngoingMatchesBySelections = `-- name: GetOngoingMatchesBySelections :many
+SELECT
+    m.id, m.name, m.slug, m.expected_start_time, m.finished,
+    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+    m.game_id, m.league_id, m.series_id, m.tournament_id,
+    g.name AS game_name,
+    l.name AS league_name,
+    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
+FROM matches m
+JOIN games g ON m.game_id = g.id
+JOIN leagues l ON m.league_id = l.id
+JOIN tournaments tour ON m.tournament_id = tour.id
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
+WHERE m.expected_start_time <= NOW()
+    AND m.finished = false
+    AND m.game_id = ANY($1::int[])
+    AND (
+        (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+    )
+ORDER BY m.expected_start_time ASC
+LIMIT $5::int
+`
+
+type GetOngoingMatchesBySelectionsParams struct {
+	GameIds    []int32
+	TeamIds    []int32
+	LeagueIds  []int32
+	MaxTier    int32
+	LimitCount int32
+}
+
+type GetOngoingMatchesBySelectionsRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	ExpectedStartTime pgtype.Timestamp
+	Finished          bool
+	Team1ID           int32
+	Team2ID           int32
+	Team1Score        int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+	GameName          string
+	LeagueName        string
+	Team1Name         pgtype.Text
+	Team1Acronym      pgtype.Text
+	Team1Image        pgtype.Text
+	Team2Name         pgtype.Text
+	Team2Acronym      pgtype.Text
+	Team2Image        pgtype.Text
+}
+
+func (q *Queries) GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getOngoingMatchesBySelections,
+		arg.GameIds,
+		arg.TeamIds,
+		arg.LeagueIds,
+		arg.MaxTier,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOngoingMatchesBySelectionsRow
+	for rows.Next() {
+		var i GetOngoingMatchesBySelectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.ExpectedStartTime,
+			&i.Finished,
+			&i.Team1ID,
+			&i.Team2ID,
+			&i.Team1Score,
+			&i.Team2Score,
+			&i.AmountOfGames,
+			&i.GameID,
+			&i.LeagueID,
+			&i.SeriesID,
+			&i.TournamentID,
+			&i.GameName,
+			&i.LeagueName,
+			&i.Team1Name,
+			&i.Team1Acronym,
+			&i.Team1Image,
+			&i.Team2Name,
+			&i.Team2Acronym,
+			&i.Team2Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPastMatchesBySelections = `-- name: GetPastMatchesBySelections :many
 SELECT
     id, name, slug, expected_start_time, finished,
@@ -483,6 +591,7 @@ FROM (
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
     WHERE m.expected_start_time < NOW()
+        AND m.finished = true
         AND m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
@@ -902,6 +1011,22 @@ func (q *Queries) LeagueExist(ctx context.Context, id int32) (int64, error) {
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const markPastUnfinishedMatchesAsFinished = `-- name: MarkPastUnfinishedMatchesAsFinished :exec
+
+UPDATE matches
+SET finished = true
+WHERE finished = false
+  AND expected_start_time < CURRENT_DATE - INTERVAL '1 day'
+`
+
+// ============================================================================
+// Maintenance Queries
+// ============================================================================
+func (q *Queries) MarkPastUnfinishedMatchesAsFinished(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, markPastUnfinishedMatchesAsFinished)
+	return err
 }
 
 const matchExist = `-- name: MatchExist :one

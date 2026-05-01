@@ -27,6 +27,7 @@ type Querier interface {
 	GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error)
 	GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLeaguesByGameIDRow, error)
 	GetMatchesInRangeBySelections(ctx context.Context, arg GetMatchesInRangeBySelectionsParams) ([]GetMatchesInRangeBySelectionsRow, error)
+	GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error)
 	GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error)
 	GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series, error)
 	GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, error)
@@ -45,6 +46,10 @@ type Querier interface {
 	// ============================================================================
 	InsertURLMapping(ctx context.Context, arg InsertURLMappingParams) error
 	LeagueExist(ctx context.Context, id int32) (int64, error)
+	// ============================================================================
+	// Maintenance Queries
+	// ============================================================================
+	MarkPastUnfinishedMatchesAsFinished(ctx context.Context) error
 	MatchExist(ctx context.Context, id int32) (int64, error)
 	SeriesExist(ctx context.Context, id int32) (int64, error)
 	TeamExist(ctx context.Context, id int32) (int64, error)

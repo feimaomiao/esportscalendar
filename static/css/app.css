@@ -336,6 +336,12 @@ body::before {
 .hud-status-upcoming {
   color: var(--color-primary);
 }
+.hud-status-ongoing {
+  color: var(--color-secondary);
+}
+.hud-status-ongoing::before {
+  animation: hud-blink 1s steps(2, end) infinite;
+}
 .hud-status-finished {
   color: var(--color-accent);
 }
