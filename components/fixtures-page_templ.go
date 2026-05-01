@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 
-func SchedulePage(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
+func FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,13 +43,13 @@ func SchedulePage(games []Option, matches []dbtypes.GetFutureMatchesBySelections
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = SchedulePageInner(games, matches, nowIndex, hideScores).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = FixturesPageInner(games, matches, nowIndex, hideScores).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = BaseLayout("Schedule - EsportsCalendar").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = BaseLayout("Fixtures - EsportsCalendar").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -57,7 +57,7 @@ func SchedulePage(games []Option, matches []dbtypes.GetFutureMatchesBySelections
 	})
 }
 
-func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
+func FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -85,13 +85,13 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("// channel.04")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 17, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 17, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">schedule</span></div><h1 class=\"hud-display text-2xl mb-1\">Match Schedule</h1><p class=\"hud-mono text-xs opacity-60 mb-4\">Past and upcoming matches across the leagues you follow. All times in your local timezone.</p><div class=\"hud-control-bar\" role=\"region\" aria-label=\"Schedule filters\"><div class=\"hud-control-bar-chips\" id=\"schedule-game-toggles\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">fixtures</span></div><h1 class=\"hud-display text-2xl mb-1\">Match Fixtures</h1><p class=\"hud-mono text-xs opacity-60 mb-4\">Past and upcoming matches across the leagues you follow. All times in your local timezone.</p><div class=\"hud-control-bar\" role=\"region\" aria-label=\"Fixtures filters\"><div class=\"hud-control-bar-chips\" id=\"fixtures-game-toggles\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -103,7 +103,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(game.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 30, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 30, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -116,7 +116,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(game.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 33, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 33, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -129,7 +129,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(game.Logo)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 36, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 36, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -142,7 +142,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(game.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 38, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 38, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -153,7 +153,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"hud-control-bar-actions\"><label class=\"hud-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer\"><input type=\"checkbox\" id=\"schedule-hide-scores\" class=\"checkbox checkbox-primary checkbox-sm\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"hud-control-bar-actions\"><label class=\"hud-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer\"><input type=\"checkbox\" id=\"fixtures-hide-scores\" class=\"checkbox checkbox-primary checkbox-sm\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -163,53 +163,53 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "> <span class=\"hidden sm:inline\">Spoiler</span></label> <button type=\"button\" id=\"schedule-tune-open\" class=\"hud-tune-btn\" aria-haspopup=\"dialog\" aria-controls=\"schedule-drawer\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-4 h-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.75\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 6h9m-9 6h9m-9 6h9M3.75 6h.008v.008H3.75V6zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 18h.008v.008H3.75V18zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg> <span class=\"uppercase tracking-widest\">Tune</span></button></div></div><div id=\"schedule-content\" class=\"mt-5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "> <span class=\"hidden sm:inline\">Spoiler</span></label> <button type=\"button\" id=\"fixtures-tune-open\" class=\"hud-tune-btn\" aria-haspopup=\"dialog\" aria-controls=\"fixtures-drawer\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-4 h-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.75\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M10.5 6h9m-9 6h9m-9 6h9M3.75 6h.008v.008H3.75V6zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 18h.008v.008H3.75V18zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg> <span class=\"uppercase tracking-widest\">Tune</span></button></div></div><div id=\"fixtures-content\" class=\"mt-5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ScheduleMatchList(matches, hideScores, nowIndex).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FixturesMatchList(matches, hideScores, nowIndex).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></div></div></div></div><aside id=\"schedule-drawer\" class=\"hud-drawer\" aria-hidden=\"true\" role=\"dialog\" aria-label=\"Tune leagues and teams\" tabindex=\"-1\"><div class=\"hud-drawer-head\"><div><span class=\"hud-label\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></div></div></div></div><aside id=\"fixtures-drawer\" class=\"hud-drawer\" aria-hidden=\"true\" role=\"dialog\" aria-label=\"Tune leagues and teams\" tabindex=\"-1\"><div class=\"hud-drawer-head\"><div><span class=\"hud-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs("// tune")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 73, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 73, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</span><h2 class=\"hud-display text-xl mt-1\">Leagues &amp; Teams</h2></div><button type=\"button\" id=\"schedule-tune-close\" class=\"hud-drawer-close\" aria-label=\"Close\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-5 h-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.75\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div><p class=\"hud-mono text-xs opacity-60 mb-4\">Switch each module on to include it in the schedule, then fine-tune its leagues, teams, and tournament tier.</p><div class=\"flex flex-col gap-3\" id=\"schedule-game-cards\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</span><h2 class=\"hud-display text-xl mt-1\">Leagues &amp; Teams</h2></div><button type=\"button\" id=\"fixtures-tune-close\" class=\"hud-drawer-close\" aria-label=\"Close\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-5 h-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.75\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div><p class=\"hud-mono text-xs opacity-60 mb-4\">Switch each module on to include it in the fixtures, then fine-tune its leagues, teams, and tournament tier.</p><div class=\"flex flex-col gap-3\" id=\"fixtures-game-cards\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, game := range games {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"hud-schedule-card\" data-schedule-card=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"hud-fixtures-card\" data-fixtures-card=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(game.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 87, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 87, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"><label class=\"hud-schedule-card-switch\"><span class=\"hud-schedule-card-switch-label\" aria-hidden=\"true\">ON</span> <input type=\"checkbox\" class=\"toggle toggle-primary toggle-sm\" data-schedule-switch data-game-id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"><label class=\"hud-fixtures-card-switch\"><span class=\"hud-fixtures-card-switch-label\" aria-hidden=\"true\">ON</span> <input type=\"checkbox\" class=\"toggle toggle-primary toggle-sm\" data-fixtures-switch data-game-id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(game.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 94, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 94, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -220,9 +220,9 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("Include " + game.Label + " in schedule")
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("Include " + game.Label + " in fixtures")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 96, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 96, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -241,7 +241,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></aside><div id=\"schedule-backdrop\" class=\"hud-drawer-backdrop\" hidden></div><script src=\"/static/js/game-selection.js\"></script><script src=\"/static/js/schedule.js\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></aside><div id=\"fixtures-backdrop\" class=\"hud-drawer-backdrop\" hidden></div><script src=\"/static/js/game-selection.js\"></script><script src=\"/static/js/fixtures.js\"></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -249,7 +249,7 @@ func SchedulePageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 	})
 }
 
-func ScheduleMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool, nowIndex int) templ.Component {
+func FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool, nowIndex int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -289,7 +289,7 @@ func ScheduleMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideSc
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("// now")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/schedule-page.templ`, Line: 122, Col: 40}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 122, Col: 40}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {

@@ -191,6 +191,31 @@ FROM (
 ) AS recent_matches
 ORDER BY expected_start_time ASC;
 
+-- name: GetMatchesInRangeBySelections :many
+SELECT
+    m.id, m.name, m.slug, m.expected_start_time, m.finished,
+    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+    m.game_id, m.league_id, m.series_id, m.tournament_id,
+    g.name AS game_name,
+    l.name AS league_name,
+    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
+FROM matches m
+JOIN games g ON m.game_id = g.id
+JOIN leagues l ON m.league_id = l.id
+JOIN tournaments tour ON m.tournament_id = tour.id
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
+WHERE m.expected_start_time >= sqlc.arg(start_time)::timestamp
+    AND m.expected_start_time <  sqlc.arg(end_time)::timestamp
+    AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
+    AND (
+        (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+    )
+ORDER BY m.expected_start_time ASC
+LIMIT sqlc.arg(limit_count)::int;
+
 -- ============================================================================
 -- Match Selection Queries (for Calendar Export)
 -- ============================================================================

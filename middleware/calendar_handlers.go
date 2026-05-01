@@ -80,9 +80,9 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (m *Middleware) CalendarHandler(c *gin.Context) {
+func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
-		zap.String("handler", "CalendarHandler"),
+		zap.String("handler", "CalendarICSHandler"),
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path))
 

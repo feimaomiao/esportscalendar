@@ -18,7 +18,7 @@ function checkAndUpdateSubmitButton() {
 }
 
 // Game selection - League and Team management.
-// storagePrefix lets callers (e.g. /schedule) namespace their saved filters
+// storagePrefix lets callers (e.g. /fixtures) namespace their saved filters
 // instead of sharing the wizard's `lts-selections-` keys.
 function initGameSelection(gameId, storagePrefix) {
 	if (!gameId || gameId === 'null' || gameId === 'undefined') {
@@ -350,7 +350,7 @@ function initGameSelection(gameId, storagePrefix) {
 	}
 
 	// Per-card handlers — registered in a global registry keyed by gameId so
-	// pages with multiple game cards (e.g. /schedule) don't clobber each other's
+	// pages with multiple game cards (e.g. /fixtures) don't clobber each other's
 	// closures via a single window.removeLeague.
 	window.__gameSelectionHandlers = window.__gameSelectionHandlers || {};
 	window.__gameSelectionHandlers[gameId] = {

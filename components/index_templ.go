@@ -93,7 +93,7 @@ func IndexInner(options []Option) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">target select</span></div><h1 class=\"hud-display text-2xl md:text-3xl mb-2 hud-caret\">Select games to track</h1><p class=\"hud-mono text-sm opacity-60 mb-6\">Choose one or more titles. Calendar feed will only include matches from selected games.</p><form id=\"game-form\" action=\"/lts\" method=\"POST\" hx-post=\"/lts\" hx-target=\"#page-content\" hx-swap=\"innerHTML\" hx-push-url=\"/lts\"><div class=\"space-y-2\" id=\"game-options\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> <span class=\"hud-label hud-bracket\">target select</span></div><h1 class=\"hud-display text-2xl md:text-3xl mb-2 hud-caret\">Select games to track</h1><p class=\"hud-mono text-sm opacity-60 mb-6\">Choose one or more titles. Calendar feed will only include matches from selected games.</p><form id=\"game-form\" action=\"/calendar\" method=\"GET\" hx-get=\"/calendar\" hx-target=\"#page-content\" hx-swap=\"innerHTML\" hx-push-url=\"/calendar\"><div class=\"space-y-2\" id=\"game-options\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,27 +1,26 @@
-// Bootstraps the public /schedule page. Initializes game-selection cards with
-// a `schedule-` storage prefix so filters don't leak into the /lts wizard,
-// then refetches the match list (debounced) whenever the user touches a chip,
-// dropdown, or tier slider.
+// Bootstraps the public /fixtures page. Initializes game-selection cards
+// (storage prefix `fixtures-selections-`) and refetches the match list
+// (debounced) whenever the user touches a chip, dropdown, or tier slider.
 (function init() {
-	const STORAGE_PREFIX = 'schedule-selections-';
-	const TOGGLES_KEY = 'schedule-toggled-games';
+	const STORAGE_PREFIX = 'fixtures-selections-';
+	const TOGGLES_KEY = 'fixtures-toggled-games';
 	const REFRESH_DEBOUNCE_MS = 300;
 
-	const cardsContainer = document.getElementById('schedule-game-cards');
-	const contentEl = document.getElementById('schedule-content');
-	const hideScoresEl = document.getElementById('schedule-hide-scores');
-	const drawer = document.getElementById('schedule-drawer');
-	const backdrop = document.getElementById('schedule-backdrop');
-	const tuneOpenBtn = document.getElementById('schedule-tune-open');
-	const tuneCloseBtn = document.getElementById('schedule-tune-close');
+	const cardsContainer = document.getElementById('fixtures-game-cards');
+	const contentEl = document.getElementById('fixtures-content');
+	const hideScoresEl = document.getElementById('fixtures-hide-scores');
+	const drawer = document.getElementById('fixtures-drawer');
+	const backdrop = document.getElementById('fixtures-backdrop');
+	const tuneOpenBtn = document.getElementById('fixtures-tune-open');
+	const tuneCloseBtn = document.getElementById('fixtures-tune-close');
 	if (!cardsContainer || !contentEl) return;
 
-	if (window.__scheduleAbort) window.__scheduleAbort.abort();
+	if (window.__fixturesAbort) window.__fixturesAbort.abort();
 	const controller = new AbortController();
-	window.__scheduleAbort = controller;
+	window.__fixturesAbort = controller;
 	const { signal } = controller;
 
-	const cardWraps = Array.from(cardsContainer.querySelectorAll('[data-schedule-card]'));
+	const cardWraps = Array.from(cardsContainer.querySelectorAll('[data-fixtures-card]'));
 	const initialized = new Set();
 
 	function chipsForGame(gameId) {
@@ -71,16 +70,16 @@
 	}
 
 	function applyToggleVisibility(gameId, active) {
-		const wrap = cardsContainer.querySelector(`[data-schedule-card="${gameId}"]`);
+		const wrap = cardsContainer.querySelector(`[data-fixtures-card="${gameId}"]`);
 		if (wrap) wrap.classList.toggle('is-off', !active);
 		chipsForGame(gameId).forEach((btn) => {
 			btn.setAttribute('data-active', String(active));
 			btn.setAttribute('aria-pressed', String(active));
 		});
-		document.querySelectorAll(`input[data-schedule-switch][data-game-id="${gameId}"]`).forEach((sw) => {
+		document.querySelectorAll(`input[data-fixtures-switch][data-game-id="${gameId}"]`).forEach((sw) => {
 			if (sw.checked !== active) sw.checked = active;
 		});
-		const label = wrap?.querySelector('.hud-schedule-card-switch-label');
+		const label = wrap?.querySelector('.hud-fixtures-card-switch-label');
 		if (label) label.textContent = active ? 'ON' : 'OFF';
 	}
 
@@ -119,7 +118,7 @@
 	document.addEventListener(
 		'change',
 		(e) => {
-			const sw = e.target.closest('input[data-schedule-switch][data-game-id]');
+			const sw = e.target.closest('input[data-fixtures-switch][data-game-id]');
 			if (!sw) return;
 			setActive(sw.getAttribute('data-game-id'), sw.checked);
 		},
@@ -130,14 +129,14 @@
 	// so we only flip the checkbox if the user previously turned it off.
 	if (hideScoresEl) {
 		try {
-			const saved = sessionStorage.getItem('schedule-hide-scores');
+			const saved = sessionStorage.getItem('fixtures-hide-scores');
 			if (saved === '0') hideScoresEl.checked = false;
 		} catch {}
 		hideScoresEl.addEventListener(
 			'change',
 			() => {
 				try {
-					sessionStorage.setItem('schedule-hide-scores', hideScoresEl.checked ? '1' : '0');
+					sessionStorage.setItem('fixtures-hide-scores', hideScoresEl.checked ? '1' : '0');
 				} catch {}
 				scheduleRefresh();
 			},
@@ -246,7 +245,7 @@
 		if (Object.keys(selections).length === 0) {
 			contentEl.innerHTML = `
 				<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
-					<span class="hud-mono text-sm">Pick at least one game with a league or team to see the schedule.</span>
+					<span class="hud-mono text-sm">Pick at least one game with a league or team to see the fixtures.</span>
 				</div>`;
 			return;
 		}
@@ -257,14 +256,14 @@
 
 		contentEl.classList.add('opacity-60');
 		try {
-			const response = await fetch('/api/schedule', {
+			const response = await fetch('/api/fixtures', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ selections, hideScores: !!(hideScoresEl && hideScoresEl.checked) }),
 				signal: reqController.signal,
 			});
 			if (!response.ok) {
-				window.showToast?.(`Schedule failed (${response.status}).`, 'error');
+				window.showToast?.(`Fixtures failed (${response.status}).`, 'error');
 				return;
 			}
 			const html = await response.text();
@@ -292,7 +291,7 @@
 	function hasPriorState() {
 		try {
 			if (sessionStorage.getItem(TOGGLES_KEY)) return true;
-			if (sessionStorage.getItem('schedule-hide-scores')) return true;
+			if (sessionStorage.getItem('fixtures-hide-scores')) return true;
 			for (let i = 0; i < sessionStorage.length; i++) {
 				const key = sessionStorage.key(i);
 				if (key && key.startsWith(STORAGE_PREFIX)) return true;

@@ -42,7 +42,7 @@ window.executeScriptsIn = function executeScriptsIn(container) {
 };
 
 // Convert any `.match-time[data-utc-time]` nodes inside `root` from server-side
-// UTC to the viewer's local timezone. Both /preview and /schedule emit the same
+// UTC to the viewer's local timezone. Both /fixtures and /calendar emit the same
 // markup; this lives here so they share the formatting and can re-run after
 // each innerHTML swap.
 window.convertMatchTimesIn = function convertMatchTimesIn(root) {

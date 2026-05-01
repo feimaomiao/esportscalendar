@@ -22,12 +22,12 @@ templ IndexInner(options []Option) {
 					</p>
 					<form
 						id="game-form"
-						action="/lts"
-						method="POST"
-						hx-post="/lts"
+						action="/calendar"
+						method="GET"
+						hx-get="/calendar"
 						hx-target="#page-content"
 						hx-swap="innerHTML"
-						hx-push-url="/lts"
+						hx-push-url="/calendar"
 					>
 						<div class="space-y-2" id="game-options">
 							for _, opt := range options {

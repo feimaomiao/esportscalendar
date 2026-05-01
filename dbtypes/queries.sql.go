@@ -347,6 +347,118 @@ func (q *Queries) GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLe
 	return items, nil
 }
 
+const getMatchesInRangeBySelections = `-- name: GetMatchesInRangeBySelections :many
+SELECT
+    m.id, m.name, m.slug, m.expected_start_time, m.finished,
+    m.team1_id, m.team2_id, m.team1_score, m.team2_score, m.amount_of_games,
+    m.game_id, m.league_id, m.series_id, m.tournament_id,
+    g.name AS game_name,
+    l.name AS league_name,
+    t1.name AS team1_name, t1.acronym AS team1_acronym, t1.image_link AS team1_image,
+    t2.name AS team2_name, t2.acronym AS team2_acronym, t2.image_link AS team2_image
+FROM matches m
+JOIN games g ON m.game_id = g.id
+JOIN leagues l ON m.league_id = l.id
+JOIN tournaments tour ON m.tournament_id = tour.id
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
+WHERE m.expected_start_time >= $1::timestamp
+    AND m.expected_start_time <  $2::timestamp
+    AND m.game_id = ANY($3::int[])
+    AND (
+        (CARDINALITY($4::int[]) > 0 AND (m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[])))
+        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]) AND COALESCE(tour.tier, 0) <= $6::int)
+    )
+ORDER BY m.expected_start_time ASC
+LIMIT $7::int
+`
+
+type GetMatchesInRangeBySelectionsParams struct {
+	StartTime  pgtype.Timestamp
+	EndTime    pgtype.Timestamp
+	GameIds    []int32
+	TeamIds    []int32
+	LeagueIds  []int32
+	MaxTier    int32
+	LimitCount int32
+}
+
+type GetMatchesInRangeBySelectionsRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	ExpectedStartTime pgtype.Timestamp
+	Finished          bool
+	Team1ID           int32
+	Team2ID           int32
+	Team1Score        int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+	GameName          string
+	LeagueName        string
+	Team1Name         pgtype.Text
+	Team1Acronym      pgtype.Text
+	Team1Image        pgtype.Text
+	Team2Name         pgtype.Text
+	Team2Acronym      pgtype.Text
+	Team2Image        pgtype.Text
+}
+
+func (q *Queries) GetMatchesInRangeBySelections(ctx context.Context, arg GetMatchesInRangeBySelectionsParams) ([]GetMatchesInRangeBySelectionsRow, error) {
+	rows, err := q.db.Query(ctx, getMatchesInRangeBySelections,
+		arg.StartTime,
+		arg.EndTime,
+		arg.GameIds,
+		arg.TeamIds,
+		arg.LeagueIds,
+		arg.MaxTier,
+		arg.LimitCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetMatchesInRangeBySelectionsRow
+	for rows.Next() {
+		var i GetMatchesInRangeBySelectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.ExpectedStartTime,
+			&i.Finished,
+			&i.Team1ID,
+			&i.Team2ID,
+			&i.Team1Score,
+			&i.Team2Score,
+			&i.AmountOfGames,
+			&i.GameID,
+			&i.LeagueID,
+			&i.SeriesID,
+			&i.TournamentID,
+			&i.GameName,
+			&i.LeagueName,
+			&i.Team1Name,
+			&i.Team1Acronym,
+			&i.Team1Image,
+			&i.Team2Name,
+			&i.Team2Acronym,
+			&i.Team2Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPastMatchesBySelections = `-- name: GetPastMatchesBySelections :many
 SELECT
     id, name, slug, expected_start_time, finished,
