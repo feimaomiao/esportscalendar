@@ -13,9 +13,9 @@ import (
 
 type Middleware struct {
 	DB         *pgxpool.Pool
-	DBConn     *dbtypes.Queries
+	DBConn     dbtypes.Querier
 	Context    context.Context
-	RedisCache *RedisCache
+	RedisCache Cache
 	Logger     *zap.Logger
 	BaseURL    string
 }
@@ -50,12 +50,16 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 
 	dbConn := dbtypes.New(conn)
 
-	// Initialize Redis cache
+	// Declare cache as the interface type up front so that a Redis init
+	// failure leaves a true-nil interface (not a typed-nil *RedisCache boxed
+	// inside an interface, which would silently break the `m.RedisCache != nil`
+	// guards across handlers).
+	var cache Cache
 	redisCache, err := NewRedisCache(ctx, logger)
 	if err != nil {
 		logger.Error("Failed to initialize Redis cache, falling back to no cache", zap.Error(err))
-		// Continue without cache - app will still work but slower
-		redisCache = nil
+	} else {
+		cache = redisCache
 	}
 
 	// Get base URL from environment variable with default fallback
@@ -71,7 +75,7 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		DB:         conn,
 		DBConn:     dbConn,
 		Context:    ctx,
-		RedisCache: redisCache,
+		RedisCache: cache,
 		Logger:     logger,
 		BaseURL:    baseURL,
 	}

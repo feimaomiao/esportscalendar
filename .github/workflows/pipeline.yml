@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: stable
       - name: test
-        run: go test ./...
+        run: go test -race -cover ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
