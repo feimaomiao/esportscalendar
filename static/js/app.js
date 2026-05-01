@@ -41,6 +41,27 @@ window.executeScriptsIn = function executeScriptsIn(container) {
 	});
 };
 
+// Convert any `.match-time[data-utc-time]` nodes inside `root` from server-side
+// UTC to the viewer's local timezone. Both /fixtures and /calendar emit the same
+// markup; this lives here so they share the formatting and can re-run after
+// each innerHTML swap.
+window.convertMatchTimesIn = function convertMatchTimesIn(root) {
+	const scope = root || document;
+	const dateOpts = { month: 'short', day: '2-digit', year: 'numeric' };
+	const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
+	scope.querySelectorAll('.match-time[data-utc-time]').forEach((el) => {
+		if (el.dataset.localized === '1') return;
+		const utc = el.getAttribute('data-utc-time');
+		const date = new Date(utc);
+		if (!utc || isNaN(date.getTime())) return;
+		const dateSpan = el.querySelector('.match-date');
+		const hourSpan = el.querySelector('.match-hour');
+		if (dateSpan) dateSpan.textContent = date.toLocaleDateString(undefined, dateOpts);
+		if (hourSpan) hourSpan.textContent = date.toLocaleTimeString(undefined, timeOpts);
+		el.dataset.localized = '1';
+	});
+};
+
 // Show/hide a small spinner inside a button while an async action is pending.
 // DaisyUI v5 expects a `.loading` span inside the button rather than a class
 // on the button itself.

@@ -12,22 +12,22 @@ templ HowToUsePage() {
 						</div>
 						<h1 class="hud-display text-3xl mb-4">Operations</h1>
 						<p class="hud-mono text-sm opacity-60 mb-6">
-							Generate a personalized calendar feed and subscribe to it in your calendar app.
+							Build a calendar feed on the homepage, then subscribe to it in your calendar app.
 						</p>
 						<div class="space-y-6">
 							<!-- Step 1 -->
 							<div class="hud-game-module">
 								<div class="hud-game-module-head">
 									<span class="hud-step-num">{ "[ 01 ]" }</span>
-									<h2 class="hud-display text-lg">Select Games</h2>
+									<h2 class="hud-display text-lg">Switch on the games you follow</h2>
 								</div>
 								<div class="hud-game-module-body">
 									<p>
-										Choose which games to track. You can pick one or many.
+										Each game has a chip above the calendar grid. Click to turn it on. The grid then fills with upcoming matches for everything you switched on.
 									</p>
 									<div class="hud-alert hud-alert-info mt-3">
 										@IconInfo("stroke-current shrink-0 w-5 h-5")
-										<span>Select only the games you actively follow to keep your calendar focused.</span>
+										<span>One feed covers every game you turn on, so you can stack several into the same calendar.</span>
 									</div>
 								</div>
 							</div>
@@ -35,24 +35,24 @@ templ HowToUsePage() {
 							<div class="hud-game-module">
 								<div class="hud-game-module-head">
 									<span class="hud-step-num">{ "[ 02 ]" }</span>
-									<h2 class="hud-display text-lg">Choose Leagues &amp; Teams</h2>
+									<h2 class="hud-display text-lg">Tune leagues, teams, and tier</h2>
 								</div>
 								<div class="hud-game-module-body">
 									<p>
-										For each game, pick which leagues and teams to follow. Filter by tournament tier to exclude lower-stakes matches.
+										Hit Tune to open the side drawer. For each game you have on, narrow it down — pick specific leagues, follow specific teams, or set a minimum tournament tier. Skip Tune entirely if you want everything for a game.
 									</p>
 									<ul class="mt-3 space-y-2">
 										<li class="flex items-start gap-3">
 											<span class="hud-mono text-primary text-xs mt-1">›</span>
-											<div><strong class="hud-mono uppercase tracking-wider text-sm">Search Leagues</strong> — find specific leagues to track</div>
+											<div><strong class="hud-mono uppercase tracking-wider text-sm">Leagues</strong> — type to search; only matches in those leagues show up</div>
 										</li>
 										<li class="flex items-start gap-3">
 											<span class="hud-mono text-primary text-xs mt-1">›</span>
-											<div><strong class="hud-mono uppercase tracking-wider text-sm">Search Teams</strong> — follow your favorite teams across all tournaments</div>
+											<div><strong class="hud-mono uppercase tracking-wider text-sm">Teams</strong> — pin specific teams across every tournament</div>
 										</li>
 										<li class="flex items-start gap-3">
 											<span class="hud-mono text-primary text-xs mt-1">›</span>
-											<div><strong class="hud-mono uppercase tracking-wider text-sm">Tier Filter</strong> — Tier S is highest, "All" includes everything</div>
+											<div><strong class="hud-mono uppercase tracking-wider text-sm">Tier</strong> — Tier S is the top; "All" keeps qualifiers and lower brackets in</div>
 										</li>
 									</ul>
 								</div>
@@ -61,15 +61,15 @@ templ HowToUsePage() {
 							<div class="hud-game-module">
 								<div class="hud-game-module-head">
 									<span class="hud-step-num">{ "[ 03 ]" }</span>
-									<h2 class="hud-display text-lg">Preview &amp; Export</h2>
+									<h2 class="hud-display text-lg">Check the grid, then Export</h2>
 								</div>
 								<div class="hud-game-module-body">
 									<p>
-										Preview the matches that will appear in your feed. If they look right, hit Export to generate your calendar URL.
+										The grid reflects your filters in real time. Click any day to see the full matchups. When it looks right, hit Export — you'll get a feed URL.
 									</p>
 									<div class="hud-alert hud-alert-success mt-3">
 										@IconCheckCircle("stroke-current shrink-0 w-5 h-5")
-										<span>The preview shows upcoming matches. Your calendar updates automatically as new matches are scheduled.</span>
+										<span>Filters are saved into the URL itself, so the feed keeps pulling in new matches that fit your settings without you coming back.</span>
 									</div>
 								</div>
 							</div>
@@ -77,22 +77,22 @@ templ HowToUsePage() {
 							<div class="hud-game-module">
 								<div class="hud-game-module-head">
 									<span class="hud-step-num">{ "[ 04 ]" }</span>
-									<h2 class="hud-display text-lg">Subscribe to Calendar</h2>
+									<h2 class="hud-display text-lg">Subscribe to the feed</h2>
 								</div>
 								<div class="hud-game-module-body">
 									<p class="mb-4">
-										After generating your feed URL, subscribe to it in your calendar app. This creates a live feed that auto-updates.
+										Paste the URL into any calendar app that supports subscribing to a .ics link. Don't import — subscribe, so it stays in sync.
 									</p>
 									<label class="hud-collapse">
 										<input type="checkbox"/>
 										<span class="hud-collapse-title">Apple Calendar (macOS / iOS)</span>
 										<div class="hud-collapse-content">
 											<ol class="list-decimal list-inside space-y-2 mt-2 text-sm">
-												<li>Copy the generated calendar link</li>
-												<li>Open Calendar app</li>
-												<li>Go to <strong>File → New Calendar Subscription</strong> (macOS) or <strong>Settings → Accounts → Add Account → Other → Add Subscribed Calendar</strong> (iOS)</li>
-												<li>Paste the calendar URL</li>
-												<li>Click Subscribe and customize the name/color if desired</li>
+												<li>Copy the feed URL</li>
+												<li>Open Calendar</li>
+												<li>macOS: <strong>File → New Calendar Subscription</strong>. iOS: <strong>Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar</strong></li>
+												<li>Paste the URL and confirm</li>
+												<li>Pick a name and color if you want</li>
 											</ol>
 										</div>
 									</label>
@@ -101,12 +101,10 @@ templ HowToUsePage() {
 										<span class="hud-collapse-title">Google Calendar</span>
 										<div class="hud-collapse-content">
 											<ol class="list-decimal list-inside space-y-2 mt-2 text-sm">
-												<li>Copy the generated calendar link</li>
-												<li>Open Google Calendar on web</li>
-												<li>Click the <strong>+</strong> next to "Other calendars"</li>
-												<li>Select <strong>"From URL"</strong></li>
-												<li>Paste the calendar URL</li>
-												<li>Click <strong>Add calendar</strong></li>
+												<li>Copy the feed URL</li>
+												<li>Open Google Calendar on web (the mobile app can't add subscriptions, but it'll show them once added on web)</li>
+												<li>Click <strong>+</strong> next to "Other calendars" → <strong>From URL</strong></li>
+												<li>Paste the URL and click <strong>Add calendar</strong></li>
 											</ol>
 										</div>
 									</label>
@@ -115,17 +113,16 @@ templ HowToUsePage() {
 										<span class="hud-collapse-title">Outlook</span>
 										<div class="hud-collapse-content">
 											<ol class="list-decimal list-inside space-y-2 mt-2 text-sm">
-												<li>Copy the generated calendar link</li>
+												<li>Copy the feed URL</li>
 												<li>Open Outlook Calendar</li>
-												<li>Go to <strong>Add Calendar → Subscribe from web</strong></li>
-												<li>Paste the calendar URL</li>
-												<li>Name your calendar and click <strong>Import</strong></li>
+												<li><strong>Add Calendar → Subscribe from web</strong></li>
+												<li>Paste the URL, name it, then <strong>Import</strong></li>
 											</ol>
 										</div>
 									</label>
 								</div>
 							</div>
-							<!-- Additional Info -->
+							<!-- Notes -->
 							<div class="hud-game-module">
 								<div class="hud-game-module-head">
 									@IconInfo("h-5 w-5 stroke-current text-primary")
@@ -133,15 +130,15 @@ templ HowToUsePage() {
 								</div>
 								<div class="hud-game-module-body">
 									<div class="space-y-2 text-sm">
-										<p><strong class="hud-mono uppercase tracking-wider text-xs">Time Zone:</strong> Match times are stored in UTC. Your calendar app converts them to your local timezone automatically.</p>
-										<p><strong class="hud-mono uppercase tracking-wider text-xs">Updates:</strong> The feed auto-updates. Calendar apps may take a few hours to a day to sync, depending on settings.</p>
-										<p><strong class="hud-mono uppercase tracking-wider text-xs">Multiple Games:</strong> Multiple games are bundled into a single calendar feed.</p>
+										<p><strong class="hud-mono uppercase tracking-wider text-xs">Time zone:</strong> Match times are stored in UTC; your calendar app converts to local time on its own.</p>
+										<p><strong class="hud-mono uppercase tracking-wider text-xs">Sync delay:</strong> Subscribed feeds aren't push — calendar apps poll on their own schedule, anywhere from an hour to a day.</p>
+										<p><strong class="hud-mono uppercase tracking-wider text-xs">Changing filters:</strong> Re-export to get a new URL. The old subscription will keep running with the old filters until you swap it out.</p>
 									</div>
 								</div>
 							</div>
 							<div class="card-actions justify-center mt-2">
 								<a href="/" class="btn btn-primary btn-lg">
-									&gt; Get Started
+									&gt; Open the calendar
 									@IconArrowRight("w-5 h-5")
 								</a>
 							</div>

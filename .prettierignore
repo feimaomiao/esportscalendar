@@ -1,0 +1,13 @@
+# Don't reformat vendored or generated assets.
+static/js/vendor/
+static/css/tw.css
+node_modules/
+components/*_templ.go
+dbtypes/
+tmp/
+data/
+package-lock.json
+go.sum
+
+# Generated YAML/SQL we'd rather not touch.
+sqlc/

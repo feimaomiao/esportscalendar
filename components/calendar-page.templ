@@ -1,0 +1,355 @@
+package components
+
+import (
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/feimaomiao/esportscalendar/dbtypes"
+)
+
+templ CalendarPage(games []Option, year int, month int, minYear int, minMonth int, maxYear int, maxMonth int, matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
+	@BaseLayout("Calendar - EsportsCalendar") {
+		@CalendarPageInner(games, year, month, minYear, minMonth, maxYear, maxMonth, matches, hideScores)
+	}
+}
+
+templ CalendarPageInner(games []Option, year int, month int, minYear int, minMonth int, maxYear int, maxMonth int, matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
+	<div class="container mx-auto p-4">
+		<div class="max-w-6xl mx-auto">
+			<div class="card bg-base-100 border border-base-300">
+				<div class="card-body">
+					<div class="flex items-baseline justify-between mb-1">
+						<span class="hud-label">{ "// channel.05" }</span>
+						<span class="hud-label hud-bracket">calendar</span>
+					</div>
+					<h1 class="hud-display text-2xl mb-1">Match Calendar</h1>
+					<p class="hud-mono text-xs opacity-60 mb-4">
+						Monthly view of every filtered match. All times shown in your local timezone.
+					</p>
+					<div class="hud-control-bar" role="region" aria-label="Calendar filters">
+						<div class="hud-control-bar-chips" id="calendar-game-toggles">
+							for _, game := range games {
+								<button
+									type="button"
+									class="hud-game-chip"
+									data-game-id={ game.ID }
+									data-active="true"
+									aria-pressed="true"
+									title={ game.Label }
+								>
+									<span class="hud-logo hud-logo-sm">
+										<img src={ game.Logo } alt=""/>
+									</span>
+									<span class="hud-game-chip-label">{ game.Label }</span>
+									<span class="hud-game-chip-dot" aria-hidden="true"></span>
+								</button>
+							}
+						</div>
+						<div class="hud-control-bar-actions">
+							<label class="hud-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									id="calendar-hide-scores"
+									class="checkbox checkbox-primary checkbox-sm"
+									if hideScores {
+										checked
+									}
+								/>
+								<span class="hidden sm:inline">Spoiler</span>
+							</label>
+							<button type="button" id="calendar-tune-open" class="hud-tune-btn" aria-haspopup="dialog" aria-controls="calendar-drawer">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9m-9 6h9m-9 6h9M3.75 6h.008v.008H3.75V6zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 18h.008v.008H3.75V18zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"></path>
+								</svg>
+								<span class="uppercase tracking-widest">Tune</span>
+							</button>
+						</div>
+					</div>
+					<div class="hud-cal-monthbar mt-4" role="region" aria-label="Month navigation">
+						<button
+							type="button"
+							id="calendar-prev"
+							class="hud-cal-navbtn"
+							aria-label="Previous month"
+							data-min-year={ strconv.Itoa(minYear) }
+							data-min-month={ strconv.Itoa(minMonth) }
+						>&lt;</button>
+						<div class="hud-cal-monthlabel">
+							<span class="hud-display text-lg" id="calendar-month-label">{ monthLabel(year, month) }</span>
+							<span class="hud-mono text-xs opacity-60" id="calendar-month-iso" data-year={ strconv.Itoa(year) } data-month={ strconv.Itoa(month) }>{ monthISO(year, month) }</span>
+						</div>
+						<button
+							type="button"
+							id="calendar-next"
+							class="hud-cal-navbtn"
+							aria-label="Next month"
+							data-max-year={ strconv.Itoa(maxYear) }
+							data-max-month={ strconv.Itoa(maxMonth) }
+						>&gt;</button>
+						<button type="button" id="calendar-today" class="hud-cal-today" aria-label="Jump to today">Today</button>
+					</div>
+					<div id="calendar-content" class="mt-4">
+						@CalendarMonthGrid(year, month, matches, hideScores)
+					</div>
+					<div class="card-actions justify-end mt-6">
+						<button type="button" id="calendar-export-btn" class="btn btn-primary w-full md:w-auto">
+							&gt; Export Calendar
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
+							</svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<aside id="calendar-drawer" class="hud-drawer" aria-hidden="true" role="dialog" aria-label="Tune leagues and teams" tabindex="-1">
+		<div class="hud-drawer-head">
+			<div>
+				<span class="hud-label">{ "// tune" }</span>
+				<h2 class="hud-display text-xl mt-1">Leagues &amp; Teams</h2>
+			</div>
+			<button type="button" id="calendar-tune-close" class="hud-drawer-close" aria-label="Close">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+				</svg>
+			</button>
+		</div>
+		<p class="hud-mono text-xs opacity-60 mb-4">
+			Switch each module on to include it on the calendar, then fine-tune its leagues, teams, and tournament tier.
+		</p>
+		<div class="flex flex-col gap-3" id="calendar-game-cards">
+			for _, game := range games {
+				<div class="hud-fixtures-card" data-calendar-card={ game.ID }>
+					<label class="hud-fixtures-card-switch">
+						<span class="hud-fixtures-card-switch-label" aria-hidden="true">ON</span>
+						<input
+							type="checkbox"
+							class="toggle toggle-primary toggle-sm"
+							data-calendar-switch
+							data-game-id={ game.ID }
+							checked
+							aria-label={ "Include " + game.Label + " on calendar" }
+						/>
+					</label>
+					@GameSelectionCard(game)
+				</div>
+			}
+		</div>
+	</aside>
+	<div id="calendar-backdrop" class="hud-drawer-backdrop" hidden></div>
+	<div id="calendar-day-modal" class="hud-cal-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-day-modal-title" hidden>
+		<div class="hud-cal-modal-card">
+			<div class="hud-cal-modal-head">
+				<div>
+					<span class="hud-label">{ "// day" }</span>
+					<h2 id="calendar-day-modal-title" class="hud-display text-xl mt-1">—</h2>
+				</div>
+				<button type="button" id="calendar-day-modal-close" class="hud-drawer-close" aria-label="Close">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
+			<div id="calendar-day-modal-body" class="hud-cal-modal-body"></div>
+		</div>
+	</div>
+	<script src="/static/js/game-selection.js"></script>
+	<script src="/static/js/export-calendar.js"></script>
+	<script src="/static/js/calendar.js"></script>
+}
+
+// CalendarMonthGrid renders the Monday-first six-week grid for one month, plus
+// hidden <template> blocks (one per day-with-matches) carrying the full
+// HUDMatchRow markup the modal uses on day-click.
+templ CalendarMonthGrid(year int, month int, matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
+	{{ days, byDay := buildMonthGrid(year, month, matches) }}
+	<div class="hud-cal-grid" role="grid" aria-label={ monthLabel(year, month) }>
+		<div class="hud-cal-weekhead" role="row">
+			<div class="hud-cal-cwhead" role="columnheader">CW</div>
+			for _, label := range []string{"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"} {
+				<div class="hud-cal-dayhead" role="columnheader">{ label }</div>
+			}
+		</div>
+		for weekIdx := 0; weekIdx < len(days)/7; weekIdx++ {
+			<div class="hud-cal-weekrow" role="row">
+				<div class="hud-cal-cw" role="rowheader">{ "CW " + strconv.Itoa(isoWeekOf(days[weekIdx*7])) }</div>
+				for col := 0; col < 7; col++ {
+					{{ d := days[weekIdx*7+col] }}
+					{{ dayMatches := byDay[dayKey(d)] }}
+					@CalendarDayCell(d, month, dayMatches, hideScores)
+				}
+			</div>
+		}
+	</div>
+	// Note: iteration order of `byDay` (a map) is unspecified. The hidden
+	// <template> blocks are looked up by `data-day-modal-content` attribute on
+	// click, so order in the HTML output doesn't affect behaviour. Don't add
+	// snapshot tests against this output without sorting first.
+	for dateKey, dayMatches := range byDay {
+		if len(dayMatches) > 0 {
+			<template data-day-modal-content={ dateKey }>
+				for _, match := range dayMatches {
+					@HUDMatchRow(match, hideScores)
+				}
+			</template>
+		}
+	}
+}
+
+// CalendarDayCell renders one day square. It always reserves chip slots even
+// when empty, so the grid stays visually even.
+templ CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
+	{{ inMonth := int(day.Month()) == anchorMonth }}
+	{{ isToday := isSameDay(day, time.Now()) }}
+	<button
+		type="button"
+		class={ calendarDayClass(inMonth, isToday, len(matches)) }
+		role="gridcell"
+		data-date={ dayKey(day) }
+		data-match-count={ strconv.Itoa(len(matches)) }
+		if len(matches) == 0 {
+			disabled
+			aria-disabled="true"
+		} else {
+			aria-label={ fmt.Sprintf("%s — %d matches", day.Format("Mon Jan 2 2006"), len(matches)) }
+		}
+	>
+		<span class="hud-cal-daynum">{ strconv.Itoa(day.Day()) }</span>
+		<div class="hud-cal-daychips">
+			for _, match := range visibleMatches(matches) {
+				<span class="hud-cal-chip" data-status={ matchStatus(match) }>
+					<span class="hud-cal-chip-time">
+						if match.ExpectedStartTime.Valid {
+							<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
+								<span class="match-hour">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
+							</span>
+						}
+					</span>
+					<span class="hud-cal-chip-text">
+						{ chipMatchupLabel(match) }
+					</span>
+				</span>
+			}
+			if len(matches) > calendarChipsPerDay {
+				<span class="hud-cal-chip hud-cal-chip-more">{ fmt.Sprintf("+%d more", len(matches)-calendarChipsPerDay) }</span>
+			}
+		</div>
+	</button>
+}
+
+// ---- helpers (pure Go, used by the templ blocks above) ----
+
+func monthLabel(year int, month int) string {
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC).Format("January 2006")
+}
+
+func monthISO(year int, month int) string {
+	return fmt.Sprintf("%04d-%02d", year, month)
+}
+
+func dayKey(t time.Time) string {
+	return t.Format("2006-01-02")
+}
+
+// isSameDay compares the UTC dates of a and b. Callers in this file pass
+// grid days anchored in UTC; normalising both sides keeps the "today" cell
+// independent of the server's local timezone.
+func isSameDay(a, b time.Time) bool {
+	au := a.UTC()
+	bu := b.UTC()
+	ay, am, ad := au.Date()
+	by, bm, bd := bu.Date()
+	return ay == by && am == bm && ad == bd
+}
+
+func isoWeekOf(t time.Time) int {
+	_, week := t.ISOWeek()
+	return week
+}
+
+func calendarDayClass(inMonth bool, isToday bool, matchCount int) string {
+	cls := "hud-cal-day"
+	if !inMonth {
+		cls += " hud-cal-day-out"
+	}
+	if isToday {
+		cls += " hud-cal-day-today"
+	}
+	if matchCount == 0 {
+		cls += " hud-cal-day-empty"
+	}
+	return cls
+}
+
+// Calendar timezone policy: the month grid is anchored in UTC and matches are
+// bucketed by their UTC date. Chip times inside cells are converted to the
+// viewer's local timezone client-side (see convertMatchTimesIn in app.js), so
+// for users in non-UTC zones a match near midnight UTC may render under a cell
+// whose date differs from the chip's displayed local date. This is a known
+// trade-off; making cell bucketing TZ-aware would require client-side
+// rebucketing or sending a TZ offset with each /api/calendar request.
+//
+// buildMonthGrid returns a slice of 42 days starting from the Monday on or
+// before the 1st of the requested month, plus a map keyed by "2006-01-02" of
+// every match in `matches` whose start day falls within those 42 days.
+func buildMonthGrid(
+	year int,
+	month int,
+	matches []dbtypes.GetFutureMatchesBySelectionsRow,
+) ([]time.Time, map[string][]dbtypes.GetFutureMatchesBySelectionsRow) {
+	first := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	// Go's Weekday(): Sunday=0..Saturday=6. We want Monday=0..Sunday=6.
+	offset := (int(first.Weekday()) + 6) % 7
+	gridStart := first.AddDate(0, 0, -offset)
+	days := make([]time.Time, 42)
+	for i := 0; i < 42; i++ {
+		days[i] = gridStart.AddDate(0, 0, i)
+	}
+	byDay := make(map[string][]dbtypes.GetFutureMatchesBySelectionsRow)
+	for _, m := range matches {
+		if !m.ExpectedStartTime.Valid {
+			continue
+		}
+		key := m.ExpectedStartTime.Time.Format("2006-01-02")
+		byDay[key] = append(byDay[key], m)
+	}
+	return days, byDay
+}
+
+// chipMatchupLabel returns "TEAM1 vs TEAM2" using acronyms when present,
+// truncated by CSS rather than here.
+func chipMatchupLabel(match dbtypes.GetFutureMatchesBySelectionsRow) string {
+	left := teamShort(match.Team1Acronym, match.Team1Name)
+	right := teamShort(match.Team2Acronym, match.Team2Name)
+	return left + " vs " + right
+}
+
+// teamShort mirrors the precedence used in match-row.templ HUDMatchRow:
+// acronym first, then full name, then "TBD".
+func teamShort(acronym, name pgtype.Text) string {
+	if acronym.Valid && acronym.String != "" {
+		return acronym.String
+	}
+	if name.Valid {
+		return name.String
+	}
+	return "TBD"
+}
+
+// calendarChipsPerDay caps how many event chips render in a single day cell
+// before collapsing into a "+N more" overflow chip.
+const calendarChipsPerDay = 4
+
+// visibleMatches returns at most calendarChipsPerDay rows. Used in the templ
+// for-loop instead of `{{ break }}`, since templ's parser does not guarantee
+// support for `break` statements inside the for body.
+func visibleMatches(matches []dbtypes.GetFutureMatchesBySelectionsRow) []dbtypes.GetFutureMatchesBySelectionsRow {
+	if len(matches) <= calendarChipsPerDay {
+		return matches
+	}
+	return matches[:calendarChipsPerDay]
+}

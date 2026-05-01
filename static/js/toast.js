@@ -1,17 +1,19 @@
 window.showToast = function showToast(message, kind) {
-	const variant = ({
-		info: 'alert-info',
-		success: 'alert-success',
-		warning: 'alert-warning',
-		error: 'alert-error',
-	})[kind] || 'alert-info';
+	const variant =
+		{
+			info: 'alert-info',
+			success: 'alert-success',
+			warning: 'alert-warning',
+			error: 'alert-error',
+		}[kind] || 'alert-info';
 
-	const tag = ({
-		info: '[ INFO ]',
-		success: '[ OK ]',
-		warning: '[ WARN ]',
-		error: '[ ERR ]',
-	})[kind] || '[ INFO ]';
+	const tag =
+		{
+			info: '[ INFO ]',
+			success: '[ OK ]',
+			warning: '[ WARN ]',
+			error: '[ ERR ]',
+		}[kind] || '[ INFO ]';
 
 	let host = document.getElementById('toast-host');
 	if (!host) {

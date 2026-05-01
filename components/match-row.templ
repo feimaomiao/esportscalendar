@@ -3,69 +3,6 @@ package components
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 import "fmt"
 
-templ PreviewPage(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
-	@BaseLayout("Preview - EsportsCalendar") {
-		@PreviewInner(matches, showingPast, hideScores)
-	}
-}
-
-templ PreviewInner(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
-	@ProgressIndicator(3)
-	<div class="container mx-auto p-4">
-		<div class="max-w-5xl mx-auto">
-			@PreviewPageContent(matches, showingPast, hideScores)
-		</div>
-	</div>
-	<script src="/static/js/preview.js"></script>
-}
-
-templ PreviewPageContent(matches []dbtypes.GetFutureMatchesBySelectionsRow, showingPast bool, hideScores bool) {
-	<div class="card bg-base-100 border border-base-300">
-		<div class="card-body">
-			<div class="flex items-baseline justify-between mb-1">
-				<span class="hud-label">{ "// channel.03" }</span>
-				<span class="hud-label hud-bracket">feed preview</span>
-			</div>
-			<h2 class="hud-display text-2xl mb-2">Calendar feed</h2>
-			<p class="hud-mono text-xs opacity-60 mb-4">
-				All times displayed in your local timezone.
-			</p>
-			<div id="preview-content" class="mt-2">
-				if len(matches) == 0 {
-					<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-warning shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-						</svg>
-						<span class="hud-mono text-sm">No matches found for current selection.</span>
-					</div>
-				} else {
-					<div class="flex flex-col gap-2">
-						for _, match := range matches {
-							@HUDMatchRow(match, hideScores)
-						}
-					</div>
-				}
-			</div>
-			<div class="card-actions flex-col md:flex-row md:justify-between gap-4 mt-6">
-				<button
-					type="button"
-					id="back-to-selection-btn"
-					class="btn btn-outline w-full md:w-auto"
-				>
-					@IconArrowLeft("w-5 h-5")
-					Back
-				</button>
-				<button type="button" id="export-calendar-btn" class="btn btn-primary w-full md:w-auto">
-					&gt; Export Calendar
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
-					</svg>
-				</button>
-			</div>
-		</div>
-	</div>
-}
-
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
 	<div class="hud-match" data-status={ matchStatus(match) }>
 		<span class="hud-match-game" title={ match.GameName }>{ match.GameName }</span>

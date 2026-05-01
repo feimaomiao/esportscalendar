@@ -1,0 +1,129 @@
+package components
+
+import "github.com/feimaomiao/esportscalendar/dbtypes"
+
+templ FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) {
+	@BaseLayout("Fixtures - EsportsCalendar") {
+		@FixturesPageInner(games, matches, nowIndex, hideScores)
+	}
+}
+
+templ FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) {
+	<div class="container mx-auto p-4">
+		<div class="max-w-5xl mx-auto">
+			<div class="card bg-base-100 border border-base-300">
+				<div class="card-body">
+					<div class="flex items-baseline justify-between mb-1">
+						<span class="hud-label">{ "// channel.04" }</span>
+						<span class="hud-label hud-bracket">fixtures</span>
+					</div>
+					<h1 class="hud-display text-2xl mb-1">Match Fixtures</h1>
+					<p class="hud-mono text-xs opacity-60 mb-4">
+						Past and upcoming matches across the leagues you follow. All times in your local timezone.
+					</p>
+					<div class="hud-control-bar" role="region" aria-label="Fixtures filters">
+						<div class="hud-control-bar-chips" id="fixtures-game-toggles">
+							for _, game := range games {
+								<button
+									type="button"
+									class="hud-game-chip"
+									data-game-id={ game.ID }
+									data-active="true"
+									aria-pressed="true"
+									title={ game.Label }
+								>
+									<span class="hud-logo hud-logo-sm">
+										<img src={ game.Logo } alt=""/>
+									</span>
+									<span class="hud-game-chip-label">{ game.Label }</span>
+									<span class="hud-game-chip-dot" aria-hidden="true"></span>
+								</button>
+							}
+						</div>
+						<div class="hud-control-bar-actions">
+							<label class="hud-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									id="fixtures-hide-scores"
+									class="checkbox checkbox-primary checkbox-sm"
+									if hideScores {
+										checked
+									}
+								/>
+								<span class="hidden sm:inline">Spoiler</span>
+							</label>
+							<button type="button" id="fixtures-tune-open" class="hud-tune-btn" aria-haspopup="dialog" aria-controls="fixtures-drawer">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9m-9 6h9m-9 6h9M3.75 6h.008v.008H3.75V6zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 18h.008v.008H3.75V18zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"></path>
+								</svg>
+								<span class="uppercase tracking-widest">Tune</span>
+							</button>
+						</div>
+					</div>
+					<div id="fixtures-content" class="mt-5">
+						@FixturesMatchList(matches, hideScores, nowIndex)
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<aside id="fixtures-drawer" class="hud-drawer" aria-hidden="true" role="dialog" aria-label="Tune leagues and teams" tabindex="-1">
+		<div class="hud-drawer-head">
+			<div>
+				<span class="hud-label">{ "// tune" }</span>
+				<h2 class="hud-display text-xl mt-1">Leagues &amp; Teams</h2>
+			</div>
+			<button type="button" id="fixtures-tune-close" class="hud-drawer-close" aria-label="Close">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+				</svg>
+			</button>
+		</div>
+		<p class="hud-mono text-xs opacity-60 mb-4">
+			Switch each module on to include it in the fixtures, then fine-tune its leagues, teams, and tournament tier.
+		</p>
+		<div class="flex flex-col gap-3" id="fixtures-game-cards">
+			for _, game := range games {
+				<div class="hud-fixtures-card" data-fixtures-card={ game.ID }>
+					<label class="hud-fixtures-card-switch">
+						<span class="hud-fixtures-card-switch-label" aria-hidden="true">ON</span>
+						<input
+							type="checkbox"
+							class="toggle toggle-primary toggle-sm"
+							data-fixtures-switch
+							data-game-id={ game.ID }
+							checked
+							aria-label={ "Include " + game.Label + " in fixtures" }
+						/>
+					</label>
+					@GameSelectionCard(game)
+				</div>
+			}
+		</div>
+	</aside>
+	<div id="fixtures-backdrop" class="hud-drawer-backdrop" hidden></div>
+	<script src="/static/js/game-selection.js"></script>
+	<script src="/static/js/fixtures.js"></script>
+}
+
+templ FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool, nowIndex int) {
+	if len(matches) == 0 {
+		<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-warning shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+			</svg>
+			<span class="hud-mono text-sm">No matches found for current filter selection.</span>
+		</div>
+	} else {
+		<div class="flex flex-col gap-2">
+			for i, match := range matches {
+				if i == nowIndex {
+					<div class="hud-now-divider" role="separator">
+						<span class="hud-label">{ "// now" }</span>
+					</div>
+				}
+				@HUDMatchRow(match, hideScores)
+			}
+		</div>
+	}
+}

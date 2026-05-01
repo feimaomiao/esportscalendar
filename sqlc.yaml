@@ -8,3 +8,4 @@ sql:
         package: "dbtypes"
         sql_package: "pgx/v5"
         out: "dbtypes"
+        emit_interface: true

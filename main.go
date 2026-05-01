@@ -11,9 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/feimaomiao/esportscalendar/middleware"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/feimaomiao/esportscalendar/middleware"
 
 	// loads .env file automatically.
 	_ "github.com/joho/godotenv/autoload"
@@ -80,20 +81,21 @@ func main() {
 	})
 
 	// Routes
-	router.GET("/", mw.IndexHandler)
-	router.Any("/lts", mw.SecondPageHandler)
-	router.GET("/preview", mw.PreviewRehydrateHandler)
-	router.POST("/preview", mw.PreviewHandler)
+	router.GET("/", mw.CalendarHandler)
 	router.POST("/export", mw.ExportHandler)
 	router.GET("/how-to-use", mw.HowToUseHandler)
 	router.GET("/about", mw.AboutHandler)
+	router.GET("/fixtures", mw.FixturesHandler)
+	router.POST("/api/fixtures", mw.FixturesAPIHandler)
+	router.GET("/calendar", mw.CalendarHandler)
+	router.POST("/api/calendar", mw.CalendarAPIHandler)
 	router.GET("/api/league-options/*param", mw.LeagueOptionsHandler)
 	router.GET("/api/team-options/*param", mw.TeamOptionsHandler)
 
 	// NoRoute handler for .ics files (calendar downloads)
 	router.NoRoute(func(c *gin.Context) {
 		if strings.HasSuffix(c.Request.URL.Path, ".ics") {
-			mw.CalendarHandler(c)
+			mw.CalendarICSHandler(c)
 		} else {
 			c.Status(http.StatusNotFound)
 		}

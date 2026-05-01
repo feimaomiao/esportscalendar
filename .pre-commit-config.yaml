@@ -1,0 +1,81 @@
+# Run with `pre-commit install` once per clone, then it fires on every
+# `git commit`. Use `pre-commit run --all-files` to sweep the whole tree.
+#
+# All hooks are scoped to staged files except `golangci-lint` and
+# `templ-generate-check`, which need to see whole packages / the full set of
+# generated files.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.(svg|min\.js|min\.css)$|^components/.*_templ\.go$|^dbtypes/'
+      - id: end-of-file-fixer
+        exclude: '\.(svg|min\.js|min\.css)$|^components/.*_templ\.go$|^dbtypes/'
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: check-merge-conflict
+
+  # Format Go code (goimports + golines, per .golangci.yml `formatters` block).
+  # Modifies files in place. Re-stage and re-commit if it rewrites anything.
+  - repo: local
+    hooks:
+      - id: golangci-lint-fmt
+        name: golangci-lint fmt
+        entry: golangci-lint fmt
+        language: system
+        types: [go]
+        pass_filenames: false
+        require_serial: true
+
+      # Lint after formatting so the format-fix doesn't trip the lint step.
+      - id: golangci-lint
+        name: golangci-lint run
+        entry: golangci-lint run
+        language: system
+        types: [go]
+        pass_filenames: false
+        require_serial: true
+
+      # Format .templ files. Idempotent — re-runs cheaply if nothing changed.
+      - id: templ-fmt
+        name: templ fmt
+        entry: templ fmt
+        language: system
+        files: '\.templ$'
+        require_serial: true
+
+      # Make sure committed _templ.go files match what `templ generate` would
+      # produce from the .templ sources. Catches the "I edited the template
+      # but forgot to regenerate" mistake.
+      - id: templ-generate-check
+        name: templ generate (no diff)
+        entry: bash -c 'templ generate && git diff --exit-code -- "components/*_templ.go"'
+        language: system
+        files: '\.templ$|^components/.*_templ\.go$'
+        pass_filenames: false
+        require_serial: true
+
+      # Format JS / CSS / JSON / YAML via Prettier. Per-extension overrides in
+      # .prettierrc.json keep YAML/CSS/JSON on 2-space + double-quote (their
+      # existing convention), and JS on tabs + single quotes.
+      - id: prettier
+        name: prettier
+        entry: npx --no-install prettier --write
+        language: system
+        files: '\.(js|css|json|ya?ml|md)$'
+        exclude: '^(static/js/vendor/|static/css/tw\.css$|node_modules/|components/.*_templ\.go$|dbtypes/|tmp/|data/|package-lock\.json$|sqlc/)'
+        require_serial: true
+
+      # Lint static JS after Prettier so format-only fixes don't trip lint.
+      - id: eslint
+        name: eslint
+        entry: npx --no-install eslint
+        language: system
+        files: '^static/js/.*\.js$'
+        exclude: "^static/js/vendor/"
+        require_serial: true

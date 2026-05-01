@@ -6,9 +6,14 @@
     <changefreq>daily</changefreq>
   </url>
   <url>
-    <loc>https://esportscalendar.app/lts</loc>
-    <priority>0.8</priority>
-    <changefreq>weekly</changefreq>
+    <loc>https://esportscalendar.app/calendar</loc>
+    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>https://esportscalendar.app/fixtures</loc>
+    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
   </url>
   <url>
     <loc>https://esportscalendar.app/how-to-use</loc>
