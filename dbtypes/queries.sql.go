@@ -93,7 +93,7 @@ FROM (
     WHERE m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
 ) ranked
 WHERE rn <= 1000
@@ -104,7 +104,7 @@ type GetCalendarMatchesBySelectionsParams struct {
 	GameIds   []int32
 	TeamIds   []int32
 	LeagueIds []int32
-	MaxTier   int32
+	MaxTiers  []int32
 }
 
 type GetCalendarMatchesBySelectionsRow struct {
@@ -145,7 +145,7 @@ func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCal
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 	)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -229,7 +229,7 @@ type GetFutureMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -271,7 +271,7 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -468,6 +468,59 @@ func (q *Queries) GetLiveMatches(ctx context.Context) ([]GetLiveMatchesRow, erro
 	return items, nil
 }
 
+const getMatchByID = `-- name: GetMatchByID :one
+
+SELECT id, name, slug, finished, expected_start_time, actual_game_time,
+    team1_id, team1_score, team2_id, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id
+FROM matches
+WHERE id = $1
+`
+
+type GetMatchByIDRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	Finished          bool
+	ExpectedStartTime pgtype.Timestamp
+	ActualGameTime    float64
+	Team1ID           int32
+	Team1Score        int32
+	Team2ID           int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+}
+
+// ============================================================================
+// Single-match lookup (used by prediction handlers)
+// ============================================================================
+func (q *Queries) GetMatchByID(ctx context.Context, id int32) (GetMatchByIDRow, error) {
+	row := q.db.QueryRow(ctx, getMatchByID, id)
+	var i GetMatchByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Finished,
+		&i.ExpectedStartTime,
+		&i.ActualGameTime,
+		&i.Team1ID,
+		&i.Team1Score,
+		&i.Team2ID,
+		&i.Team2Score,
+		&i.AmountOfGames,
+		&i.GameID,
+		&i.LeagueID,
+		&i.SeriesID,
+		&i.TournamentID,
+	)
+	return i, err
+}
+
 const getMatchesInRangeBySelections = `-- name: GetMatchesInRangeBySelections :many
 SELECT
     m.id, m.name, m.slug, m.expected_start_time, m.finished,
@@ -494,7 +547,7 @@ WHERE m.expected_start_time >= $1::timestamp
     AND m.game_id = ANY($3::int[])
     AND (
         (CARDINALITY($4::int[]) > 0 AND (m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[])))
-        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]) AND COALESCE(tour.tier, 0) <= $6::int)
+        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]) AND COALESCE(tour.tier, 0) <= ($6::int[])[array_position($3::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $7::int
@@ -506,7 +559,7 @@ type GetMatchesInRangeBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -547,7 +600,7 @@ func (q *Queries) GetMatchesInRangeBySelections(ctx context.Context, arg GetMatc
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -622,7 +675,7 @@ WHERE m.expected_start_time <= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -632,7 +685,7 @@ type GetOngoingMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -671,7 +724,7 @@ func (q *Queries) GetOngoingMatchesBySelections(ctx context.Context, arg GetOngo
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -756,7 +809,7 @@ FROM (
         AND m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
     ORDER BY m.expected_start_time DESC
     LIMIT $5::int
@@ -768,7 +821,7 @@ type GetPastMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -807,7 +860,7 @@ func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMat
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {

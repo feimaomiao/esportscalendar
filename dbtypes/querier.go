@@ -30,6 +30,10 @@ type Querier interface {
 	// Live Matches Queries
 	// ============================================================================
 	GetLiveMatches(ctx context.Context) ([]GetLiveMatchesRow, error)
+	// ============================================================================
+	// Single-match lookup (used by prediction handlers)
+	// ============================================================================
+	GetMatchByID(ctx context.Context, id int32) (GetMatchByIDRow, error)
 	GetMatchesInRangeBySelections(ctx context.Context, arg GetMatchesInRangeBySelectionsParams) ([]GetMatchesInRangeBySelectionsRow, error)
 	GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error)
 	GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error)

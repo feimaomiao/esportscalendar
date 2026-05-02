@@ -158,7 +158,7 @@ WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -189,7 +189,7 @@ WHERE m.expected_start_time <= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -230,7 +230,7 @@ FROM (
         AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
         )
     ORDER BY m.expected_start_time DESC
     LIMIT sqlc.arg(limit_count)::int
@@ -263,7 +263,7 @@ WHERE m.expected_start_time >= sqlc.arg(start_time)::timestamp
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -307,7 +307,7 @@ FROM (
     WHERE m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= sqlc.arg(max_tier)::int)
+            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
         )
 ) ranked
 WHERE rn <= 1000
@@ -373,3 +373,14 @@ WHERE hashed_key = $1;
 UPDATE url_mappings
 SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP
 WHERE hashed_key = $1;
+
+-- ============================================================================
+-- Single-match lookup (used by prediction handlers)
+-- ============================================================================
+
+-- name: GetMatchByID :one
+SELECT id, name, slug, finished, expected_start_time, actual_game_time,
+    team1_id, team1_score, team2_id, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id
+FROM matches
+WHERE id = $1;

@@ -1,6 +1,7 @@
 package components
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
+import "github.com/jackc/pgx/v5/pgtype"
 import "fmt"
 
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
@@ -124,8 +125,8 @@ templ HUDMatchDetail(match dbtypes.GetFutureMatchesBySelectionsRow) {
 				<span class="hud-match-detail-label">Tournament</span>
 				<span class="hud-match-detail-value">
 					{ match.TournamentName }
-					if match.TournamentTier.Valid {
-						<span class="hud-match-detail-tier">{ fmt.Sprintf("Tier %d", match.TournamentTier.Int32) }</span>
+					if letter := tierLetter(match.TournamentTier); letter != "" {
+						<span class="hud-match-detail-tier">{ letter + " Tier" }</span>
 					}
 				</span>
 			</div>
@@ -170,4 +171,28 @@ func formatBestOf(n int32) string {
 		return "Single match"
 	}
 	return fmt.Sprintf("Best of %d", n)
+}
+
+// tierLetter maps the integer tier column (1=S, 2=A, …, 5=D) to the letter
+// shown in UI. Slider/badge/picker all share this scale; the int form lives
+// only in the DB and the filter API. Returns "" for invalid or out-of-range
+// values so callers can omit the badge.
+func tierLetter(t pgtype.Int4) string {
+	if !t.Valid {
+		return ""
+	}
+	switch t.Int32 {
+	case 1:
+		return "S"
+	case 2:
+		return "A"
+	case 3:
+		return "B"
+	case 4:
+		return "C"
+	case 5:
+		return "D"
+	default:
+		return ""
+	}
 }

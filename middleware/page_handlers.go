@@ -302,7 +302,7 @@ func isTier1League(minTier any) bool {
 
 func (m *Middleware) buildFixturesMatches(
 	gameIDs, leagueIDs []int32,
-	maxTier int32,
+	maxTiers []int32,
 	history, horizon int32,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, int, int) {
 	pastIndex := -1
@@ -316,7 +316,7 @@ func (m *Middleware) buildFixturesMatches(
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
 		TeamIds:    nil,
-		MaxTier:    maxTier,
+		MaxTiers:   maxTiers,
 		LimitCount: history,
 	})
 	if pastErr != nil {
@@ -329,7 +329,7 @@ func (m *Middleware) buildFixturesMatches(
 			GameIds:    gameIDs,
 			LeagueIds:  leagueIDs,
 			TeamIds:    nil,
-			MaxTier:    maxTier,
+			MaxTiers:   maxTiers,
 			LimitCount: horizon,
 		},
 	)
@@ -343,7 +343,7 @@ func (m *Middleware) buildFixturesMatches(
 			GameIds:    gameIDs,
 			LeagueIds:  leagueIDs,
 			TeamIds:    nil,
-			MaxTier:    maxTier,
+			MaxTiers:   maxTiers,
 			LimitCount: horizon,
 		},
 	)
@@ -379,7 +379,6 @@ func (m *Middleware) buildFixturesMatches(
 func (m *Middleware) FixturesHandler(c *gin.Context) {
 	const fixturesHistory = 30
 	const fixturesHorizon = 30
-	const defaultMaxTier = 2
 	const defaultHideScores = true
 
 	m.Logger.Info("Handler",
@@ -399,7 +398,7 @@ func (m *Middleware) FixturesHandler(c *gin.Context) {
 	matches, pastIndex, ongoingIndex := m.buildFixturesMatches(
 		gameIDs,
 		leagueIDs,
-		defaultMaxTier,
+		defaultMaxTiers(len(gameIDs)),
 		int32(fixturesHistory),
 		int32(fixturesHorizon),
 	)
@@ -453,7 +452,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		selections = requestBody
 	}
 
-	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	gameIDs, leagueIDs, teamIDs, maxTiers := parseSelections(selections, m.Logger)
 	if err := validateSelections(gameIDs, leagueIDs, teamIDs); err != nil {
 		m.Logger.Warn("Invalid fixtures selections", zap.Error(err))
 		// Empty list is fine — render the empty state component so the client
@@ -469,7 +468,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
 		TeamIds:    teamIDs,
-		MaxTier:    maxTier,
+		MaxTiers:   maxTiers,
 		LimitCount: fixturesHistory,
 	})
 	if err != nil {
@@ -484,7 +483,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 			GameIds:    gameIDs,
 			LeagueIds:  leagueIDs,
 			TeamIds:    teamIDs,
-			MaxTier:    maxTier,
+			MaxTiers:   maxTiers,
 			LimitCount: fixturesHorizon,
 		},
 	)
@@ -498,7 +497,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 		GameIds:    gameIDs,
 		LeagueIds:  leagueIDs,
 		TeamIds:    teamIDs,
-		MaxTier:    maxTier,
+		MaxTiers:   maxTiers,
 		LimitCount: fixturesHorizon,
 	})
 	if err != nil {
@@ -546,7 +545,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 // produce a zero-result query (no games or no leagues/teams selected).
 func (m *Middleware) calendarMatches(
 	gameIDs, leagueIDs, teamIDs []int32,
-	maxTier int32,
+	maxTiers []int32,
 	start, end time.Time,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, error) {
 	if len(gameIDs) == 0 || (len(leagueIDs) == 0 && len(teamIDs) == 0) {
@@ -564,7 +563,7 @@ func (m *Middleware) calendarMatches(
 		GameIds:    gameIDs,
 		TeamIds:    teamIDs,
 		LeagueIds:  leagueIDs,
-		MaxTier:    maxTier,
+		MaxTiers:   maxTiers,
 		LimitCount: calendarMonthMatchCap,
 	})
 	if err != nil {
@@ -602,7 +601,7 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 
 	gameIDs, leagueIDs := m.fixturesDefaults(options)
 	start, end := calendarMonthBounds(year, month)
-	matches, err := m.calendarMatches(gameIDs, leagueIDs, nil, defaultMaxTier, start, end)
+	matches, err := m.calendarMatches(gameIDs, leagueIDs, nil, defaultMaxTiers(len(gameIDs)), start, end)
 	if err != nil {
 		m.Logger.Warn("Calendar default month fetch failed", zap.Error(err))
 		matches = nil
@@ -673,7 +672,7 @@ func (m *Middleware) CalendarAPIHandler(c *gin.Context) {
 	if selections == nil {
 		selections = requestBody
 	}
-	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	gameIDs, leagueIDs, teamIDs, maxTiers := parseSelections(selections, m.Logger)
 	if err := validateSelections(gameIDs, leagueIDs, teamIDs); err != nil {
 		// Render an empty grid so the client gets HTML to swap in.
 		m.Logger.Warn("Invalid calendar selections", zap.Error(err))
@@ -685,7 +684,7 @@ func (m *Middleware) CalendarAPIHandler(c *gin.Context) {
 	}
 
 	start, end := calendarMonthBounds(year, month)
-	matches, err := m.calendarMatches(gameIDs, leagueIDs, teamIDs, maxTier, start, end)
+	matches, err := m.calendarMatches(gameIDs, leagueIDs, teamIDs, maxTiers, start, end)
 	if err != nil {
 		m.Logger.Error("Failed to fetch calendar matches", zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to fetch matches")
