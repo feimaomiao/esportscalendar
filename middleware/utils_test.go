@@ -237,20 +237,28 @@ func TestParseSelections(t *testing.T) {
 		}
 	})
 
-	t.Run("maxTier below 1 clamps to 1 (overrides default)", func(t *testing.T) {
+	t.Run("maxTier 0 means OFF (auto-include disabled) and is preserved", func(t *testing.T) {
 		t.Parallel()
 		input := mustParse(t, `{"1": {"maxTier": 0}}`)
 		_, _, _, tiers := parseSelections(input, zap.NewNop())
-		// User-supplied tier of 0 clamps up to minTier=1. Now that filtering is
-		// per-game, an explicit user value wins over the default — so a strict
-		// S-only request actually applies, fixing the prior bug where default=2
-		// silently overrode it.
-		if !equalInt32(tiers, []int32{minTier}) {
-			t.Errorf("tiers = %v, want [%d]", tiers, minTier)
+		// maxTier=0 is the OFF sentinel — the SQL auto-include branch checks
+		// max_tiers[idx] > 0, so 0 disables the "show big tournaments" shortcut
+		// and only league/team picks contribute matches for that game.
+		if !equalInt32(tiers, []int32{tierOff}) {
+			t.Errorf("tiers = %v, want [%d] (OFF)", tiers, tierOff)
 		}
 	})
 
-	t.Run("maxTier above 6 is clamped to 6", func(t *testing.T) {
+	t.Run("negative maxTier clamps to OFF", func(t *testing.T) {
+		t.Parallel()
+		input := mustParse(t, `{"1": {"maxTier": -3}}`)
+		_, _, _, tiers := parseSelections(input, zap.NewNop())
+		if !equalInt32(tiers, []int32{tierOff}) {
+			t.Errorf("tiers = %v, want [%d] (clamped to OFF)", tiers, tierOff)
+		}
+	})
+
+	t.Run("maxTier above D is clamped to D", func(t *testing.T) {
 		t.Parallel()
 		input := mustParse(t, `{"1": {"maxTier": 99}}`)
 		_, _, _, tiers := parseSelections(input, zap.NewNop())

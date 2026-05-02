@@ -93,7 +93,8 @@ FROM (
     WHERE m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
 ) ranked
 WHERE rn <= 1000
@@ -219,7 +220,8 @@ WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -547,7 +549,8 @@ WHERE m.expected_start_time >= $1::timestamp
     AND m.game_id = ANY($3::int[])
     AND (
         (CARDINALITY($4::int[]) > 0 AND (m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[])))
-        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]) AND COALESCE(tour.tier, 0) <= ($6::int[])[array_position($3::int[], m.game_id)])
+        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]))
+        OR (($6::int[])[array_position($3::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($6::int[])[array_position($3::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $7::int
@@ -675,7 +678,8 @@ WHERE m.expected_start_time <= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -809,7 +813,8 @@ FROM (
         AND m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= ($4::int[])[array_position($1::int[], m.game_id)])
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
     ORDER BY m.expected_start_time DESC
     LIMIT $5::int

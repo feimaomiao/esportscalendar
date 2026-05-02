@@ -158,7 +158,8 @@ WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR ((sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -189,7 +190,8 @@ WHERE m.expected_start_time <= NOW()
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR ((sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -230,7 +232,8 @@ FROM (
         AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
+            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR ((sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
         )
     ORDER BY m.expected_start_time DESC
     LIMIT sqlc.arg(limit_count)::int
@@ -263,7 +266,8 @@ WHERE m.expected_start_time >= sqlc.arg(start_time)::timestamp
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
+        OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR ((sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT sqlc.arg(limit_count)::int;
@@ -307,7 +311,8 @@ FROM (
     WHERE m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
-            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]) AND COALESCE(tour.tier, 0) <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
+            OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
+        OR ((sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= (sqlc.arg(max_tiers)::int[])[array_position(sqlc.arg(game_ids)::int[], m.game_id)])
         )
 ) ranked
 WHERE rn <= 1000

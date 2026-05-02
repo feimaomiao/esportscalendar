@@ -215,7 +215,10 @@
 					if (typeof parsed.maxTier === 'number') maxTier = parsed.maxTier;
 				}
 			} catch {}
-			if (leagues.length > 0 || teams.length > 0) {
+			// Include the game if it contributes any rows: explicit league/team
+			// picks, or tier auto-include (maxTier > 0). A game with neither is
+			// a no-op for the server query, so skip it to keep the payload tight.
+			if (leagues.length > 0 || teams.length > 0 || maxTier > 0) {
 				leagues = leagues.slice().sort((a, b) => a - b);
 				teams = teams.slice().sort((a, b) => a - b);
 				selections[gameId] = { leagues, teams, maxTier };

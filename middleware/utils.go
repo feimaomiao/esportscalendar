@@ -120,6 +120,20 @@ func extractInt32IDs(raw any) []int32 {
 	return out
 }
 
+// anyTierAutoInclude returns true when at least one game has its tier
+// slider in S–D (i.e. any maxTier > 0). Used by handlers to decide whether
+// a request with no league/team selections is still worth running — a pure
+// "show me big tournaments" query has no league/team membership but should
+// still hit the DB to find tier-matching matches.
+func anyTierAutoInclude(maxTiers []int32) bool {
+	for _, t := range maxTiers {
+		if t > tierOff {
+			return true
+		}
+	}
+	return false
+}
+
 // defaultMaxTiers builds a per-game tier slice of length n filled with
 // defaultMaxTier. Used by handlers that render initial defaults (no client-
 // supplied selections payload), where every game should fall back to the

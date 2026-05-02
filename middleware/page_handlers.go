@@ -542,13 +542,17 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 
 // calendarMatches loads matches for the requested [start, end) range using
 // the supplied selections. Returns an empty slice when the request would
-// produce a zero-result query (no games or no leagues/teams selected).
+// produce a zero-result query: no games, or no leagues/teams selected and
+// every game's tier-auto-include is OFF (=0).
 func (m *Middleware) calendarMatches(
 	gameIDs, leagueIDs, teamIDs []int32,
 	maxTiers []int32,
 	start, end time.Time,
 ) ([]dbtypes.GetFutureMatchesBySelectionsRow, error) {
-	if len(gameIDs) == 0 || (len(leagueIDs) == 0 && len(teamIDs) == 0) {
+	if len(gameIDs) == 0 {
+		return nil, nil
+	}
+	if len(leagueIDs) == 0 && len(teamIDs) == 0 && !anyTierAutoInclude(maxTiers) {
 		return nil, nil
 	}
 	rows, err := m.DBConn.GetMatchesInRangeBySelections(m.Context, dbtypes.GetMatchesInRangeBySelectionsParams{
