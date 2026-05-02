@@ -383,10 +383,12 @@
 	// `data-utc-time` is rendered to the viewer's local timezone client-side.
 	// For users in non-UTC zones a match near midnight UTC ends up under the
 	// "wrong" cell — the modal title says one day, the rows show another.
-	// rebucketCalendar() walks the server-rendered grid once per content swap
-	// and re-files chips and modal data into local-date buckets so cells,
-	// counts, and modals all agree with the viewer's clock.
-	const chipsByLocalDate = new Map();
+	//
+	// rebucketCalendar() walks the server-rendered modal templates (which carry
+	// every match for the month, not just the 4 visible chips per day) and
+	// re-files them into local-date buckets. The same bucket then drives both
+	// the day cell's chip list AND the modal contents, so counts, overflow, and
+	// the row list all agree with the viewer's clock.
 	const wrappersByLocalDate = new Map();
 
 	function formatLocalDate(d) {
@@ -396,21 +398,46 @@
 		return `${y}-${m}-${day}`;
 	}
 
-	function rebucketCalendar() {
-		chipsByLocalDate.clear();
-		wrappersByLocalDate.clear();
+	// Build a calendar chip element from a HUDMatchRow wrapper. Mirrors the
+	// server-side chip markup in calendar-page.templ so initial paint and
+	// rebucketed view look identical.
+	function chipFromWrapper(wrapper) {
+		const inner = wrapper.querySelector('.hud-match');
+		const status = inner?.getAttribute('data-status') || 'upcoming';
+		const slug = wrapper.getAttribute('data-game-slug') || '';
+		const utcEl = wrapper.querySelector('.match-time[data-utc-time]');
+		const utc = utcEl?.getAttribute('data-utc-time') || '';
+		const teamNames = wrapper.querySelectorAll('.hud-team-name');
+		const left = teamNames[0]?.textContent.trim() || 'TBD';
+		const right = teamNames[1]?.textContent.trim() || 'TBD';
 
-		contentEl.querySelectorAll('.hud-cal-chip').forEach((chip) => {
-			if (chip.classList.contains('hud-cal-chip-more')) return;
-			const utcEl = chip.querySelector('.match-time[data-utc-time]');
-			if (!utcEl) return;
-			const d = new Date(utcEl.getAttribute('data-utc-time'));
-			if (isNaN(d.getTime())) return;
-			const key = formatLocalDate(d);
-			let bucket = chipsByLocalDate.get(key);
-			if (!bucket) chipsByLocalDate.set(key, (bucket = []));
-			bucket.push({ time: d.getTime(), chip });
-		});
+		const chip = document.createElement('span');
+		chip.className = 'hud-cal-chip';
+		chip.setAttribute('data-status', status);
+		if (slug) chip.setAttribute('data-game-slug', slug);
+
+		const timeWrap = document.createElement('span');
+		timeWrap.className = 'hud-cal-chip-time';
+		if (utc) {
+			const matchTime = document.createElement('span');
+			matchTime.className = 'match-time';
+			matchTime.setAttribute('data-utc-time', utc);
+			const hour = document.createElement('span');
+			hour.className = 'match-hour';
+			matchTime.appendChild(hour);
+			timeWrap.appendChild(matchTime);
+		}
+		chip.appendChild(timeWrap);
+
+		const text = document.createElement('span');
+		text.className = 'hud-cal-chip-text';
+		text.textContent = `${left} vs ${right}`;
+		chip.appendChild(text);
+		return chip;
+	}
+
+	function rebucketCalendar() {
+		wrappersByLocalDate.clear();
 
 		contentEl.querySelectorAll('template[data-day-modal-content]').forEach((tpl) => {
 			Array.from(tpl.content.children).forEach((node) => {
@@ -425,21 +452,22 @@
 				bucket.push({ time: d.getTime(), node });
 			});
 		});
-
-		chipsByLocalDate.forEach((b) => b.sort((a, b) => a.time - b.time));
 		wrappersByLocalDate.forEach((b) => b.sort((a, b) => a.time - b.time));
 
 		contentEl.querySelectorAll('.hud-cal-day[data-date]').forEach((cell) => {
 			const dateKey = cell.getAttribute('data-date');
-			const bucket = chipsByLocalDate.get(dateKey) || [];
+			const bucket = wrappersByLocalDate.get(dateKey) || [];
 			const chipsEl = cell.querySelector('.hud-cal-daychips');
 			if (chipsEl) {
 				chipsEl.innerHTML = '';
-				bucket.slice(0, 4).forEach(({ chip }) => chipsEl.appendChild(chip.cloneNode(true)));
+				bucket.slice(0, 4).forEach(({ node }) => chipsEl.appendChild(chipFromWrapper(node)));
 				if (bucket.length > 4) {
+					const hidden = bucket.length - 4;
 					const more = document.createElement('span');
 					more.className = 'hud-cal-chip hud-cal-chip-more';
-					more.textContent = `+${bucket.length - 4} more`;
+					// Mirror overflowLabel in calendar-page.templ — small counts
+					// shown verbatim, anything past 5 caps at "5+ more".
+					more.textContent = hidden > 5 ? '5+ more' : `${hidden} more`;
 					chipsEl.appendChild(more);
 				}
 			}

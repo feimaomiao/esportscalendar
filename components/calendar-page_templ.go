@@ -710,9 +710,9 @@ func CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFuture
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var39 string
-			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("+%d more", len(matches)-calendarChipsPerDay))
+			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(overflowLabel(len(matches) - calendarChipsPerDay))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 238, Col: 108}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 238, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
@@ -831,8 +831,22 @@ func teamShort(acronym, name pgtype.Text) string {
 }
 
 // calendarChipsPerDay caps how many event chips render in a single day cell
-// before collapsing into a "+N more" overflow chip.
+// before collapsing into an overflow chip.
 const calendarChipsPerDay = 4
+
+// overflowChipMaxExact is the largest hidden-match count we render verbatim
+// ("5 more"). Past it, the chip caps at "5+ more" so a 50-match day doesn't
+// show "+46 more" and dwarf the chips above it. Mirror this in calendar.js.
+const overflowChipMaxExact = 5
+
+// overflowLabel formats the trailing "+N more" chip. Shared by templ and
+// (mirrored in) calendar.js so the initial paint matches the rebucketed view.
+func overflowLabel(hidden int) string {
+	if hidden > overflowChipMaxExact {
+		return fmt.Sprintf("%d+ more", overflowChipMaxExact)
+	}
+	return fmt.Sprintf("%d more", hidden)
+}
 
 // visibleMatches returns at most calendarChipsPerDay rows. Used in the templ
 // for-loop instead of `{{ break }}`, since templ's parser does not guarantee
