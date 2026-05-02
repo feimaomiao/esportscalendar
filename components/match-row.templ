@@ -4,81 +4,154 @@ import "github.com/feimaomiao/esportscalendar/dbtypes"
 import "fmt"
 
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
-	<div class="hud-match" data-status={ matchStatus(match) }>
-		<span class="hud-match-game" title={ match.GameName }>{ match.GameName }</span>
-		<div class="flex items-center gap-3 flex-1 min-w-[14rem]">
-			<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
-				<span class="hud-team-name truncate">
-					if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
-						{ match.Team1Acronym.String }
-					} else if match.Team1Name.Valid {
+	<div class="hud-match-wrapper" data-match-id={ fmt.Sprintf("%d", match.ID) }>
+		<div class="hud-match" data-status={ matchStatus(match) } data-match-toggle role="button" tabindex="0" aria-expanded="false" aria-controls={ fmt.Sprintf("match-detail-%d", match.ID) }>
+			<span class="hud-match-game" title={ match.GameName }>{ match.GameName }</span>
+			<div class="flex items-center gap-3 flex-1 min-w-[14rem]">
+				<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+					<span class="hud-team-name truncate">
+						if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
+							{ match.Team1Acronym.String }
+						} else if match.Team1Name.Valid {
+							{ match.Team1Name.String }
+						} else {
+							TBD
+						}
+					</span>
+					<span class="hud-logo hud-logo-sm">
+						if match.Team1Image.Valid && match.Team1Image.String != "" {
+							if match.Team1Name.Valid {
+								<img src={ match.Team1Image.String } alt={ match.Team1Name.String }/>
+							} else {
+								<img src={ match.Team1Image.String } alt="TBD"/>
+							}
+						} else {
+							<img src="/static/images/default-logo.png" alt="TBD"/>
+						}
+					</span>
+				</div>
+				<span class="hud-vs">VS</span>
+				<div class="flex items-center gap-2 flex-1 min-w-0">
+					<span class="hud-logo hud-logo-sm">
+						if match.Team2Image.Valid && match.Team2Image.String != "" {
+							if match.Team2Name.Valid {
+								<img src={ match.Team2Image.String } alt={ match.Team2Name.String }/>
+							} else {
+								<img src={ match.Team2Image.String } alt="TBD"/>
+							}
+						} else {
+							<img src="/static/images/default-logo.png" alt="TBD"/>
+						}
+					</span>
+					<span class="hud-team-name truncate">
+						if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
+							{ match.Team2Acronym.String }
+						} else if match.Team2Name.Valid {
+							{ match.Team2Name.String }
+						} else {
+							TBD
+						}
+					</span>
+				</div>
+			</div>
+			<div class="hud-time flex items-center gap-2 flex-shrink-0">
+				if match.ExpectedStartTime.Valid {
+					<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
+						<span class="hud-time-date match-date">{ match.ExpectedStartTime.Time.Format("Jan 02") }</span>
+						<span class="hud-time-hour match-hour ml-1">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
+					</span>
+				} else {
+					<span class="opacity-50">— : —</span>
+				}
+			</div>
+			<div class="flex-shrink-0">
+				if match.Finished {
+					if hideScores {
+						<span class="hud-status hud-status-finished">Final</span>
+					} else {
+						<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
+					}
+				} else if match.IsLive {
+					if match.StreamURL.Valid && match.StreamURL.String != "" {
+						<a
+							href={ match.StreamURL.String }
+							class="hud-status hud-status-ongoing hud-status-link"
+							target="_blank"
+							rel="noopener noreferrer"
+						>Ongoing</a>
+					} else {
+						<span class="hud-status hud-status-ongoing">Ongoing</span>
+					}
+				} else {
+					<span class="hud-status hud-status-upcoming">Upcoming</span>
+				}
+			</div>
+			<div class="hud-meta">
+				<span class="truncate" title={ match.Name }>{ match.Name }</span>
+				<span class="hidden md:inline opacity-50">·</span>
+				<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
+			</div>
+			<span class="hud-match-chevron" aria-hidden="true">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
+				</svg>
+			</span>
+		</div>
+		<div id={ fmt.Sprintf("match-detail-%d", match.ID) } class="hud-match-detail" hidden>
+			@HUDMatchDetail(match)
+		</div>
+	</div>
+}
+
+templ HUDMatchDetail(match dbtypes.GetFutureMatchesBySelectionsRow) {
+	<div class="hud-match-detail-grid">
+		<div class="hud-match-detail-cell">
+			<span class="hud-match-detail-label">Match</span>
+			<span class="hud-match-detail-value">{ match.Name }</span>
+		</div>
+		<div class="hud-match-detail-cell">
+			<span class="hud-match-detail-label">League</span>
+			<span class="hud-match-detail-value">{ match.LeagueName }</span>
+		</div>
+		if match.SeriesName != "" {
+			<div class="hud-match-detail-cell">
+				<span class="hud-match-detail-label">Series</span>
+				<span class="hud-match-detail-value">{ match.SeriesName }</span>
+			</div>
+		}
+		if match.TournamentName != "" {
+			<div class="hud-match-detail-cell">
+				<span class="hud-match-detail-label">Tournament</span>
+				<span class="hud-match-detail-value">
+					{ match.TournamentName }
+					if match.TournamentTier.Valid {
+						<span class="hud-match-detail-tier">{ fmt.Sprintf("Tier %d", match.TournamentTier.Int32) }</span>
+					}
+				</span>
+			</div>
+		}
+		<div class="hud-match-detail-cell">
+			<span class="hud-match-detail-label">Format</span>
+			<span class="hud-match-detail-value">{ formatBestOf(match.AmountOfGames) }</span>
+		</div>
+		if (match.Team1Name.Valid && match.Team1Acronym.Valid && match.Team1Acronym.String != "") || (match.Team2Name.Valid && match.Team2Acronym.Valid && match.Team2Acronym.String != "") {
+			<div class="hud-match-detail-cell hud-match-detail-cell-wide">
+				<span class="hud-match-detail-label">Teams</span>
+				<span class="hud-match-detail-value">
+					if match.Team1Name.Valid {
 						{ match.Team1Name.String }
 					} else {
 						TBD
 					}
-				</span>
-				<span class="hud-logo hud-logo-sm">
-					if match.Team1Image.Valid && match.Team1Image.String != "" {
-						if match.Team1Name.Valid {
-							<img src={ match.Team1Image.String } alt={ match.Team1Name.String }/>
-						} else {
-							<img src={ match.Team1Image.String } alt="TBD"/>
-						}
-					} else {
-						<img src="/static/images/default-logo.png" alt="TBD"/>
-					}
-				</span>
-			</div>
-			<span class="hud-vs">VS</span>
-			<div class="flex items-center gap-2 flex-1 min-w-0">
-				<span class="hud-logo hud-logo-sm">
-					if match.Team2Image.Valid && match.Team2Image.String != "" {
-						if match.Team2Name.Valid {
-							<img src={ match.Team2Image.String } alt={ match.Team2Name.String }/>
-						} else {
-							<img src={ match.Team2Image.String } alt="TBD"/>
-						}
-					} else {
-						<img src="/static/images/default-logo.png" alt="TBD"/>
-					}
-				</span>
-				<span class="hud-team-name truncate">
-					if match.Team2Acronym.Valid && match.Team2Acronym.String != "" {
-						{ match.Team2Acronym.String }
-					} else if match.Team2Name.Valid {
+					{ " vs " }
+					if match.Team2Name.Valid {
 						{ match.Team2Name.String }
 					} else {
 						TBD
 					}
 				</span>
 			</div>
-		</div>
-		<div class="hud-time flex items-center gap-2 flex-shrink-0">
-			if match.ExpectedStartTime.Valid {
-				<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
-					<span class="hud-time-date match-date">{ match.ExpectedStartTime.Time.Format("Jan 02") }</span>
-					<span class="hud-time-hour match-hour ml-1">{ match.ExpectedStartTime.Time.Format("15:04") }</span>
-				</span>
-			} else {
-				<span class="opacity-50">— : —</span>
-			}
-		</div>
-		<div class="flex-shrink-0">
-			if match.Finished {
-				if hideScores {
-					<span class="hud-status hud-status-finished">Final</span>
-				} else {
-					<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
-				}
-			} else {
-				<span class="hud-status hud-status-upcoming">Upcoming</span>
-			}
-		</div>
-		<div class="hud-meta">
-			<span class="truncate" title={ match.Name }>{ match.Name }</span>
-			<span class="hidden md:inline opacity-50">·</span>
-			<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
-		</div>
+		}
 	</div>
 }
 
@@ -86,5 +159,15 @@ func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) string {
 	if match.Finished {
 		return "finished"
 	}
+	if match.IsLive {
+		return "ongoing"
+	}
 	return "upcoming"
+}
+
+func formatBestOf(n int32) string {
+	if n <= 1 {
+		return "Single match"
+	}
+	return fmt.Sprintf("Best of %d", n)
 }

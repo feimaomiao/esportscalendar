@@ -225,12 +225,18 @@
 	}
 
 	function scrollToUpcoming(behavior) {
-		// The server places `// now` between the last past match and the first
-		// future match. Scrolling to it lands the next-upcoming match right
-		// below the sticky control bar; if there's no past data we land at the
-		// top of the list, which is also the first future match.
-		const divider = contentEl.querySelector('.hud-now-divider');
-		const target = divider || contentEl.firstElementChild;
+		// The server places dividers between sections: past/ongoing and ongoing/upcoming.
+		// Prefer scrolling to the ongoing divider (so currently-live matches are
+		// at the top); fall back to the upcoming divider if no ongoing matches
+		// exist; otherwise the first match.
+		const dividers = Array.from(contentEl.querySelectorAll('.hud-now-divider'));
+		let target = null;
+		if (dividers.length > 0) {
+			const ongoingDivider = dividers.find((d) => d.textContent.includes('ongoing'));
+			const upcomingDivider = dividers.find((d) => d.textContent.includes('upcoming'));
+			target = ongoingDivider || upcomingDivider || dividers[0];
+		}
+		target = target || contentEl.firstElementChild;
 		if (!target) return;
 		const navOffset = 64; // .navbar (fixed)
 		const barEl = document.querySelector('.hud-control-bar');

@@ -11,6 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	jsonError   = "error"
+	jsonMessage = "message"
+	jsonLeagues = "leagues"
+	jsonTeams   = "teams"
+)
+
 func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "LeagueOptionsHandler"),
@@ -24,9 +31,9 @@ func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   true,
-			"message": "Invalid game ID",
-			"leagues": []any{},
+			jsonError:   true,
+			jsonMessage: "Invalid game ID",
+			jsonLeagues: []any{},
 		})
 		return
 	}
@@ -66,9 +73,9 @@ func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 			message = "Unable to load leagues. Please refresh the page: " + err.Error()
 		}
 		c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   true,
-			"message": message,
-			"leagues": []any{},
+			jsonError:   true,
+			jsonMessage: message,
+			jsonLeagues: []any{},
 		})
 		return
 	}
@@ -108,9 +115,9 @@ func (m *Middleware) LeagueOptionsHandler(c *gin.Context) {
 
 	// Build JSON response
 	response := map[string]any{
-		"error":   false,
-		"message": "",
-		"leagues": leagueList,
+		jsonError:   false,
+		jsonMessage: "",
+		jsonLeagues: leagueList,
 	}
 
 	// Marshal to JSON bytes
@@ -156,9 +163,9 @@ func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 	gameID, err := strconv.ParseInt(path, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   true,
-			"message": "Invalid game ID",
-			"teams":   []any{},
+			jsonError:   true,
+			jsonMessage: "Invalid game ID",
+			jsonTeams:   []any{},
 		})
 		return
 	}
@@ -198,9 +205,9 @@ func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 			message = "Unable to load teams. Please refresh the page: " + err.Error()
 		}
 		c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   true,
-			"message": message,
-			"teams":   []any{},
+			jsonError:   true,
+			jsonMessage: message,
+			jsonTeams:   []any{},
 		})
 		return
 	}
@@ -235,9 +242,9 @@ func (m *Middleware) TeamOptionsHandler(c *gin.Context) {
 
 	// Build JSON response
 	response := map[string]any{
-		"error":   false,
-		"message": "",
-		"teams":   teamList,
+		jsonError:   false,
+		jsonMessage: "",
+		jsonTeams:   teamList,
 	}
 
 	// Marshal to JSON bytes

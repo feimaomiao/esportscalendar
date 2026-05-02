@@ -86,7 +86,16 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 				)
 			}
 		}
+		// Add stream URL to description if available
+		if match.StreamURL.Valid && match.StreamURL.String != "" {
+			description += "\n\nWatch live: " + match.StreamURL.String
+		}
 		fmt.Fprintf(&ics, "DESCRIPTION:%s\r\n", escapeICS(description))
+
+		// Emit standard iCalendar URL property so calendar clients render a clickable link.
+		if match.StreamURL.Valid && match.StreamURL.String != "" {
+			fmt.Fprintf(&ics, "URL:%s\r\n", match.StreamURL.String)
+		}
 
 		// Build location: League - Series (only include dash if both are non-empty)
 		location := ""

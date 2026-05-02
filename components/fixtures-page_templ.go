@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 
-func FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
+func FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, pastIndex int, ongoingIndex int, hideScores bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,7 +43,7 @@ func FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelections
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = FixturesPageInner(games, matches, nowIndex, hideScores).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = FixturesPageInner(games, matches, pastIndex, ongoingIndex, hideScores).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -57,7 +57,7 @@ func FixturesPage(games []Option, matches []dbtypes.GetFutureMatchesBySelections
 	})
 }
 
-func FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, nowIndex int, hideScores bool) templ.Component {
+func FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelectionsRow, pastIndex int, ongoingIndex int, hideScores bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -167,7 +167,7 @@ func FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FixturesMatchList(matches, hideScores, nowIndex).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FixturesMatchList(matches, hideScores, pastIndex, ongoingIndex).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -249,7 +249,7 @@ func FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySelec
 	})
 }
 
-func FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool, nowIndex int) templ.Component {
+func FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool, pastIndex int, ongoingIndex int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -281,15 +281,15 @@ func FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideSc
 				return templ_7745c5c3_Err
 			}
 			for i, match := range matches {
-				if i == nowIndex {
+				if i == pastIndex {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"hud-now-divider\" role=\"separator\"><span class=\"hud-label\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
-					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("// now")
+					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("// ongoing")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 122, Col: 40}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 122, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -304,12 +304,35 @@ func FixturesMatchList(matches []dbtypes.GetFutureMatchesBySelectionsRow, hideSc
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+				if i == ongoingIndex {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div class=\"hud-now-divider\" role=\"separator\"><span class=\"hud-label\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var15 string
+					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("// upcoming")
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/fixtures-page.templ`, Line: 127, Col: 45}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span></div>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 				templ_7745c5c3_Err = HUDMatchRow(match, hideScores).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

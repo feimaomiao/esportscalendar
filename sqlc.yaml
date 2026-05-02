@@ -9,3 +9,5 @@ sql:
         sql_package: "pgx/v5"
         out: "dbtypes"
         emit_interface: true
+        rename:
+          stream_url: "StreamURL"

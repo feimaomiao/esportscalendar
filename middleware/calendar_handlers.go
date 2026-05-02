@@ -22,7 +22,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	var requestBody map[string]any
 	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		m.Logger.Error("Failed to parse JSON body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, map[string]string{jsonError: "Invalid request body"})
 		return
 	}
 	m.Logger.Debug("Received request body for export", zap.Any("request_body", requestBody))
@@ -37,7 +37,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	gIDs, lIDs, tIDs, _ := parseSelections(selections, m.Logger)
 	if vErr := validateSelections(gIDs, lIDs, tIDs); vErr != nil {
 		m.Logger.Warn("Invalid export selections", zap.Error(vErr))
-		c.JSON(http.StatusBadRequest, map[string]string{"error": vErr.Error()})
+		c.JSON(http.StatusBadRequest, map[string]string{jsonError: vErr.Error()})
 		return
 	}
 
@@ -46,7 +46,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	jsonBytes, err := json.Marshal(requestBody)
 	if err != nil {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process selections"})
+		c.JSON(http.StatusInternalServerError, map[string]string{jsonError: "Failed to process selections"})
 		return
 	}
 

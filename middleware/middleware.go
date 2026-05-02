@@ -50,6 +50,11 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 
 	dbConn := dbtypes.New(conn)
 
+	// Clean up old unfinished matches from before today
+	if markErr := dbConn.MarkPastUnfinishedMatchesAsFinished(ctx); markErr != nil {
+		logger.Warn("Failed to mark past unfinished matches as finished", zap.Error(markErr))
+	}
+
 	// Declare cache as the interface type up front so that a Redis init
 	// failure leaves a true-nil interface (not a typed-nil *RedisCache boxed
 	// inside an interface, which would silently break the `m.RedisCache != nil`
