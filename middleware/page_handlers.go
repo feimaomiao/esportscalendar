@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -236,11 +237,15 @@ func (m *Middleware) fixturesDefaults(options []components.Option) ([]int32, []i
 // Calendar bounds. The earliest navigable month is hard-coded — data prior to
 // 2025-09 is incomplete or absent. The forward cap is a safety bound; bump
 // calendarMaxMonthsAhead if you want users to page further into the future.
+//
+// calendarMonthMatchCap is effectively unbounded (max int32). The per-month
+// query is still range-bounded by [start, end), so the result set is naturally
+// limited to whatever's scheduled in that month.
 const (
 	calendarMinYear        = 2025
 	calendarMinMonth       = 9 // September
 	calendarMaxMonthsAhead = 12
-	calendarMonthMatchCap  = 500 // soft DB cap per month — way above any realistic month load
+	calendarMonthMatchCap  = math.MaxInt32
 )
 
 // monthAnchor returns the UTC midnight at the first day of the given month.
@@ -364,16 +369,25 @@ func (m *Middleware) buildFixturesMatches(
 	}
 	matches = append(matches, futureMatches...)
 
-	if len(pastMatches) > 0 {
-		pastIndex = len(pastMatches)
-		if len(ongoingMatches) > 0 {
-			ongoingIndex = len(pastMatches) + len(ongoingMatches)
-		}
-	} else if len(ongoingMatches) > 0 {
-		ongoingIndex = len(ongoingMatches)
-	}
+	pastIndex, ongoingIndex = fixturesDividers(len(pastMatches), len(ongoingMatches), len(futureMatches))
 
 	return matches, pastIndex, ongoingIndex
+}
+
+// fixturesDividers picks the index of each section divider in the concatenated
+// past+ongoing+future list. Returns -1 when a divider should be skipped because
+// the section that follows it is empty — otherwise the "// ongoing" label
+// would render above what are actually upcoming matches.
+func fixturesDividers(pastCount, ongoingCount, futureCount int) (int, int) {
+	ongoingDivider := -1
+	upcomingDivider := -1
+	if ongoingCount > 0 {
+		ongoingDivider = pastCount
+	}
+	if futureCount > 0 {
+		upcomingDivider = pastCount + ongoingCount
+	}
+	return ongoingDivider, upcomingDivider
 }
 
 func (m *Middleware) FixturesHandler(c *gin.Context) {
@@ -519,18 +533,7 @@ func (m *Middleware) FixturesAPIHandler(c *gin.Context) {
 	}
 	combined = append(combined, futureMatches...)
 
-	// Indices mark boundaries: pastIndex separates past/ongoing, ongoingIndex separates ongoing/future.
-	// -1 means no divider.
-	pastIndex := -1
-	ongoingIndex := -1
-	if len(pastMatches) > 0 {
-		pastIndex = len(pastMatches)
-		if len(ongoingMatches) > 0 {
-			ongoingIndex = len(pastMatches) + len(ongoingMatches)
-		}
-	} else if len(ongoingMatches) > 0 {
-		ongoingIndex = len(ongoingMatches)
-	}
+	pastIndex, ongoingIndex := fixturesDividers(len(pastMatches), len(ongoingMatches), len(futureMatches))
 
 	c.Header("Cache-Control", "no-store")
 	component := components.FixturesMatchList(combined, hideScores, pastIndex, ongoingIndex)

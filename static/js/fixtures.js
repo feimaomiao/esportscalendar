@@ -138,7 +138,10 @@
 				try {
 					sessionStorage.setItem('fixtures-hide-scores', hideScoresEl.checked ? '1' : '0');
 				} catch {}
-				scheduleRefresh();
+				// Spoiler is a presentational toggle — the visible match list
+				// doesn't change, only score vs "Final" rendering. Skip the
+				// scroll-to-ongoing reflow so the user stays where they are.
+				scheduleRefresh({ preserveScroll: true });
 			},
 			{ signal },
 		);
@@ -249,7 +252,8 @@
 	}
 
 	let inflight = null;
-	async function refresh() {
+	async function refresh(opts) {
+		const preserveScroll = !!(opts && opts.preserveScroll);
 		const selections = collectSelections();
 		if (Object.keys(selections).length === 0) {
 			contentEl.innerHTML = `
@@ -278,7 +282,7 @@
 			const html = await response.text();
 			contentEl.innerHTML = html;
 			window.convertMatchTimesIn?.(contentEl);
-			scrollToUpcoming('smooth');
+			if (!preserveScroll) scrollToUpcoming('smooth');
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				window.showToast?.('Network error: ' + err.message, 'error');
@@ -291,10 +295,10 @@
 
 	let refreshTimer = null;
 	let suppressRefresh = true; // suppress during hydration
-	function scheduleRefresh() {
+	function scheduleRefresh(opts) {
 		if (suppressRefresh) return;
 		clearTimeout(refreshTimer);
-		refreshTimer = setTimeout(refresh, REFRESH_DEBOUNCE_MS);
+		refreshTimer = setTimeout(() => refresh(opts), REFRESH_DEBOUNCE_MS);
 	}
 
 	function hasPriorState() {

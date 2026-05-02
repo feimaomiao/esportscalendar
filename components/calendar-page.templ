@@ -221,7 +221,7 @@ templ CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFutur
 		<span class="hud-cal-daynum">{ strconv.Itoa(day.Day()) }</span>
 		<div class="hud-cal-daychips">
 			for _, match := range visibleMatches(matches) {
-				<span class="hud-cal-chip" data-status={ matchStatus(match) }>
+				<span class="hud-cal-chip" data-status={ matchStatus(match) } data-game-slug={ gameSlug(match.GameSlug) }>
 					<span class="hud-cal-chip-time">
 						if match.ExpectedStartTime.Valid {
 							<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
