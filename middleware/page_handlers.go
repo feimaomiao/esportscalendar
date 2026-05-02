@@ -260,12 +260,15 @@ func addMonths(year int, month int, delta int) (int, int) {
 	return t.Year(), int(t.Month())
 }
 
-// calendarMonthBounds returns the first day of the requested month (inclusive)
-// and the first day of the following month (exclusive) — half-open range
-// suitable for `expected_start_time >= start AND expected_start_time < end`.
+// calendarMonthBounds returns a half-open UTC range covering the requested
+// month plus one day on each side. The pad lets the client re-bucket matches
+// into the viewer's local date without clipping edge-of-month rows: e.g. a
+// match at May 1 02:00 UTC is Apr 30 19:00 PT and belongs to the user's
+// Apr 30 cell, which sits one row outside the May query window.
 func calendarMonthBounds(year int, month int) (time.Time, time.Time) {
-	start := monthAnchor(year, month)
-	end := start.AddDate(0, 1, 0)
+	monthStart := monthAnchor(year, month)
+	start := monthStart.AddDate(0, 0, -1)
+	end := monthStart.AddDate(0, 1, 1)
 	return start, end
 }
 
