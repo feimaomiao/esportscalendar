@@ -4,6 +4,7 @@ type Option struct {
 	ID      string
 	Label   string
 	Logo    string
+	Slug    string // games.slug — drives the per-game accent CSS hook.
 	Checked bool
 }
 

@@ -71,18 +71,21 @@ func (m *Middleware) IndexHandler(c *gin.Context) {
 	var options []components.Option
 	for _, game := range games {
 		logo := components.DefaultLogo()
+		slug := ""
 		ignored := map[int]bool{20: true, 25: true, 27: true, 29: true, 30: true}
 
 		if ignored[int(game.ID)] {
 			continue
 		}
 		if game.Slug.Valid {
-			logo = components.LogoPath(game.Slug.String) + ".png"
+			slug = game.Slug.String
+			logo = components.LogoPath(slug) + ".png"
 		}
 		options = append(options, components.Option{
 			ID:      strconv.Itoa(int(game.ID)),
 			Label:   game.Name,
 			Logo:    logo,
+			Slug:    slug,
 			Checked: false,
 		})
 	}
@@ -192,13 +195,16 @@ func (m *Middleware) gameOptions() ([]components.Option, error) {
 			continue
 		}
 		logo := components.DefaultLogo()
+		slug := ""
 		if game.Slug.Valid {
-			logo = components.LogoPath(game.Slug.String) + ".png"
+			slug = game.Slug.String
+			logo = components.LogoPath(slug) + ".png"
 		}
 		options = append(options, components.Option{
 			ID:      strconv.Itoa(int(game.ID)),
 			Label:   game.Name,
 			Logo:    logo,
+			Slug:    slug,
 			Checked: false,
 		})
 	}

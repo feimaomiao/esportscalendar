@@ -36,6 +36,7 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 									type="button"
 									class="hud-game-chip"
 									data-game-id={ game.ID }
+									data-game-slug={ game.Slug }
 									data-active="true"
 									aria-pressed="true"
 									title={ game.Label }
@@ -123,7 +124,7 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 		</p>
 		<div class="flex flex-col gap-3" id="calendar-game-cards">
 			for _, game := range games {
-				<div class="hud-fixtures-card" data-calendar-card={ game.ID }>
+				<div class="hud-fixtures-card" data-calendar-card={ game.ID } data-game-slug={ game.Slug }>
 					<label class="hud-fixtures-card-switch">
 						<span class="hud-fixtures-card-switch-label" aria-hidden="true">ON</span>
 						<input

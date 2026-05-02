@@ -231,7 +231,9 @@ body::before {
    leave fixtures rows stuck on the theme primary while calendar chips (which
    carry the slug attr directly) coloured correctly. */
 .hud-match-wrapper,
-.hud-cal-chip {
+.hud-cal-chip,
+.hud-game-chip,
+.hud-fixtures-card {
   --game-accent: var(--color-primary);
 }
 
@@ -1601,7 +1603,7 @@ dialog.modal .modal-box {
   transform: translateY(-1px);
 }
 .hud-game-chip:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--game-accent);
   outline-offset: 2px;
 }
 .hud-game-chip .hud-game-chip-dot {
@@ -1619,12 +1621,12 @@ dialog.modal .modal-box {
   filter: saturate(0.4);
 }
 .hud-game-chip[data-active="true"] {
-  border-color: var(--color-primary);
-  background: color-mix(in oklch, var(--color-primary) 8%, var(--color-base-100));
+  border-color: var(--game-accent);
+  background: color-mix(in oklch, var(--game-accent) 8%, var(--color-base-100));
 }
 .hud-game-chip[data-active="true"] .hud-game-chip-dot {
-  background: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 25%, transparent);
+  background: var(--game-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--game-accent) 25%, transparent);
 }
 @media (max-width: 640px) {
   .hud-game-chip-label {
@@ -1779,11 +1781,22 @@ body.drawer-open {
   font-size: 0.65rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--game-accent);
   font-weight: 600;
   min-width: 1.6em;
   text-align: right;
   transition: color 0.15s ease;
+}
+
+/* DaisyUI's `.toggle.toggle-primary` defaults to the theme primary; route it
+   through --game-accent when the toggle sits inside a card with a slug so the
+   ON state matches its game's neon palette. Targets the <input> directly so we
+   override DaisyUI's default cleanly. */
+.hud-fixtures-card[data-game-slug] input.toggle.toggle-primary:checked,
+.hud-fixtures-card[data-game-slug] input.toggle.toggle-primary[checked] {
+  color: var(--game-accent);
+  background-color: var(--game-accent);
+  border-color: var(--game-accent);
 }
 .hud-fixtures-card.is-off .hud-fixtures-card-switch-label {
   color: color-mix(in oklch, var(--color-base-content) 45%, transparent);
