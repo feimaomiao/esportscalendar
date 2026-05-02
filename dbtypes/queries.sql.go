@@ -65,7 +65,7 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
-    game_name, league_name, series_name, tournament_name, tournament_tier,
+    game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
 FROM (
@@ -76,6 +76,7 @@ FROM (
         m.is_live,
         m.stream_url,
         g.name AS game_name,
+        g.slug AS game_slug,
         l.name AS league_name,
         s.name AS series_name,
         tour.name AS tournament_name,
@@ -93,7 +94,8 @@ FROM (
     WHERE m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
 ) ranked
 WHERE rn <= 1000
@@ -104,7 +106,7 @@ type GetCalendarMatchesBySelectionsParams struct {
 	GameIds   []int32
 	TeamIds   []int32
 	LeagueIds []int32
-	MaxTier   int32
+	MaxTiers  []int32
 }
 
 type GetCalendarMatchesBySelectionsRow struct {
@@ -125,6 +127,7 @@ type GetCalendarMatchesBySelectionsRow struct {
 	IsLive            bool
 	StreamURL         pgtype.Text
 	GameName          string
+	GameSlug          pgtype.Text
 	LeagueName        string
 	SeriesName        string
 	TournamentName    string
@@ -145,7 +148,7 @@ func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCal
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 	)
 	if err != nil {
 		return nil, err
@@ -172,6 +175,7 @@ func (q *Queries) GetCalendarMatchesBySelections(ctx context.Context, arg GetCal
 			&i.IsLive,
 			&i.StreamURL,
 			&i.GameName,
+			&i.GameSlug,
 			&i.LeagueName,
 			&i.SeriesName,
 			&i.TournamentName,
@@ -202,6 +206,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -219,7 +224,8 @@ WHERE m.expected_start_time >= NOW()
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -229,7 +235,7 @@ type GetFutureMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -251,6 +257,7 @@ type GetFutureMatchesBySelectionsRow struct {
 	IsLive            bool
 	StreamURL         pgtype.Text
 	GameName          string
+	GameSlug          pgtype.Text
 	LeagueName        string
 	SeriesName        string
 	TournamentName    string
@@ -271,7 +278,7 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -299,6 +306,7 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 			&i.IsLive,
 			&i.StreamURL,
 			&i.GameName,
+			&i.GameSlug,
 			&i.LeagueName,
 			&i.SeriesName,
 			&i.TournamentName,
@@ -468,6 +476,59 @@ func (q *Queries) GetLiveMatches(ctx context.Context) ([]GetLiveMatchesRow, erro
 	return items, nil
 }
 
+const getMatchByID = `-- name: GetMatchByID :one
+
+SELECT id, name, slug, finished, expected_start_time, actual_game_time,
+    team1_id, team1_score, team2_id, team2_score, amount_of_games,
+    game_id, league_id, series_id, tournament_id
+FROM matches
+WHERE id = $1
+`
+
+type GetMatchByIDRow struct {
+	ID                int32
+	Name              string
+	Slug              pgtype.Text
+	Finished          bool
+	ExpectedStartTime pgtype.Timestamp
+	ActualGameTime    float64
+	Team1ID           int32
+	Team1Score        int32
+	Team2ID           int32
+	Team2Score        int32
+	AmountOfGames     int32
+	GameID            int32
+	LeagueID          int32
+	SeriesID          int32
+	TournamentID      int32
+}
+
+// ============================================================================
+// Single-match lookup (used by prediction handlers)
+// ============================================================================
+func (q *Queries) GetMatchByID(ctx context.Context, id int32) (GetMatchByIDRow, error) {
+	row := q.db.QueryRow(ctx, getMatchByID, id)
+	var i GetMatchByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Finished,
+		&i.ExpectedStartTime,
+		&i.ActualGameTime,
+		&i.Team1ID,
+		&i.Team1Score,
+		&i.Team2ID,
+		&i.Team2Score,
+		&i.AmountOfGames,
+		&i.GameID,
+		&i.LeagueID,
+		&i.SeriesID,
+		&i.TournamentID,
+	)
+	return i, err
+}
+
 const getMatchesInRangeBySelections = `-- name: GetMatchesInRangeBySelections :many
 SELECT
     m.id, m.name, m.slug, m.expected_start_time, m.finished,
@@ -476,6 +537,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -494,7 +556,8 @@ WHERE m.expected_start_time >= $1::timestamp
     AND m.game_id = ANY($3::int[])
     AND (
         (CARDINALITY($4::int[]) > 0 AND (m.team1_id = ANY($4::int[]) OR m.team2_id = ANY($4::int[])))
-        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]) AND COALESCE(tour.tier, 0) <= $6::int)
+        OR (CARDINALITY($5::int[]) > 0 AND m.league_id = ANY($5::int[]))
+        OR (($6::int[])[array_position($3::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($6::int[])[array_position($3::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $7::int
@@ -506,7 +569,7 @@ type GetMatchesInRangeBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -528,6 +591,7 @@ type GetMatchesInRangeBySelectionsRow struct {
 	IsLive            bool
 	StreamURL         pgtype.Text
 	GameName          string
+	GameSlug          pgtype.Text
 	LeagueName        string
 	SeriesName        string
 	TournamentName    string
@@ -547,7 +611,7 @@ func (q *Queries) GetMatchesInRangeBySelections(ctx context.Context, arg GetMatc
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -575,6 +639,7 @@ func (q *Queries) GetMatchesInRangeBySelections(ctx context.Context, arg GetMatc
 			&i.IsLive,
 			&i.StreamURL,
 			&i.GameName,
+			&i.GameSlug,
 			&i.LeagueName,
 			&i.SeriesName,
 			&i.TournamentName,
@@ -604,6 +669,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -617,12 +683,13 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 LEFT JOIN teams t1 ON m.team1_id = t1.id
 LEFT JOIN teams t2 ON m.team2_id = t2.id
-WHERE m.expected_start_time <= NOW()
+WHERE m.is_live = true
     AND m.finished = false
     AND m.game_id = ANY($1::int[])
     AND (
         (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+        OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
     )
 ORDER BY m.expected_start_time ASC
 LIMIT $5::int
@@ -632,7 +699,7 @@ type GetOngoingMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -654,6 +721,7 @@ type GetOngoingMatchesBySelectionsRow struct {
 	IsLive            bool
 	StreamURL         pgtype.Text
 	GameName          string
+	GameSlug          pgtype.Text
 	LeagueName        string
 	SeriesName        string
 	TournamentName    string
@@ -666,12 +734,18 @@ type GetOngoingMatchesBySelectionsRow struct {
 	Team2Image        pgtype.Text
 }
 
+// "Ongoing" must mean is_live=true so it lines up with the per-row badge
+// (see matchStatus in components/match-row.templ). expected_start_time is
+// only an estimate; matches whose schedule has slipped past NOW() but never
+// went live are stale, not ongoing — they get cleaned up by
+// MarkPastUnfinishedMatchesAsFinished and shouldn't show under a // ongoing
+// divider in the meantime.
 func (q *Queries) GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error) {
 	rows, err := q.db.Query(ctx, getOngoingMatchesBySelections,
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -699,6 +773,7 @@ func (q *Queries) GetOngoingMatchesBySelections(ctx context.Context, arg GetOngo
 			&i.IsLive,
 			&i.StreamURL,
 			&i.GameName,
+			&i.GameSlug,
 			&i.LeagueName,
 			&i.SeriesName,
 			&i.TournamentName,
@@ -727,7 +802,7 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
-    game_name, league_name, series_name, tournament_name, tournament_tier,
+    game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
 FROM (
@@ -738,6 +813,7 @@ FROM (
         m.is_live,
         m.stream_url,
         g.name AS game_name,
+        g.slug AS game_slug,
         l.name AS league_name,
         s.name AS series_name,
         tour.name AS tournament_name,
@@ -756,7 +832,8 @@ FROM (
         AND m.game_id = ANY($1::int[])
         AND (
             (CARDINALITY($2::int[]) > 0 AND (m.team1_id = ANY($2::int[]) OR m.team2_id = ANY($2::int[])))
-            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]) AND COALESCE(tour.tier, 0) <= $4::int)
+            OR (CARDINALITY($3::int[]) > 0 AND m.league_id = ANY($3::int[]))
+        OR (($4::int[])[array_position($1::int[], m.game_id)] > 0 AND tour.tier IS NOT NULL AND tour.tier <= ($4::int[])[array_position($1::int[], m.game_id)])
         )
     ORDER BY m.expected_start_time DESC
     LIMIT $5::int
@@ -768,7 +845,7 @@ type GetPastMatchesBySelectionsParams struct {
 	GameIds    []int32
 	TeamIds    []int32
 	LeagueIds  []int32
-	MaxTier    int32
+	MaxTiers   []int32
 	LimitCount int32
 }
 
@@ -790,6 +867,7 @@ type GetPastMatchesBySelectionsRow struct {
 	IsLive            bool
 	StreamURL         pgtype.Text
 	GameName          string
+	GameSlug          pgtype.Text
 	LeagueName        string
 	SeriesName        string
 	TournamentName    string
@@ -807,7 +885,7 @@ func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMat
 		arg.GameIds,
 		arg.TeamIds,
 		arg.LeagueIds,
-		arg.MaxTier,
+		arg.MaxTiers,
 		arg.LimitCount,
 	)
 	if err != nil {
@@ -835,6 +913,7 @@ func (q *Queries) GetPastMatchesBySelections(ctx context.Context, arg GetPastMat
 			&i.IsLive,
 			&i.StreamURL,
 			&i.GameName,
+			&i.GameSlug,
 			&i.LeagueName,
 			&i.SeriesName,
 			&i.TournamentName,

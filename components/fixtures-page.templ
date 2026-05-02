@@ -28,6 +28,7 @@ templ FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySele
 									type="button"
 									class="hud-game-chip"
 									data-game-id={ game.ID }
+									data-game-slug={ game.Slug }
 									data-active="true"
 									aria-pressed="true"
 									title={ game.Label }
@@ -84,7 +85,7 @@ templ FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySele
 		</p>
 		<div class="flex flex-col gap-3" id="fixtures-game-cards">
 			for _, game := range games {
-				<div class="hud-fixtures-card" data-fixtures-card={ game.ID }>
+				<div class="hud-fixtures-card" data-fixtures-card={ game.ID } data-game-slug={ game.Slug }>
 					<label class="hud-fixtures-card-switch">
 						<span class="hud-fixtures-card-switch-label" aria-hidden="true">ON</span>
 						<input

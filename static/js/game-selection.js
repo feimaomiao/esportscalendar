@@ -4,9 +4,10 @@ function checkAndUpdateSubmitButton() {
 	let hasSelections = false;
 
 	gameCards.forEach((card) => {
-		const gameId = card.getAttribute('data-game-id');
-		const selectedContainer = document.getElementById('selected-combined-' + gameId);
-		if (selectedContainer && selectedContainer.querySelectorAll('.badge').length > 0) {
+		// Selected leagues and selected teams now live in two separate
+		// containers per card; scan all `.selected-items-container` under
+		// the card so either type's badges count.
+		if (card.querySelectorAll('.selected-items-container .badge').length > 0) {
 			hasSelections = true;
 		}
 	});
@@ -33,7 +34,8 @@ function initGameSelection(gameId, storagePrefix) {
 	const loadingElement = document.getElementById('loading-' + gameId);
 	const leagueList = document.getElementById('league-list-' + gameId);
 	const noResults = document.getElementById('no-results-' + gameId);
-	const selectedCombinedContainer = document.getElementById('selected-combined-' + gameId);
+	const selectedLeaguesContainer = document.getElementById('selected-leagues-' + gameId);
+	const selectedTeamsContainer = document.getElementById('selected-teams-' + gameId);
 
 	if (!searchInput || !dropdownMenu || !loadingElement) {
 		console.error('Required elements not found for gameId:', gameId);
@@ -344,7 +346,8 @@ function initGameSelection(gameId, storagePrefix) {
 			)
 			.join('');
 
-		selectedCombinedContainer.innerHTML = leagueHTML + teamHTML;
+		if (selectedLeaguesContainer) selectedLeaguesContainer.innerHTML = leagueHTML;
+		if (selectedTeamsContainer) selectedTeamsContainer.innerHTML = teamHTML;
 
 		checkAndUpdateSubmitButton();
 	}
@@ -484,8 +487,11 @@ function initGameSelection(gameId, storagePrefix) {
 		const tierValue = document.getElementById('tier-value-' + gameId);
 
 		function getTierLabel(tier) {
-			const tierMap = { 1: 'S', 2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'All' };
-			return tierMap[tier] || tier;
+			// 0 = OFF (no tier auto-include — only selected leagues/teams show).
+			// 1–5 = auto-include tier S through D. Range form makes the additive
+			// nature obvious as the slider drags right (more tiers join).
+			const rangeMap = { 0: 'OFF', 1: 'S', 2: 'S–A', 3: 'S–B', 4: 'S–C', 5: 'S–D' };
+			return rangeMap[tier] ?? tier;
 		}
 
 		if (tierSlider && tierValue) {
@@ -501,18 +507,29 @@ function initGameSelection(gameId, storagePrefix) {
 	}
 
 	function setupDeselectAllButton() {
-		const deselectAllBtn = document.getElementById('deselect-all-' + gameId);
-		if (deselectAllBtn) {
-			deselectAllBtn.addEventListener('click', () => {
+		// Each clear button now scopes to its own type — clearing leagues
+		// keeps team picks intact and vice versa. Early-return when the set
+		// is already empty so the click is a no-op (no needless re-renders).
+		const deselectLeaguesBtn = document.getElementById('deselect-leagues-' + gameId);
+		if (deselectLeaguesBtn) {
+			deselectLeaguesBtn.addEventListener('click', () => {
+				if (selectedLeagues.size === 0) return;
 				selectedLeagues.clear();
-				selectedTeams.clear();
-
 				saveSelections();
 				updateCombinedDisplay();
-
 				if (allLeagues.length > 0) {
 					renderLeagues(searchInput.value ? filterLeagues(searchInput.value) : allLeagues);
 				}
+			});
+		}
+
+		const deselectTeamsBtn = document.getElementById('deselect-teams-' + gameId);
+		if (deselectTeamsBtn) {
+			deselectTeamsBtn.addEventListener('click', () => {
+				if (selectedTeams.size === 0) return;
+				selectedTeams.clear();
+				saveSelections();
+				updateCombinedDisplay();
 				if (allTeams.length > 0) {
 					renderTeams(searchTeamsInput.value ? filterTeams(searchTeamsInput.value) : allTeams);
 				}

@@ -13,61 +13,69 @@ templ GameSelectionCard(option Option) {
 		</div>
 		<div class="hud-game-module-body">
 			<div class="flex justify-between items-center mb-2">
-				<span class="hud-label">{ "// selected" }</span>
-				<button type="button" id={ "deselect-all-" + option.ID } class="hud-mono text-xs uppercase tracking-widest text-base-content/60 hover:text-secondary transition-colors flex items-center gap-1">
+				<span class="hud-label">{ "// selected leagues" }</span>
+				<button type="button" id={ "deselect-leagues-" + option.ID } class="hud-mono text-xs uppercase tracking-widest text-base-content/60 hover:text-primary transition-colors flex items-center gap-1">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
 					</svg>
 					Clear
 				</button>
 			</div>
-			<div id={ "selected-combined-" + option.ID } class="selected-items-container"></div>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start mt-4">
-				<div>
-					<span class="hud-label block mb-2">{ "// search leagues" }</span>
-					<div class="relative w-full" id={ "dropdown-container-" + option.ID }>
-						<div class="hud-input-wrap">
-							<input
-								type="text"
-								id={ "search-" + option.ID }
-								placeholder="type to search..."
-								class="hud-input"
-								autocomplete="off"
-							/>
+			<div id={ "selected-leagues-" + option.ID } class="selected-items-container"></div>
+			<div class="mt-3">
+				<span class="hud-label block mb-2">{ "// search leagues" }</span>
+				<div class="relative w-full" id={ "dropdown-container-" + option.ID }>
+					<div class="hud-input-wrap">
+						<input
+							type="text"
+							id={ "search-" + option.ID }
+							placeholder="type to search..."
+							class="hud-input"
+							autocomplete="off"
+						/>
+					</div>
+					<div class="dropdown-menu" id={ "dropdown-menu-" + option.ID }>
+						<div id={ "loading-" + option.ID } class="dropdown-loading">
+							<span class="loading loading-spinner loading-sm"></span>
+							<span class="ml-2 hud-mono text-xs">Loading leagues...</span>
 						</div>
-						<div class="dropdown-menu" id={ "dropdown-menu-" + option.ID }>
-							<div id={ "loading-" + option.ID } class="dropdown-loading">
-								<span class="loading loading-spinner loading-sm"></span>
-								<span class="ml-2 hud-mono text-xs">Loading leagues...</span>
-							</div>
-							<ul class="menu p-2 w-full hidden" id={ "league-list-" + option.ID }></ul>
-							<div class="dropdown-no-results hud-mono text-xs" id={ "no-results-" + option.ID }>
-								No leagues found
-							</div>
+						<ul class="menu p-2 w-full hidden" id={ "league-list-" + option.ID }></ul>
+						<div class="dropdown-no-results hud-mono text-xs" id={ "no-results-" + option.ID }>
+							No leagues found
 						</div>
 					</div>
 				</div>
-				<div>
-					<span class="hud-label block mb-2">{ "// search teams" }</span>
-					<div class="relative w-full" id={ "dropdown-teams-container-" + option.ID }>
-						<div class="hud-input-wrap">
-							<input
-								type="text"
-								id={ "search-teams-" + option.ID }
-								placeholder="type to search..."
-								class="hud-input"
-								autocomplete="off"
-							/>
+			</div>
+			<div class="flex justify-between items-center mb-2 mt-4">
+				<span class="hud-label">{ "// selected teams" }</span>
+				<button type="button" id={ "deselect-teams-" + option.ID } class="hud-mono text-xs uppercase tracking-widest text-base-content/60 hover:text-secondary transition-colors flex items-center gap-1">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+					Clear
+				</button>
+			</div>
+			<div id={ "selected-teams-" + option.ID } class="selected-items-container"></div>
+			<div class="mt-3">
+				<span class="hud-label block mb-2">{ "// search teams" }</span>
+				<div class="relative w-full" id={ "dropdown-teams-container-" + option.ID }>
+					<div class="hud-input-wrap">
+						<input
+							type="text"
+							id={ "search-teams-" + option.ID }
+							placeholder="type to search..."
+							class="hud-input"
+							autocomplete="off"
+						/>
+					</div>
+					<div class="dropdown-menu" id={ "dropdown-teams-menu-" + option.ID }>
+						<div id={ "loading-teams-" + option.ID } class="dropdown-loading">
+							<span class="loading loading-spinner loading-sm"></span>
+							<span class="ml-2 hud-mono text-xs">Loading teams...</span>
 						</div>
-						<div class="dropdown-menu" id={ "dropdown-teams-menu-" + option.ID }>
-							<div id={ "loading-teams-" + option.ID } class="dropdown-loading">
-								<span class="loading loading-spinner loading-sm"></span>
-								<span class="ml-2 hud-mono text-xs">Loading teams...</span>
-							</div>
-							<ul class="menu p-2 w-full hidden" id={ "team-list-" + option.ID }></ul>
-							<div class="dropdown-no-results hud-mono text-xs" id={ "no-teams-results-" + option.ID }>
-								No teams found
-							</div>
+						<ul class="menu p-2 w-full hidden" id={ "team-list-" + option.ID }></ul>
+						<div class="dropdown-no-results hud-mono text-xs" id={ "no-teams-results-" + option.ID }>
+							No teams found
 						</div>
 					</div>
 				</div>
@@ -75,31 +83,31 @@ templ GameSelectionCard(option Option) {
 			<div class="mt-5">
 				<div class="mb-2 flex items-center justify-between gap-2">
 					<div class="flex items-center gap-2">
-						<span class="hud-label">{ "// min tier" }</span>
-						<div class="tooltip" data-tip="Different tiered tournaments may exist within the same league. Putting this slider to S will only show matches with an S tier tournament within the selected leagues.">
+						<span class="hud-label">{ "// auto-show tier" }</span>
+						<div class="tooltip" data-tip="Selected leagues and teams always show, regardless of tier. This slider adds a shortcut for big tournaments: at S, also include any S-tier matches in this game (Worlds, MSI). Drag right to add A, B, C, D — each step pulls in the next quality tier. OFF disables the shortcut and trusts only your league/team picks.">
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-info cursor-help" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 							</svg>
 						</div>
 					</div>
-					<span class="hud-mono text-sm font-bold tracking-widest text-primary" id={ "tier-value-" + option.ID }>A</span>
+					<span class="hud-mono text-sm font-bold tracking-widest text-primary" id={ "tier-value-" + option.ID }>S–A</span>
 				</div>
 				<input
 					type="range"
-					min="1"
-					max="6"
+					min="0"
+					max="5"
 					value="2"
 					class="hud-slider"
 					id={ "tier-slider-" + option.ID }
-					aria-label="Minimum tournament tier"
+					aria-label="Tier auto-include"
 				/>
 				<div class="hud-slider-ticks">
+					<span>OFF</span>
 					<span>S</span>
 					<span>A</span>
 					<span>B</span>
 					<span>C</span>
 					<span>D</span>
-					<span>All</span>
 				</div>
 			</div>
 		</div>

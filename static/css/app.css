@@ -223,12 +223,88 @@ body::before {
    Match card — broadcast lower-third
    ---------------------------------------------------------------------------- */
 
+/* Per-game accent colour. The default is the theme primary; rules further
+   down override `--game-accent` based on `data-game-slug` so each game gets
+   its own neon hue across match rows, calendar chips, and chevrons.
+   NB: don't redeclare `--game-accent` on `.hud-match` here — that would shadow
+   the slug-based override that lives on the parent `.hud-match-wrapper` and
+   leave fixtures rows stuck on the theme primary while calendar chips (which
+   carry the slug attr directly) coloured correctly. */
+.hud-match-wrapper,
+.hud-cal-chip,
+.hud-game-chip,
+.hud-fixtures-card {
+  --game-accent: var(--color-primary);
+}
+
+/* Per-game neon palette. Slugs come from the games.slug column (PandaScore
+   slugs). Each colour leans on the game's own brand identity:
+     · LoL          — Hextech cyan/teal from the in-game UI
+     · Dota 2       — Defense-of-the-Ancients crimson
+     · Counter-Strike — CS orange flare
+     · Valorant     — VLR signature red
+     · R6 Siege     — Ubisoft / Six tactical orange
+     · Wild Rift    — Wild Rift hex purple
+     · MLBB         — Mobile Legends gold
+     · Rocket League — boost / supersonic electric blue
+     · COD MW       — tactical military green
+     · Overwatch    — Tracer / OW orange
+     · PUBG         — PUBG hazard yellow
+     · StarCraft    — Protoss psionic blue
+     · King of Glory — Honor of Kings magenta
+   Add a row when a new game ships; rendering falls back to theme primary. */
+[data-game-slug="league-of-legends"] {
+  --game-accent: #00d9ff;
+}
+[data-game-slug="dota-2"] {
+  --game-accent: #ff1744;
+}
+[data-game-slug="cs-go"] {
+  --game-accent: #f89a1c;
+}
+[data-game-slug="valorant"] {
+  --game-accent: #ff4655;
+}
+[data-game-slug="r6-siege"] {
+  --game-accent: #ff6b00;
+}
+[data-game-slug="lol-wild-rift"] {
+  --game-accent: #c77dff;
+}
+[data-game-slug="mlbb"] {
+  --game-accent: #ffb400;
+}
+[data-game-slug="rl"] {
+  --game-accent: #2d9cff;
+}
+[data-game-slug="cod-mw"] {
+  --game-accent: #76b947;
+}
+[data-game-slug="overwatch"] {
+  --game-accent: #f99e1a;
+}
+[data-game-slug="pubg"] {
+  --game-accent: #ffcb05;
+}
+[data-game-slug="starcraft-2"],
+[data-game-slug="starcraft-brood-war"] {
+  --game-accent: #2979ff;
+}
+[data-game-slug="king-of-glory"] {
+  --game-accent: #ff4081;
+}
+
 .hud-match {
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  /* Fixed widths on game pill, time, status, chevron columns so the matchup
+     (1fr) starts and ends at the same X across every row — that's what
+     centers VS row-to-row. Pill width fits the widest label ("COUNTER-STRIKE"
+     plus logo). */
+  grid-template-columns: 11rem minmax(0, 1fr) 8.5rem 6rem 1.25rem;
   align-items: center;
-  gap: 0.75rem 1rem;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
   padding: 0.875rem 1rem 0.875rem 1.25rem;
   background-color: var(--color-base-100);
   border: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
@@ -244,30 +320,26 @@ body::before {
   top: 0;
   bottom: 0;
   width: 3px;
-  background-color: color-mix(in oklch, var(--color-base-content) 25%, transparent);
+  background-color: var(--game-accent);
+  box-shadow: 0 0 10px -1px color-mix(in oklch, var(--game-accent) 70%, transparent);
 }
 .hud-match:hover {
-  border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
-}
-.hud-match[data-status="upcoming"]::before {
-  background-color: var(--color-primary);
-  box-shadow: 0 0 10px -1px color-mix(in oklch, var(--color-primary) 70%, transparent);
-}
-.hud-match[data-status="finished"]::before {
-  background-color: var(--color-accent);
+  border-color: color-mix(in oklch, var(--game-accent) 55%, transparent);
 }
 .hud-match[data-status="live"]::before,
 .hud-match[data-status="ongoing"]::before {
-  background-color: var(--color-secondary);
   animation: hud-pulse 1.4s ease-in-out infinite;
+}
+.hud-match[data-status="finished"]::before {
+  opacity: 0.55;
 }
 @keyframes hud-pulse {
   0%,
   100% {
-    box-shadow: 0 0 8px -1px var(--color-secondary);
+    box-shadow: 0 0 8px -1px var(--game-accent);
   }
   50% {
-    box-shadow: 0 0 22px 0 var(--color-secondary);
+    box-shadow: 0 0 22px 0 var(--game-accent);
   }
 }
 
@@ -288,7 +360,6 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
   flex-shrink: 0;
   color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
   transition:
@@ -297,7 +368,7 @@ body::before {
 }
 .hud-match[aria-expanded="true"] .hud-match-chevron {
   transform: rotate(180deg);
-  color: var(--color-primary);
+  color: var(--game-accent);
 }
 
 .hud-match-detail {
@@ -306,7 +377,7 @@ body::before {
   background-color: color-mix(in oklch, var(--color-base-100) 50%, transparent);
   border: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
   border-left-width: 3px;
-  border-left-color: color-mix(in oklch, var(--color-primary) 60%, transparent);
+  border-left-color: color-mix(in oklch, var(--game-accent) 60%, transparent);
   border-radius: 0.125rem;
 }
 
@@ -355,16 +426,66 @@ body::before {
 }
 
 .hud-match-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  padding: 0.25rem 0.55rem;
+  border: 1px solid color-mix(in oklch, var(--game-accent) 45%, transparent);
   border-radius: 0.125rem;
   color: var(--color-base-content);
+  background: color-mix(in oklch, var(--game-accent) 8%, transparent);
+}
+.hud-match-game-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 0.125rem;
+  background: #e8edf2;
+  padding: 1px;
   flex-shrink: 0;
+}
+.hud-match-game-logo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.hud-match-game-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Three-column matchup grid: team1 (right-aligned) | VS | team2 (left-aligned).
+   This keeps "VS" visually centred row-to-row regardless of game-pill or team
+   name widths. */
+.hud-match-matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.75rem;
+  min-width: 0;
+}
+.hud-match-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.hud-match-team-left {
+  justify-content: flex-end;
+}
+.hud-match-team-right {
+  justify-content: flex-start;
 }
 
 .hud-team-name {
@@ -384,23 +505,36 @@ body::before {
 }
 
 .hud-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   font-feature-settings: "tnum";
+  white-space: nowrap;
 }
 .hud-time .hud-time-date {
   opacity: 0.6;
 }
 .hud-time .hud-time-hour {
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-base-content);
+}
+.hud-match-status {
+  display: inline-flex;
+  align-items: center;
 }
 
 .hud-status {
+  /* Fixed width sized for the longest label ("UPCOMING") so Final/Ongoing/
+     Upcoming chips render at exactly the same size — the column already
+     reserves the slot in .hud-match's grid template. */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  width: 7rem;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -417,20 +551,24 @@ body::before {
   border-radius: 50%;
   background: currentColor;
 }
+/* Status chips use fixed semantic colours so users learn the trio at a glance:
+   blue = upcoming, red = live/ongoing, green = finished. The per-game accent
+   already lives on the row's left bar, time hour stays neutral white, so the
+   status chip is the one place where state colour is canonical. */
 .hud-status-upcoming {
-  color: var(--color-primary);
+  color: #3b82f6;
 }
 .hud-status-ongoing {
-  color: var(--color-secondary);
+  color: #ef4444;
 }
 .hud-status-ongoing::before {
   animation: hud-blink 1s steps(2, end) infinite;
 }
 .hud-status-finished {
-  color: var(--color-accent);
+  color: #22c55e;
 }
 .hud-status-live {
-  color: var(--color-secondary);
+  color: #ef4444;
 }
 .hud-status-live::before {
   animation: hud-blink 1s steps(2, end) infinite;
@@ -447,7 +585,7 @@ a.hud-status-ongoing:hover {
 }
 
 .hud-meta {
-  flex-basis: 100%;
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -458,6 +596,42 @@ a.hud-status-ongoing:hover {
   font-size: 0.6875rem;
   letter-spacing: 0.05em;
   color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+
+/* On narrow screens, use named grid areas so each piece gets a stable spot
+   regardless of source order. The matchup keeps its own inner grid so VS
+   still aligns within the row. */
+@media (max-width: 720px) {
+  .hud-match {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "game    chev"
+      "matchup matchup"
+      "time    status"
+      "meta    meta";
+    column-gap: 0.5rem;
+  }
+  .hud-match-game {
+    grid-area: game;
+    justify-self: start;
+  }
+  .hud-match-chevron {
+    grid-area: chev;
+    justify-self: end;
+  }
+  .hud-match-matchup {
+    grid-area: matchup;
+  }
+  .hud-time {
+    grid-area: time;
+  }
+  .hud-match-status {
+    grid-area: status;
+    justify-self: end;
+  }
+  .hud-meta {
+    grid-area: meta;
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -1429,7 +1603,7 @@ dialog.modal .modal-box {
   transform: translateY(-1px);
 }
 .hud-game-chip:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--game-accent);
   outline-offset: 2px;
 }
 .hud-game-chip .hud-game-chip-dot {
@@ -1447,12 +1621,12 @@ dialog.modal .modal-box {
   filter: saturate(0.4);
 }
 .hud-game-chip[data-active="true"] {
-  border-color: var(--color-primary);
-  background: color-mix(in oklch, var(--color-primary) 8%, var(--color-base-100));
+  border-color: var(--game-accent);
+  background: color-mix(in oklch, var(--game-accent) 8%, var(--color-base-100));
 }
 .hud-game-chip[data-active="true"] .hud-game-chip-dot {
-  background: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 25%, transparent);
+  background: var(--game-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--game-accent) 25%, transparent);
 }
 @media (max-width: 640px) {
   .hud-game-chip-label {
@@ -1607,11 +1781,22 @@ body.drawer-open {
   font-size: 0.65rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--game-accent);
   font-weight: 600;
   min-width: 1.6em;
   text-align: right;
   transition: color 0.15s ease;
+}
+
+/* DaisyUI's `.toggle.toggle-primary` defaults to the theme primary; route it
+   through --game-accent when the toggle sits inside a card with a slug so the
+   ON state matches its game's neon palette. Targets the <input> directly so we
+   override DaisyUI's default cleanly. */
+.hud-fixtures-card[data-game-slug] input.toggle.toggle-primary:checked,
+.hud-fixtures-card[data-game-slug] input.toggle.toggle-primary[checked] {
+  color: var(--game-accent);
+  background-color: var(--game-accent);
+  border-color: var(--game-accent);
 }
 .hud-fixtures-card.is-off .hud-fixtures-card-switch-label {
   color: color-mix(in oklch, var(--color-base-content) 45%, transparent);
@@ -1810,16 +1995,14 @@ body.drawer-open {
   align-items: center;
   gap: 0.3rem;
   padding: 0.1rem 0.3rem;
-  border-left: 2px solid color-mix(in oklch, var(--color-primary) 70%, transparent);
-  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+  border-left: 2px solid color-mix(in oklch, var(--game-accent) 75%, transparent);
+  background: color-mix(in oklch, var(--game-accent) 12%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .hud-cal-chip[data-status="finished"] {
-  border-left-color: color-mix(in oklch, var(--color-base-content) 30%, transparent);
-  background: color-mix(in oklch, var(--color-base-content) 5%, transparent);
-  opacity: 0.75;
+  opacity: 0.55;
 }
 .hud-cal-chip-time {
   flex-shrink: 0;

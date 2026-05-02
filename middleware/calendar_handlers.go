@@ -175,13 +175,13 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 		selections = storedData
 	}
 
-	// Extract game IDs, league IDs, team IDs, and max tier from selections
-	gameIDs, leagueIDs, teamIDs, maxTier := parseSelections(selections, m.Logger)
+	// Extract game IDs, league IDs, team IDs, and per-game max tiers from selections
+	gameIDs, leagueIDs, teamIDs, maxTiers := parseSelections(selections, m.Logger)
 	m.Logger.Debug("Parsed IDs from selections",
 		zap.Any("game_ids", gameIDs),
 		zap.Any("league_ids", leagueIDs),
 		zap.Any("team_ids", teamIDs),
-		zap.Int32("max_tier", maxTier),
+		zap.Int32s("max_tiers", maxTiers),
 		zap.Bool("hide_scores", hideScores))
 
 	// Fetch matches from database (all-time, capped at 1000 most recent per game, filtered by tier)
@@ -191,7 +191,7 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 			GameIds:   gameIDs,
 			LeagueIds: leagueIDs,
 			TeamIds:   teamIDs,
-			MaxTier:   maxTier,
+			MaxTiers:  maxTiers,
 		})
 		if err != nil {
 			m.Logger.Error("Failed to fetch matches", zap.Error(err))

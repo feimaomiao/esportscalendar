@@ -150,14 +150,11 @@ func TestParseSelections(t *testing.T) {
 		return m
 	}
 
-	t.Run("empty selections returns empty slices and default tier", func(t *testing.T) {
+	t.Run("empty selections returns empty slices and no tiers", func(t *testing.T) {
 		t.Parallel()
-		games, leagues, teams, tier := parseSelections(map[string]any{}, zap.NewNop())
-		if len(games) != 0 || len(leagues) != 0 || len(teams) != 0 {
-			t.Fatalf("expected empty slices, got games=%v leagues=%v teams=%v", games, leagues, teams)
-		}
-		if tier != defaultMaxTier {
-			t.Fatalf("tier = %d, want %d (default)", tier, defaultMaxTier)
+		games, leagues, teams, tiers := parseSelections(map[string]any{}, zap.NewNop())
+		if len(games) != 0 || len(leagues) != 0 || len(teams) != 0 || len(tiers) != 0 {
+			t.Fatalf("expected empty slices, got games=%v leagues=%v teams=%v tiers=%v", games, leagues, teams, tiers)
 		}
 	})
 
@@ -170,7 +167,7 @@ func TestParseSelections(t *testing.T) {
 				"maxTier": 3
 			}
 		}`)
-		games, leagues, teams, tier := parseSelections(input, zap.NewNop())
+		games, leagues, teams, tiers := parseSelections(input, zap.NewNop())
 		if !equalInt32(games, []int32{1}) {
 			t.Errorf("games = %v, want [1]", games)
 		}
@@ -180,8 +177,8 @@ func TestParseSelections(t *testing.T) {
 		if !equalSetInt32(teams, []int32{100, 200}) {
 			t.Errorf("teams = %v, want {100,200}", teams)
 		}
-		if tier != 3 {
-			t.Errorf("tier = %d, want 3", tier)
+		if !equalInt32(tiers, []int32{3}) {
+			t.Errorf("tiers = %v, want [3]", tiers)
 		}
 	})
 
@@ -240,36 +237,55 @@ func TestParseSelections(t *testing.T) {
 		}
 	})
 
-	t.Run("maxTier below 1 is clamped to 1, but default tier 2 wins", func(t *testing.T) {
+	t.Run("maxTier 0 means OFF (auto-include disabled) and is preserved", func(t *testing.T) {
 		t.Parallel()
 		input := mustParse(t, `{"1": {"maxTier": 0}}`)
-		_, _, _, tier := parseSelections(input, zap.NewNop())
-		// tier in payload clamps to 1 (minTier), but defaultMaxTier=2 is higher,
-		// and parseSelections only updates maxTier when the parsed tier is greater.
-		if tier != defaultMaxTier {
-			t.Errorf("tier = %d, want %d (default wins)", tier, defaultMaxTier)
+		_, _, _, tiers := parseSelections(input, zap.NewNop())
+		// maxTier=0 is the OFF sentinel — the SQL auto-include branch checks
+		// max_tiers[idx] > 0, so 0 disables the "show big tournaments" shortcut
+		// and only league/team picks contribute matches for that game.
+		if !equalInt32(tiers, []int32{tierOff}) {
+			t.Errorf("tiers = %v, want [%d] (OFF)", tiers, tierOff)
 		}
 	})
 
-	t.Run("maxTier above 6 is clamped to 6", func(t *testing.T) {
+	t.Run("negative maxTier clamps to OFF", func(t *testing.T) {
+		t.Parallel()
+		input := mustParse(t, `{"1": {"maxTier": -3}}`)
+		_, _, _, tiers := parseSelections(input, zap.NewNop())
+		if !equalInt32(tiers, []int32{tierOff}) {
+			t.Errorf("tiers = %v, want [%d] (clamped to OFF)", tiers, tierOff)
+		}
+	})
+
+	t.Run("maxTier above D is clamped to D", func(t *testing.T) {
 		t.Parallel()
 		input := mustParse(t, `{"1": {"maxTier": 99}}`)
-		_, _, _, tier := parseSelections(input, zap.NewNop())
-		if tier != maxTierBound {
-			t.Errorf("tier = %d, want %d", tier, maxTierBound)
+		_, _, _, tiers := parseSelections(input, zap.NewNop())
+		if !equalInt32(tiers, []int32{maxTierBound}) {
+			t.Errorf("tiers = %v, want [%d]", tiers, maxTierBound)
 		}
 	})
 
-	t.Run("multiple games take the max maxTier across them", func(t *testing.T) {
+	t.Run("multiple games keep per-game tiers", func(t *testing.T) {
 		t.Parallel()
 		input := mustParse(t, `{
 			"1": {"maxTier": 2},
 			"2": {"maxTier": 5},
 			"3": {"maxTier": 3}
 		}`)
-		_, _, _, tier := parseSelections(input, zap.NewNop())
-		if tier != 5 {
-			t.Errorf("tier = %d, want 5 (highest)", tier)
+		games, _, _, tiers := parseSelections(input, zap.NewNop())
+		// Each game keeps its own tier ceiling — alignment with games is what
+		// the SQL relies on (array_position(game_ids, m.game_id) → max_tiers).
+		if len(games) != len(tiers) {
+			t.Fatalf("games (%d) and tiers (%d) lengths must match: games=%v tiers=%v",
+				len(games), len(tiers), games, tiers)
+		}
+		want := map[int32]int32{1: 2, 2: 5, 3: 3}
+		for i, g := range games {
+			if tiers[i] != want[g] {
+				t.Errorf("game %d: tier = %d, want %d", g, tiers[i], want[g])
+			}
 		}
 	})
 

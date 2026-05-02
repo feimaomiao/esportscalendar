@@ -252,7 +252,10 @@
 					if (typeof parsed.maxTier === 'number') maxTier = parsed.maxTier;
 				}
 			} catch {}
-			if (leagues.length > 0 || teams.length > 0) {
+			// Include the game if it contributes any rows: explicit league/team
+			// picks, or tier auto-include (maxTier > 0). A game with neither is
+			// a no-op for the server query, so skip it to keep the payload tight.
+			if (leagues.length > 0 || teams.length > 0 || maxTier > 0) {
 				leagues = leagues.slice().sort((a, b) => a - b);
 				teams = teams.slice().sort((a, b) => a - b);
 				selections[gameId] = { leagues, teams, maxTier };
@@ -314,7 +317,7 @@
 			}
 			const html = await response.text();
 			contentEl.innerHTML = html;
-			window.convertMatchTimesIn?.(contentEl);
+			rebucketCalendar();
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				window.showToast?.('Network error: ' + err.message, 'error');
@@ -376,11 +379,127 @@
 		{ signal },
 	);
 
+	// Server buckets matches by UTC date (cells, chips, modal templates), but
+	// `data-utc-time` is rendered to the viewer's local timezone client-side.
+	// For users in non-UTC zones a match near midnight UTC ends up under the
+	// "wrong" cell — the modal title says one day, the rows show another.
+	//
+	// rebucketCalendar() walks the server-rendered modal templates (which carry
+	// every match for the month, not just the 4 visible chips per day) and
+	// re-files them into local-date buckets. The same bucket then drives both
+	// the day cell's chip list AND the modal contents, so counts, overflow, and
+	// the row list all agree with the viewer's clock.
+	const wrappersByLocalDate = new Map();
+
+	function formatLocalDate(d) {
+		const y = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		return `${y}-${m}-${day}`;
+	}
+
+	// Build a calendar chip element from a HUDMatchRow wrapper. Mirrors the
+	// server-side chip markup in calendar-page.templ so initial paint and
+	// rebucketed view look identical.
+	function chipFromWrapper(wrapper) {
+		const inner = wrapper.querySelector('.hud-match');
+		const status = inner?.getAttribute('data-status') || 'upcoming';
+		const slug = wrapper.getAttribute('data-game-slug') || '';
+		const utcEl = wrapper.querySelector('.match-time[data-utc-time]');
+		const utc = utcEl?.getAttribute('data-utc-time') || '';
+		const teamNames = wrapper.querySelectorAll('.hud-team-name');
+		const left = teamNames[0]?.textContent.trim() || 'TBD';
+		const right = teamNames[1]?.textContent.trim() || 'TBD';
+
+		const chip = document.createElement('span');
+		chip.className = 'hud-cal-chip';
+		chip.setAttribute('data-status', status);
+		if (slug) chip.setAttribute('data-game-slug', slug);
+
+		const timeWrap = document.createElement('span');
+		timeWrap.className = 'hud-cal-chip-time';
+		if (utc) {
+			const matchTime = document.createElement('span');
+			matchTime.className = 'match-time';
+			matchTime.setAttribute('data-utc-time', utc);
+			const hour = document.createElement('span');
+			hour.className = 'match-hour';
+			matchTime.appendChild(hour);
+			timeWrap.appendChild(matchTime);
+		}
+		chip.appendChild(timeWrap);
+
+		const text = document.createElement('span');
+		text.className = 'hud-cal-chip-text';
+		text.textContent = `${left} vs ${right}`;
+		chip.appendChild(text);
+		return chip;
+	}
+
+	function rebucketCalendar() {
+		wrappersByLocalDate.clear();
+
+		contentEl.querySelectorAll('template[data-day-modal-content]').forEach((tpl) => {
+			Array.from(tpl.content.children).forEach((node) => {
+				if (!node.classList || !node.classList.contains('hud-match-wrapper')) return;
+				const utcEl = node.querySelector('.match-time[data-utc-time]');
+				if (!utcEl) return;
+				const d = new Date(utcEl.getAttribute('data-utc-time'));
+				if (isNaN(d.getTime())) return;
+				const key = formatLocalDate(d);
+				let bucket = wrappersByLocalDate.get(key);
+				if (!bucket) wrappersByLocalDate.set(key, (bucket = []));
+				bucket.push({ time: d.getTime(), node });
+			});
+		});
+		wrappersByLocalDate.forEach((b) => b.sort((a, b) => a.time - b.time));
+
+		contentEl.querySelectorAll('.hud-cal-day[data-date]').forEach((cell) => {
+			const dateKey = cell.getAttribute('data-date');
+			const bucket = wrappersByLocalDate.get(dateKey) || [];
+			const chipsEl = cell.querySelector('.hud-cal-daychips');
+			if (chipsEl) {
+				chipsEl.innerHTML = '';
+				bucket.slice(0, 4).forEach(({ node }) => chipsEl.appendChild(chipFromWrapper(node)));
+				if (bucket.length > 4) {
+					const hidden = bucket.length - 4;
+					const more = document.createElement('span');
+					more.className = 'hud-cal-chip hud-cal-chip-more';
+					// Mirror overflowLabel in calendar-page.templ — small counts
+					// shown verbatim, anything past 5 caps at "5+ more".
+					more.textContent = hidden > 5 ? '5+ more' : `${hidden} more`;
+					chipsEl.appendChild(more);
+				}
+			}
+			cell.dataset.matchCount = String(bucket.length);
+			if (bucket.length === 0) {
+				cell.disabled = true;
+				cell.setAttribute('aria-disabled', 'true');
+				cell.classList.add('hud-cal-day-empty');
+				cell.removeAttribute('aria-label');
+			} else {
+				cell.disabled = false;
+				cell.removeAttribute('aria-disabled');
+				cell.classList.remove('hud-cal-day-empty');
+				const niceDate = new Date(`${dateKey}T00:00:00`).toDateString();
+				cell.setAttribute('aria-label', `${niceDate} — ${bucket.length} matches`);
+			}
+		});
+
+		window.convertMatchTimesIn?.(contentEl);
+	}
+
 	function openDayModal(dateKey) {
-		const tpl = contentEl.querySelector(`template[data-day-modal-content="${dateKey}"]`);
-		if (!tpl) return;
+		const bucket = wrappersByLocalDate.get(dateKey) || [];
 		dayModalBody.innerHTML = '';
-		dayModalBody.appendChild(tpl.content.cloneNode(true));
+		if (bucket.length > 0) {
+			bucket.forEach(({ node }) => dayModalBody.appendChild(node.cloneNode(true)));
+		} else {
+			// Fallback: server's UTC-bucketed template if local rebucket hasn't run yet.
+			const tpl = contentEl.querySelector(`template[data-day-modal-content="${dateKey}"]`);
+			if (!tpl) return;
+			dayModalBody.appendChild(tpl.content.cloneNode(true));
+		}
 		const date = new Date(`${dateKey}T00:00:00`);
 		dayModalTitle.textContent = date.toLocaleDateString(undefined, {
 			weekday: 'long',
@@ -457,11 +576,10 @@
 			{ signal },
 		);
 
-		const localize = () => window.convertMatchTimesIn?.(contentEl);
 		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', localize, { once: true, signal });
+			document.addEventListener('DOMContentLoaded', rebucketCalendar, { once: true, signal });
 		} else {
-			localize();
+			rebucketCalendar();
 		}
 
 		// Same suppression strategy as fixtures.js: cold load already matches

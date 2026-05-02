@@ -138,7 +138,10 @@
 				try {
 					sessionStorage.setItem('fixtures-hide-scores', hideScoresEl.checked ? '1' : '0');
 				} catch {}
-				scheduleRefresh();
+				// Spoiler is a presentational toggle — the visible match list
+				// doesn't change, only score vs "Final" rendering. Skip the
+				// scroll-to-ongoing reflow so the user stays where they are.
+				scheduleRefresh({ preserveScroll: true });
 			},
 			{ signal },
 		);
@@ -215,7 +218,10 @@
 					if (typeof parsed.maxTier === 'number') maxTier = parsed.maxTier;
 				}
 			} catch {}
-			if (leagues.length > 0 || teams.length > 0) {
+			// Include the game if it contributes any rows: explicit league/team
+			// picks, or tier auto-include (maxTier > 0). A game with neither is
+			// a no-op for the server query, so skip it to keep the payload tight.
+			if (leagues.length > 0 || teams.length > 0 || maxTier > 0) {
 				leagues = leagues.slice().sort((a, b) => a - b);
 				teams = teams.slice().sort((a, b) => a - b);
 				selections[gameId] = { leagues, teams, maxTier };
@@ -246,7 +252,8 @@
 	}
 
 	let inflight = null;
-	async function refresh() {
+	async function refresh(opts) {
+		const preserveScroll = !!(opts && opts.preserveScroll);
 		const selections = collectSelections();
 		if (Object.keys(selections).length === 0) {
 			contentEl.innerHTML = `
@@ -275,7 +282,7 @@
 			const html = await response.text();
 			contentEl.innerHTML = html;
 			window.convertMatchTimesIn?.(contentEl);
-			scrollToUpcoming('smooth');
+			if (!preserveScroll) scrollToUpcoming('smooth');
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				window.showToast?.('Network error: ' + err.message, 'error');
@@ -288,10 +295,10 @@
 
 	let refreshTimer = null;
 	let suppressRefresh = true; // suppress during hydration
-	function scheduleRefresh() {
+	function scheduleRefresh(opts) {
 		if (suppressRefresh) return;
 		clearTimeout(refreshTimer);
-		refreshTimer = setTimeout(refresh, REFRESH_DEBOUNCE_MS);
+		refreshTimer = setTimeout(() => refresh(opts), REFRESH_DEBOUNCE_MS);
 	}
 
 	function hasPriorState() {

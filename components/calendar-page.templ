@@ -36,6 +36,7 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 									type="button"
 									class="hud-game-chip"
 									data-game-id={ game.ID }
+									data-game-slug={ game.Slug }
 									data-active="true"
 									aria-pressed="true"
 									title={ game.Label }
@@ -123,7 +124,7 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 		</p>
 		<div class="flex flex-col gap-3" id="calendar-game-cards">
 			for _, game := range games {
-				<div class="hud-fixtures-card" data-calendar-card={ game.ID }>
+				<div class="hud-fixtures-card" data-calendar-card={ game.ID } data-game-slug={ game.Slug }>
 					<label class="hud-fixtures-card-switch">
 						<span class="hud-fixtures-card-switch-label" aria-hidden="true">ON</span>
 						<input
@@ -221,7 +222,7 @@ templ CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFutur
 		<span class="hud-cal-daynum">{ strconv.Itoa(day.Day()) }</span>
 		<div class="hud-cal-daychips">
 			for _, match := range visibleMatches(matches) {
-				<span class="hud-cal-chip" data-status={ matchStatus(match) }>
+				<span class="hud-cal-chip" data-status={ matchStatus(match) } data-game-slug={ gameSlug(match.GameSlug) }>
 					<span class="hud-cal-chip-time">
 						if match.ExpectedStartTime.Valid {
 							<span class="match-time" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
@@ -235,7 +236,7 @@ templ CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFutur
 				</span>
 			}
 			if len(matches) > calendarChipsPerDay {
-				<span class="hud-cal-chip hud-cal-chip-more">{ fmt.Sprintf("+%d more", len(matches)-calendarChipsPerDay) }</span>
+				<span class="hud-cal-chip hud-cal-chip-more">{ overflowLabel(len(matches) - calendarChipsPerDay) }</span>
 			}
 		</div>
 	</button>
@@ -341,8 +342,22 @@ func teamShort(acronym, name pgtype.Text) string {
 }
 
 // calendarChipsPerDay caps how many event chips render in a single day cell
-// before collapsing into a "+N more" overflow chip.
+// before collapsing into an overflow chip.
 const calendarChipsPerDay = 4
+
+// overflowChipMaxExact is the largest hidden-match count we render verbatim
+// ("5 more"). Past it, the chip caps at "5+ more" so a 50-match day doesn't
+// show "+46 more" and dwarf the chips above it. Mirror this in calendar.js.
+const overflowChipMaxExact = 5
+
+// overflowLabel formats the trailing "+N more" chip. Shared by templ and
+// (mirrored in) calendar.js so the initial paint matches the rebucketed view.
+func overflowLabel(hidden int) string {
+	if hidden > overflowChipMaxExact {
+		return fmt.Sprintf("%d+ more", overflowChipMaxExact)
+	}
+	return fmt.Sprintf("%d more", hidden)
+}
 
 // visibleMatches returns at most calendarChipsPerDay rows. Used in the templ
 // for-loop instead of `{{ break }}`, since templ's parser does not guarantee

@@ -85,23 +85,26 @@ func TestCalendarMonthBounds(t *testing.T) {
 		wantStart time.Time
 		wantEnd   time.Time
 	}{
+		// Bounds are padded by ±1 UTC day so client-side local-date rebucketing
+		// in calendar.js can pick up matches that bleed across month boundaries
+		// in non-UTC viewer timezones (see calendarMonthBounds godoc).
 		{
 			name: "regular month",
 			year: 2025, month: 6,
-			wantStart: time.Date(2025, time.June, 1, 0, 0, 0, 0, time.UTC),
-			wantEnd:   time.Date(2025, time.July, 1, 0, 0, 0, 0, time.UTC),
+			wantStart: time.Date(2025, time.May, 31, 0, 0, 0, 0, time.UTC),
+			wantEnd:   time.Date(2025, time.July, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
 			name: "december wraps end to january next year",
 			year: 2025, month: 12,
-			wantStart: time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC),
-			wantEnd:   time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			wantStart: time.Date(2025, time.November, 30, 0, 0, 0, 0, time.UTC),
+			wantEnd:   time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
 			name: "leap february",
 			year: 2024, month: 2,
-			wantStart: time.Date(2024, time.February, 1, 0, 0, 0, 0, time.UTC),
-			wantEnd:   time.Date(2024, time.March, 1, 0, 0, 0, 0, time.UTC),
+			wantStart: time.Date(2024, time.January, 31, 0, 0, 0, 0, time.UTC),
+			wantEnd:   time.Date(2024, time.March, 2, 0, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {

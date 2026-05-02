@@ -30,7 +30,17 @@ type Querier interface {
 	// Live Matches Queries
 	// ============================================================================
 	GetLiveMatches(ctx context.Context) ([]GetLiveMatchesRow, error)
+	// ============================================================================
+	// Single-match lookup (used by prediction handlers)
+	// ============================================================================
+	GetMatchByID(ctx context.Context, id int32) (GetMatchByIDRow, error)
 	GetMatchesInRangeBySelections(ctx context.Context, arg GetMatchesInRangeBySelectionsParams) ([]GetMatchesInRangeBySelectionsRow, error)
+	// "Ongoing" must mean is_live=true so it lines up with the per-row badge
+	// (see matchStatus in components/match-row.templ). expected_start_time is
+	// only an estimate; matches whose schedule has slipped past NOW() but never
+	// went live are stale, not ongoing — they get cleaned up by
+	// MarkPastUnfinishedMatchesAsFinished and shouldn't show under a // ongoing
+	// divider in the meantime.
 	GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error)
 	GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error)
 	GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series, error)

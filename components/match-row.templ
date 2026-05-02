@@ -1,14 +1,22 @@
 package components
 
 import "github.com/feimaomiao/esportscalendar/dbtypes"
+import "github.com/jackc/pgx/v5/pgtype"
 import "fmt"
 
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
-	<div class="hud-match-wrapper" data-match-id={ fmt.Sprintf("%d", match.ID) }>
+	<div class="hud-match-wrapper" data-match-id={ fmt.Sprintf("%d", match.ID) } data-game-slug={ gameSlug(match.GameSlug) }>
 		<div class="hud-match" data-status={ matchStatus(match) } data-match-toggle role="button" tabindex="0" aria-expanded="false" aria-controls={ fmt.Sprintf("match-detail-%d", match.ID) }>
-			<span class="hud-match-game" title={ match.GameName }>{ match.GameName }</span>
-			<div class="flex items-center gap-3 flex-1 min-w-[14rem]">
-				<div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+			<span class="hud-match-game" title={ match.GameName }>
+				if slug := gameSlug(match.GameSlug); slug != "" {
+					<span class="hud-match-game-logo" aria-hidden="true">
+						<img src={ "/static/images/" + slug + ".png" } alt=""/>
+					</span>
+				}
+				<span class="hud-match-game-label">{ match.GameName }</span>
+			</span>
+			<div class="hud-match-matchup">
+				<div class="hud-match-team hud-match-team-left">
 					<span class="hud-team-name truncate">
 						if match.Team1Acronym.Valid && match.Team1Acronym.String != "" {
 							{ match.Team1Acronym.String }
@@ -31,7 +39,7 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 					</span>
 				</div>
 				<span class="hud-vs">VS</span>
-				<div class="flex items-center gap-2 flex-1 min-w-0">
+				<div class="hud-match-team hud-match-team-right">
 					<span class="hud-logo hud-logo-sm">
 						if match.Team2Image.Valid && match.Team2Image.String != "" {
 							if match.Team2Name.Valid {
@@ -54,7 +62,7 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 					</span>
 				</div>
 			</div>
-			<div class="hud-time flex items-center gap-2 flex-shrink-0">
+			<div class="hud-time">
 				if match.ExpectedStartTime.Valid {
 					<span class="match-time whitespace-nowrap" data-utc-time={ match.ExpectedStartTime.Time.Format("2006-01-02T15:04:05Z07:00") }>
 						<span class="hud-time-date match-date">{ match.ExpectedStartTime.Time.Format("Jan 02") }</span>
@@ -64,7 +72,7 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 					<span class="opacity-50">— : —</span>
 				}
 			</div>
-			<div class="flex-shrink-0">
+			<div class="hud-match-status">
 				if match.Finished {
 					if hideScores {
 						<span class="hud-status hud-status-finished">Final</span>
@@ -86,16 +94,16 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 					<span class="hud-status hud-status-upcoming">Upcoming</span>
 				}
 			</div>
-			<div class="hud-meta">
-				<span class="truncate" title={ match.Name }>{ match.Name }</span>
-				<span class="hidden md:inline opacity-50">·</span>
-				<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
-			</div>
 			<span class="hud-match-chevron" aria-hidden="true">
 				<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
 				</svg>
 			</span>
+			<div class="hud-meta">
+				<span class="truncate" title={ match.Name }>{ match.Name }</span>
+				<span class="hidden md:inline opacity-50">·</span>
+				<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
+			</div>
 		</div>
 		<div id={ fmt.Sprintf("match-detail-%d", match.ID) } class="hud-match-detail" hidden>
 			@HUDMatchDetail(match)
@@ -124,8 +132,8 @@ templ HUDMatchDetail(match dbtypes.GetFutureMatchesBySelectionsRow) {
 				<span class="hud-match-detail-label">Tournament</span>
 				<span class="hud-match-detail-value">
 					{ match.TournamentName }
-					if match.TournamentTier.Valid {
-						<span class="hud-match-detail-tier">{ fmt.Sprintf("Tier %d", match.TournamentTier.Int32) }</span>
+					if letter := tierLetter(match.TournamentTier); letter != "" {
+						<span class="hud-match-detail-tier">{ letter + " Tier" }</span>
 					}
 				</span>
 			</div>
@@ -170,4 +178,37 @@ func formatBestOf(n int32) string {
 		return "Single match"
 	}
 	return fmt.Sprintf("Best of %d", n)
+}
+
+// gameSlug returns the game's slug if valid (used for per-game accent CSS
+// hooks and logo path lookup) or "" so the templ can omit the logo/data attr.
+func gameSlug(s pgtype.Text) string {
+	if !s.Valid {
+		return ""
+	}
+	return s.String
+}
+
+// tierLetter maps the integer tier column (1=S, 2=A, …, 5=D) to the letter
+// shown in UI. Slider/badge/picker all share this scale; the int form lives
+// only in the DB and the filter API. Returns "" for invalid or out-of-range
+// values so callers can omit the badge.
+func tierLetter(t pgtype.Int4) string {
+	if !t.Valid {
+		return ""
+	}
+	switch t.Int32 {
+	case 1:
+		return "S"
+	case 2:
+		return "A"
+	case 3:
+		return "B"
+	case 4:
+		return "C"
+	case 5:
+		return "D"
+	default:
+		return ""
+	}
 }
