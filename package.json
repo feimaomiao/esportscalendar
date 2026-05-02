@@ -11,7 +11,7 @@
     "@tailwindcss/cli": "^4.1.13",
     "@tailwindcss/typography": "^0.5.18",
     "daisyui": "^5.1.13",
-    "eslint": "^10.2.1",
+    "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.5.0",
     "prettier": "^3.8.3",
