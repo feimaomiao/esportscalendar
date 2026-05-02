@@ -141,6 +141,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -172,6 +173,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -185,7 +187,13 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 LEFT JOIN teams t1 ON m.team1_id = t1.id
 LEFT JOIN teams t2 ON m.team2_id = t2.id
-WHERE m.expected_start_time <= NOW()
+-- "Ongoing" must mean is_live=true so it lines up with the per-row badge
+-- (see matchStatus in components/match-row.templ). expected_start_time is
+-- only an estimate; matches whose schedule has slipped past NOW() but never
+-- went live are stale, not ongoing — they get cleaned up by
+-- MarkPastUnfinishedMatchesAsFinished and shouldn't show under a // ongoing
+-- divider in the meantime.
+WHERE m.is_live = true
     AND m.finished = false
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
@@ -203,7 +211,7 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
-    game_name, league_name, series_name, tournament_name, tournament_tier,
+    game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
 FROM (
@@ -214,6 +222,7 @@ FROM (
         m.is_live,
         m.stream_url,
         g.name AS game_name,
+        g.slug AS game_slug,
         l.name AS league_name,
         s.name AS series_name,
         tour.name AS tournament_name,
@@ -248,6 +257,7 @@ SELECT
     m.is_live,
     m.stream_url,
     g.name AS game_name,
+    g.slug AS game_slug,
     l.name AS league_name,
     s.name AS series_name,
     tour.name AS tournament_name,
@@ -283,7 +293,7 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
-    game_name, league_name, series_name, tournament_name, tournament_tier,
+    game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
 FROM (
@@ -294,6 +304,7 @@ FROM (
         m.is_live,
         m.stream_url,
         g.name AS game_name,
+        g.slug AS game_slug,
         l.name AS league_name,
         s.name AS series_name,
         tour.name AS tournament_name,
