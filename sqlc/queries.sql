@@ -100,7 +100,6 @@ SELECT COUNT(*) FROM teams WHERE id = $1;
 -- name: GetAllGames :many
 SELECT id, name, slug
 FROM games
-WHERE id != 14  -- Exclude specific game
 ORDER BY id ASC;
 
 -- name: GetSeriesByGameID :many

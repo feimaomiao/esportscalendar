@@ -30,7 +30,6 @@ const getAllGames = `-- name: GetAllGames :many
 
 SELECT id, name, slug
 FROM games
-WHERE id != 14  -- Exclude specific game
 ORDER BY id ASC
 `
 

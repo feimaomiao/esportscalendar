@@ -280,7 +280,7 @@ body::before {
 [data-game-slug="cod-mw"] {
   --game-accent: #76b947;
 }
-[data-game-slug="overwatch"] {
+[data-game-slug="ow"] {
   --game-accent: #f99e1a;
 }
 [data-game-slug="pubg"] {
