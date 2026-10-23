@@ -44,7 +44,7 @@ repos:
       # Format .templ files. Idempotent — re-runs cheaply if nothing changed.
       - id: templ-fmt
         name: templ fmt
-        entry: templ fmt
+        entry: go tool templ fmt
         language: system
         files: '\.templ$'
         require_serial: true
@@ -54,7 +54,7 @@ repos:
       # but forgot to regenerate" mistake.
       - id: templ-generate-check
         name: templ generate (no diff)
-        entry: bash -c 'templ generate && git diff --exit-code -- "components/*_templ.go"'
+        entry: bash -c 'go tool templ generate && git diff --exit-code -- "components/*_templ.go"'
         language: system
         files: '\.templ$|^components/.*_templ\.go$'
         pass_filenames: false
