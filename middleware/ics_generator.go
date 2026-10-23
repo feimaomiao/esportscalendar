@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
@@ -42,7 +43,6 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		fmt.Fprintf(&ics, "DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
 		fmt.Fprintf(&ics, "DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
 		fmt.Fprintf(&ics, "DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z"))
-		fmt.Fprintf(&ics, "URL:%s\r\n", baseURL)
 
 		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
 		// Add scores to title if match is finished and hideScores is false
@@ -93,9 +93,12 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		fmt.Fprintf(&ics, "DESCRIPTION:%s\r\n", escapeICS(description))
 
 		// Emit standard iCalendar URL property so calendar clients render a clickable link.
+		// RFC 5545 allows URL at most once per VEVENT; Outlook rejects the feed otherwise.
+		eventURL := baseURL
 		if match.StreamURL.Valid && match.StreamURL.String != "" {
-			fmt.Fprintf(&ics, "URL:%s\r\n", match.StreamURL.String)
+			eventURL = match.StreamURL.String
 		}
+		fmt.Fprintf(&ics, "URL:%s\r\n", eventURL)
 
 		// Build location: League - Series (only include dash if both are non-empty)
 		location := ""
@@ -117,7 +120,29 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 	}
 
 	ics.WriteString("END:VCALENDAR\r\n")
-	return ics.String()
+	return foldICS(ics.String())
+}
+
+// foldICS folds content lines longer than 75 octets as required by RFC 5545 section 3.1,
+// without splitting a multi-byte UTF-8 character.
+func foldICS(s string) string {
+	const maxOctets = 75
+	lines := strings.Split(strings.TrimSuffix(s, "\r\n"), "\r\n")
+	var out strings.Builder
+	for _, line := range lines {
+		lineLen := 0
+		for _, r := range line {
+			size := utf8.RuneLen(r)
+			if lineLen+size > maxOctets {
+				out.WriteString("\r\n ")
+				lineLen = 1
+			}
+			out.WriteRune(r)
+			lineLen += size
+		}
+		out.WriteString("\r\n")
+	}
+	return out.String()
 }
 
 func escapeICS(s string) string {
