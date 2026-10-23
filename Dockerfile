@@ -27,9 +27,6 @@ RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /build
 
-# Install sqlc
-RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
 # Copy go mod files
 COPY go.mod go.sum ./
 
@@ -39,8 +36,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Generate SQLC code
-RUN sqlc generate
+# Generate SQLC code (version pinned via the tool directive in go.mod)
+RUN go tool sqlc generate
 
 # Generate templ code (version pinned via the tool directive in go.mod)
 RUN go tool templ generate
