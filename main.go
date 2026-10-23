@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/feimaomiao/esportscalendar/middleware"
+	"github.com/feimaomiao/esportscalendar/telemetry"
 
 	// loads .env file automatically.
 	_ "github.com/joho/godotenv/autoload"
@@ -58,7 +59,20 @@ func main() {
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 
+	meterProvider, shutdownMetrics, err := telemetry.Setup(context.Background(), logger)
+	if err != nil {
+		logger.Fatal("Failed to set up telemetry", zap.Error(err))
+	}
+
 	mw := middleware.InitMiddleHandler(logger)
+
+	meter := meterProvider.Meter("github.com/feimaomiao/esportscalendar")
+	tel, err := middleware.NewTelemetry(meter, mw.Uniques, mw.DBConn, logger)
+	if err != nil {
+		logger.Fatal("Failed to create telemetry instruments", zap.Error(err))
+	}
+	// Must be registered before the routes below for Gin to apply it.
+	router.Use(tel.Middleware())
 
 	// Serve robots.txt and sitemap.xml from embedded static files
 	router.GET("/robots.txt", func(c *gin.Context) {
@@ -141,6 +155,12 @@ func main() {
 		logger.Error("Server forced to shutdown", zap.Error(shutdownErr))
 	} else {
 		logger.Info("Server shutdown gracefully")
+	}
+
+	// Flush metrics before closing Redis: the final collection reads the
+	// unique counts from it.
+	if metricsErr := shutdownMetrics(ctx); metricsErr != nil {
+		logger.Error("Failed to flush metrics", zap.Error(metricsErr))
 	}
 
 	// Perform cleanup

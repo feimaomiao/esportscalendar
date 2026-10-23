@@ -42,3 +42,4 @@ tmp/
 node_modules/.serena
 node_modules/
 .serena/
+docs/

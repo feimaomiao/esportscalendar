@@ -390,6 +390,28 @@ SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP
 WHERE hashed_key = $1;
 
 -- ============================================================================
+-- Telemetry: what active calendars are tracking
+-- ============================================================================
+
+-- name: GetActiveURLMappingSelections :many
+-- Selections of calendars fetched at least once in the last N days. The
+-- window is computed in SQL so it uses the same clock as accessed_at.
+SELECT value_list
+FROM url_mappings
+WHERE access_count > 0
+    AND accessed_at >= CURRENT_TIMESTAMP - make_interval(days => sqlc.arg(days)::int);
+
+-- name: GetLeagueNamesByIDs :many
+SELECT id, name, game_id
+FROM leagues
+WHERE id = ANY(sqlc.arg(ids)::int[]);
+
+-- name: GetTeamNamesByIDs :many
+SELECT id, name, game_id
+FROM teams
+WHERE id = ANY(sqlc.arg(ids)::int[]);
+
+-- ============================================================================
 -- Single-match lookup (used by prediction handlers)
 -- ============================================================================
 

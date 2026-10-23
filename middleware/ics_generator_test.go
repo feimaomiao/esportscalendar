@@ -224,7 +224,12 @@ func TestGenerateICSSingleURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ics := generateICS([]dbtypes.GetCalendarMatchesBySelectionsRow{testMatch(tt.streamURL)}, false, titleFormatDefault, "https://esportscalendar.app")
+			ics := generateICS(
+				[]dbtypes.GetCalendarMatchesBySelectionsRow{testMatch(tt.streamURL)},
+				false,
+				titleFormatDefault,
+				"https://esportscalendar.app",
+			)
 			var urls []string
 			for _, line := range strings.Split(ics, "\r\n") {
 				if strings.HasPrefix(line, "URL:") {
@@ -239,7 +244,12 @@ func TestGenerateICSSingleURL(t *testing.T) {
 }
 
 func TestGenerateICSFoldsLongLines(t *testing.T) {
-	ics := generateICS([]dbtypes.GetCalendarMatchesBySelectionsRow{testMatch("https://www.twitch.tv/riotgames")}, false, titleFormatDefault, "https://esportscalendar.app")
+	ics := generateICS(
+		[]dbtypes.GetCalendarMatchesBySelectionsRow{testMatch("https://www.twitch.tv/riotgames")},
+		false,
+		titleFormatDefault,
+		"https://esportscalendar.app",
+	)
 	if !strings.HasSuffix(ics, "END:VCALENDAR\r\n") {
 		t.Fatalf("calendar does not end with END:VCALENDAR CRLF")
 	}
@@ -249,7 +259,10 @@ func TestGenerateICSFoldsLongLines(t *testing.T) {
 		}
 	}
 	unfolded := strings.ReplaceAll(ics, "\r\n ", "")
-	if !strings.Contains(unfolded, "DESCRIPTION:Cloud9 vs Karmine Corp ÆØÅ [0-0] - Play-In - Worlds (LoL)\\n\\nWatch live: https://www.twitch.tv/riotgames\r\n") {
+	if !strings.Contains(
+		unfolded,
+		"DESCRIPTION:Cloud9 vs Karmine Corp ÆØÅ [0-0] - Play-In - Worlds (LoL)\\n\\nWatch live: https://www.twitch.tv/riotgames\r\n",
+	) {
 		t.Errorf("unfolded DESCRIPTION does not round-trip:\n%s", unfolded)
 	}
 }
