@@ -16,6 +16,7 @@ type Middleware struct {
 	DBConn     dbtypes.Querier
 	Context    context.Context
 	RedisCache Cache
+	Uniques    UniqueStore
 	Logger     *zap.Logger
 	BaseURL    string
 }
@@ -60,11 +61,13 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 	// inside an interface, which would silently break the `m.RedisCache != nil`
 	// guards across handlers).
 	var cache Cache
+	var uniques UniqueStore
 	redisCache, err := NewRedisCache(ctx, logger)
 	if err != nil {
 		logger.Error("Failed to initialize Redis cache, falling back to no cache", zap.Error(err))
 	} else {
 		cache = redisCache
+		uniques = redisCache
 	}
 
 	// Get base URL from environment variable with default fallback
@@ -81,6 +84,7 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		DBConn:     dbConn,
 		Context:    ctx,
 		RedisCache: cache,
+		Uniques:    uniques,
 		Logger:     logger,
 		BaseURL:    baseURL,
 	}

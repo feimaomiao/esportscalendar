@@ -14,6 +14,12 @@ type Querier interface {
 	// ============================================================================
 	GameExist(ctx context.Context, id int32) (int64, error)
 	// ============================================================================
+	// Telemetry: what active calendars are tracking
+	// ============================================================================
+	// Selections of calendars fetched at least once in the last N days. The
+	// window is computed in SQL so it uses the same clock as accessed_at.
+	GetActiveURLMappingSelections(ctx context.Context, days int32) ([][]byte, error)
+	// ============================================================================
 	// Basic Retrieval Queries
 	// ============================================================================
 	GetAllGames(ctx context.Context) ([]Game, error)
@@ -25,6 +31,7 @@ type Querier interface {
 	// Match Selection Queries (for Preview)
 	// ============================================================================
 	GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error)
+	GetLeagueNamesByIDs(ctx context.Context, ids []int32) ([]GetLeagueNamesByIDsRow, error)
 	GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLeaguesByGameIDRow, error)
 	// ============================================================================
 	// Live Matches Queries
@@ -44,6 +51,7 @@ type Querier interface {
 	GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error)
 	GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error)
 	GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series, error)
+	GetTeamNamesByIDs(ctx context.Context, ids []int32) ([]GetTeamNamesByIDsRow, error)
 	GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, error)
 	GetURLMapping(ctx context.Context, hashedKey string) (UrlMapping, error)
 	// ============================================================================

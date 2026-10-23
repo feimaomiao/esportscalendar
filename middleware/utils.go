@@ -41,6 +41,16 @@ func generateHash(data []byte) string {
 	return hex.EncodeToString(hash[:])[:16]
 }
 
+// unwrapSelections returns the per-game selections from a stored or submitted
+// calendar payload. New payloads nest them under "selections"; old ones are
+// the selections map itself.
+func unwrapSelections(payload map[string]any) map[string]any {
+	if v, ok := payload["selections"].(map[string]any); ok {
+		return v
+	}
+	return payload
+}
+
 // parseSelections extracts game IDs, league IDs, team IDs, and per-game max
 // tiers from selections JSON. The returned maxTiers slice is index-aligned
 // with gameIDs — element i is the tier ceiling for game i. Games without an

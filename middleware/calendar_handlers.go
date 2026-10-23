@@ -28,12 +28,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	m.Logger.Debug("Received request body for export", zap.Any("request_body", requestBody))
 
 	// Validate selections before storing — refuse oversize / empty payloads.
-	var selections map[string]any
-	if v, ok := requestBody["selections"].(map[string]any); ok {
-		selections = v
-	} else {
-		selections = requestBody
-	}
+	selections := unwrapSelections(requestBody)
 	gIDs, lIDs, tIDs, _ := parseSelections(selections, m.Logger)
 	if vErr := validateSelections(gIDs, lIDs, tIDs); vErr != nil {
 		m.Logger.Warn("Invalid export selections", zap.Error(vErr))
@@ -177,14 +172,7 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 	format := parseTitleFormat(storedData["titleFormat"])
 
 	// Extract selections (handle both old and new format)
-	var selections map[string]any
-	if selectionsVal, ok := storedData["selections"].(map[string]any); ok {
-		// New format with selections wrapper
-		selections = selectionsVal
-	} else {
-		// Old format without wrapper
-		selections = storedData
-	}
+	selections := unwrapSelections(storedData)
 
 	// Extract game IDs, league IDs, team IDs, and per-game max tiers from selections
 	gameIDs, leagueIDs, teamIDs, maxTiers := parseSelections(selections, m.Logger)

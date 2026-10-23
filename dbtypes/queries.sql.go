@@ -26,6 +26,39 @@ func (q *Queries) GameExist(ctx context.Context, id int32) (int64, error) {
 	return count, err
 }
 
+const getActiveURLMappingSelections = `-- name: GetActiveURLMappingSelections :many
+
+SELECT value_list
+FROM url_mappings
+WHERE access_count > 0
+    AND accessed_at >= CURRENT_TIMESTAMP - make_interval(days => $1::int)
+`
+
+// ============================================================================
+// Telemetry: what active calendars are tracking
+// ============================================================================
+// Selections of calendars fetched at least once in the last N days. The
+// window is computed in SQL so it uses the same clock as accessed_at.
+func (q *Queries) GetActiveURLMappingSelections(ctx context.Context, days int32) ([][]byte, error) {
+	rows, err := q.db.Query(ctx, getActiveURLMappingSelections, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items [][]byte
+	for rows.Next() {
+		var value_list []byte
+		if err := rows.Scan(&value_list); err != nil {
+			return nil, err
+		}
+		items = append(items, value_list)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllGames = `-- name: GetAllGames :many
 
 SELECT id, name, slug
@@ -317,6 +350,38 @@ func (q *Queries) GetFutureMatchesBySelections(ctx context.Context, arg GetFutur
 			&i.Team2Acronym,
 			&i.Team2Image,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLeagueNamesByIDs = `-- name: GetLeagueNamesByIDs :many
+SELECT id, name, game_id
+FROM leagues
+WHERE id = ANY($1::int[])
+`
+
+type GetLeagueNamesByIDsRow struct {
+	ID     int32
+	Name   string
+	GameID int32
+}
+
+func (q *Queries) GetLeagueNamesByIDs(ctx context.Context, ids []int32) ([]GetLeagueNamesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, getLeagueNamesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetLeagueNamesByIDsRow
+	for rows.Next() {
+		var i GetLeagueNamesByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.GameID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -957,6 +1022,38 @@ func (q *Queries) GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series
 			&i.GameID,
 			&i.LeagueID,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamNamesByIDs = `-- name: GetTeamNamesByIDs :many
+SELECT id, name, game_id
+FROM teams
+WHERE id = ANY($1::int[])
+`
+
+type GetTeamNamesByIDsRow struct {
+	ID     int32
+	Name   string
+	GameID int32
+}
+
+func (q *Queries) GetTeamNamesByIDs(ctx context.Context, ids []int32) ([]GetTeamNamesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamNamesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamNamesByIDsRow
+	for rows.Next() {
+		var i GetTeamNamesByIDsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.GameID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
