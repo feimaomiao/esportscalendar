@@ -95,7 +95,16 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 					<div id="calendar-content" class="mt-4">
 						@CalendarMonthGrid(year, month, matches, hideScores)
 					</div>
-					<div class="card-actions justify-end mt-6">
+					<div class="card-actions justify-end items-center mt-6">
+						<label class="hud-mono text-xs uppercase tracking-widest flex items-center gap-2 w-full md:w-auto">
+							<span class="opacity-70 whitespace-nowrap">Event title</span>
+							<select id="calendar-title-format" class="select select-sm flex-1 md:flex-none md:w-auto normal-case tracking-normal" aria-describedby="calendar-title-format-hint">
+								<option value="default">[Game] Tournament - Teams</option>
+								<option value="teams-first">Teams - Tournament [Game]</option>
+								<option value="teams-only">Teams only</option>
+							</select>
+						</label>
+						<span id="calendar-title-format-hint" class="sr-only">Controls how each match is titled in the exported calendar.</span>
 						<button type="button" id="calendar-export-btn" class="btn btn-primary w-full md:w-auto">
 							&gt; Export Calendar
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5" aria-hidden="true">

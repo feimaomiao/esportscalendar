@@ -41,8 +41,16 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 		return
 	}
 
+	// Only store known title formats; the default is omitted so existing
+	// selections keep hashing to the same URL.
+	if f := parseTitleFormat(requestBody["titleFormat"]); f == titleFormatDefault {
+		delete(requestBody, "titleFormat")
+	} else {
+		requestBody["titleFormat"] = string(f)
+	}
+
 	// Generate canonical JSON (sorted keys for consistent hashing)
-	// This preserves both selections and hideScores in the stored data
+	// This preserves selections, hideScores and titleFormat in the stored data
 	jsonBytes, err := json.Marshal(requestBody)
 	if err != nil {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
@@ -165,6 +173,9 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 		hideScores = hideScoresVal
 	}
 
+	// Extract title format (default to the original "[Game] Tournament - Match" layout)
+	format := parseTitleFormat(storedData["titleFormat"])
+
 	// Extract selections (handle both old and new format)
 	var selections map[string]any
 	if selectionsVal, ok := storedData["selections"].(map[string]any); ok {
@@ -182,7 +193,8 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 		zap.Any("league_ids", leagueIDs),
 		zap.Any("team_ids", teamIDs),
 		zap.Int32s("max_tiers", maxTiers),
-		zap.Bool("hide_scores", hideScores))
+		zap.Bool("hide_scores", hideScores),
+		zap.String("title_format", string(format)))
 
 	// Fetch matches from database (all-time, capped at 1000 most recent per game, filtered by tier)
 	var matches []dbtypes.GetCalendarMatchesBySelectionsRow
@@ -200,8 +212,8 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 		}
 	}
 
-	// Generate iCalendar format with hideScores flag
-	icsContent = generateICS(matches, hideScores, m.BaseURL)
+	// Generate iCalendar format with hideScores flag and title format
+	icsContent = generateICS(matches, hideScores, format, m.BaseURL)
 
 	// Store in cache
 	if m.RedisCache != nil {

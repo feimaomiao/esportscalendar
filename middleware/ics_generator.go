@@ -6,10 +6,88 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
-func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool, baseURL string) string {
+// titleFormat controls how the SUMMARY (event title) of each match is laid out.
+type titleFormat string
+
+const (
+	// titleFormatDefault: [Game] Tournament - Match Name.
+	titleFormatDefault titleFormat = "default"
+	// titleFormatTeamsFirst: Team1 vs Team2 - Tournament [Game].
+	titleFormatTeamsFirst titleFormat = "teams-first"
+	// titleFormatTeamsOnly: Team1 vs Team2.
+	titleFormatTeamsOnly titleFormat = "teams-only"
+)
+
+// unknownTeam is shown in place of a team that has not been decided yet.
+const unknownTeam = "TBD"
+
+// parseTitleFormat maps a stored/requested value to a known titleFormat,
+// falling back to the default for missing or unknown values.
+func parseTitleFormat(v any) titleFormat {
+	s, _ := v.(string)
+	if f := titleFormat(s); f == titleFormatTeamsFirst || f == titleFormatTeamsOnly {
+		return f
+	}
+	return titleFormatDefault
+}
+
+// teamLabel prefers the short acronym (fits small calendar widgets), then the full name.
+func teamLabel(acronym, name pgtype.Text) string {
+	if acronym.Valid && acronym.String != "" {
+		return acronym.String
+	}
+	if name.Valid && name.String != "" {
+		return name.String
+	}
+	return unknownTeam
+}
+
+func buildSummary(match dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool, format titleFormat) string {
+	score := ""
+	if match.Finished && !hideScores {
+		score = fmt.Sprintf(" [%d-%d]", match.Team1Score, match.Team2Score)
+	}
+
+	if format == titleFormatDefault {
+		// [Game] Tournament - Match Name (omit tournament if empty)
+		summary := fmt.Sprintf("[%s] %s", match.GameName, match.Name)
+		if match.TournamentName != "" {
+			summary = fmt.Sprintf("[%s] %s - %s", match.GameName, match.TournamentName, match.Name)
+		}
+		return summary + score
+	}
+
+	// Use the match name when neither team is known yet, since it usually
+	// carries more context (e.g. "Winner of A vs B") than "TBD vs TBD".
+	matchup := match.Name
+	if match.Team1Name.Valid || match.Team2Name.Valid {
+		matchup = fmt.Sprintf("%s vs %s",
+			teamLabel(match.Team1Acronym, match.Team1Name),
+			teamLabel(match.Team2Acronym, match.Team2Name),
+		)
+	}
+	matchup += score
+
+	if format == titleFormatTeamsOnly {
+		return matchup
+	}
+	if match.TournamentName != "" {
+		return fmt.Sprintf("%s - %s [%s]", matchup, match.TournamentName, match.GameName)
+	}
+	return fmt.Sprintf("%s [%s]", matchup, match.GameName)
+}
+
+func generateICS(
+	matches []dbtypes.GetCalendarMatchesBySelectionsRow,
+	hideScores bool,
+	format titleFormat,
+	baseURL string,
+) string {
 	var ics strings.Builder
 
 	ics.WriteString("BEGIN:VCALENDAR\r\n")
@@ -21,11 +99,11 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 
 	for _, match := range matches {
 		// Get team names with fallback to "TBD"
-		team1Name := "TBD"
+		team1Name := unknownTeam
 		if match.Team1Name.Valid {
 			team1Name = match.Team1Name.String
 		}
-		team2Name := "TBD"
+		team2Name := unknownTeam
 		if match.Team2Name.Valid {
 			team2Name = match.Team2Name.String
 		}
@@ -44,17 +122,8 @@ func generateICS(matches []dbtypes.GetCalendarMatchesBySelectionsRow, hideScores
 		fmt.Fprintf(&ics, "DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
 		fmt.Fprintf(&ics, "DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z"))
 
-		// Build summary: [Game] Tournament - Match Name (omit tournament if empty)
-		// Add scores to title if match is finished and hideScores is false
-		summary := fmt.Sprintf("[%s] %s", match.GameName, match.Name)
-		if match.TournamentName != "" {
-			summary = fmt.Sprintf("[%s] %s - %s", match.GameName, match.TournamentName, match.Name)
-		}
-		if match.Finished && !hideScores {
-			// Add score to the title
-			summary = fmt.Sprintf("%s [%d-%d]", summary, match.Team1Score, match.Team2Score)
-		}
-		fmt.Fprintf(&ics, "SUMMARY:%s\r\n", escapeICS(summary))
+		// Scores are appended to the title if match is finished and hideScores is false
+		fmt.Fprintf(&ics, "SUMMARY:%s\r\n", escapeICS(buildSummary(match, hideScores, format)))
 
 		// Build description with teams, league, tournament, and score for finished matches
 		description := fmt.Sprintf("%s vs %s - %s - %s (%s)",
