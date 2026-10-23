@@ -5,6 +5,7 @@
 	const STORAGE_PREFIX = 'fixtures-selections-';
 	const TOGGLES_KEY = 'fixtures-toggled-games';
 	const HIDE_SCORES_KEY = 'fixtures-hide-scores';
+	const TITLE_FORMAT_KEY = 'calendar-title-format';
 	const CURRENT_MONTH_KEY = 'calendar-current-month';
 	const REFRESH_DEBOUNCE_MS = 300;
 
@@ -16,6 +17,7 @@
 	const nextBtn = document.getElementById('calendar-next');
 	const todayBtn = document.getElementById('calendar-today');
 	const hideScoresEl = document.getElementById('calendar-hide-scores');
+	const titleFormatEl = document.getElementById('calendar-title-format');
 	const drawer = document.getElementById('calendar-drawer');
 	const backdrop = document.getElementById('calendar-backdrop');
 	const tuneOpenBtn = document.getElementById('calendar-tune-open');
@@ -174,6 +176,23 @@
 					sessionStorage.setItem(HIDE_SCORES_KEY, hideScoresEl.checked ? '1' : '0');
 				} catch {}
 				scheduleRefresh();
+			},
+			{ signal },
+		);
+	}
+
+	// Title format only affects the exported .ics, so no refresh is needed.
+	if (titleFormatEl) {
+		try {
+			const saved = sessionStorage.getItem(TITLE_FORMAT_KEY);
+			if (saved && titleFormatEl.querySelector(`option[value="${saved}"]`)) titleFormatEl.value = saved;
+		} catch {}
+		titleFormatEl.addEventListener(
+			'change',
+			() => {
+				try {
+					sessionStorage.setItem(TITLE_FORMAT_KEY, titleFormatEl.value);
+				} catch {}
 			},
 			{ signal },
 		);
@@ -374,7 +393,10 @@
 				return;
 			}
 			const hideScores = !!(hideScoresEl && hideScoresEl.checked);
-			window.exportCalendarPayload?.({ selections, hideScores }, exportBtn);
+			const payload = { selections, hideScores };
+			// Omit the default so existing selections keep the same calendar URL.
+			if (titleFormatEl && titleFormatEl.value !== 'default') payload.titleFormat = titleFormatEl.value;
+			window.exportCalendarPayload?.(payload, exportBtn);
 		},
 		{ signal },
 	);

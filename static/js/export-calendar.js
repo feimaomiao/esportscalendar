@@ -1,10 +1,11 @@
 // Shared helper for the Export Calendar action. Used by /calendar.
-// POSTs the supplied {selections, hideScores} payload to /export and shows a
+// POSTs the supplied {selections, hideScores, titleFormat?} payload to /export and shows a
 // modal with the returned subscription URL. The user copies via the Copy
 // button (no auto-copy on open).
 //
 // Public API: window.exportCalendarPayload(payload, button)
-//   payload — object with shape { selections: {...}, hideScores: boolean }
+//   payload — object with shape { selections: {...}, hideScores: boolean,
+//             titleFormat?: 'teams-first' | 'teams-only' }
 //             matching the format /api/calendar and /api/fixtures already use.
 //   button  — the trigger element. Used with window.setButtonLoading so the
 //             button shows a spinner while the request is in flight.
