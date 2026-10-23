@@ -22,13 +22,10 @@ RUN npx @tailwindcss/cli -i input.css -o ./static/css/tw.css --minify
 # Go build stage
 FROM golang:1.26-alpine AS builder
 
-# Install build dependencies including templ and sqlc
+# Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /build
-
-# Install templ CLI
-RUN go install github.com/a-h/templ/cmd/templ@latest
 
 # Install sqlc
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
@@ -45,8 +42,8 @@ COPY . .
 # Generate SQLC code
 RUN sqlc generate
 
-# Generate templ code
-RUN templ generate
+# Generate templ code (version pinned via the tool directive in go.mod)
+RUN go tool templ generate
 
 # Copy built CSS from css-builder stage
 COPY --from=css-builder /build/static/css/tw.css ./static/css/tw.css
