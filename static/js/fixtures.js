@@ -242,7 +242,10 @@
 			const upcomingDivider = dividers.find((d) => d.textContent.includes('upcoming'));
 			target = ongoingDivider || upcomingDivider || dividers[0];
 		}
-		target = target || contentEl.firstElementChild;
+		scrollToEl(target || contentEl.firstElementChild, behavior);
+	}
+
+	function scrollToEl(target, behavior) {
 		if (!target) return;
 		const navOffset = 64; // .navbar (fixed)
 		const barEl = document.querySelector('.hud-control-bar');
@@ -250,6 +253,37 @@
 		const top = target.getBoundingClientRect().top + window.scrollY - navOffset - barOffset;
 		window.scrollTo({ top: Math.max(0, top), behavior: behavior || 'auto' });
 	}
+
+	// "Today" lands on the first finished match that started today (local
+	// time), so this morning's results are in view. If none, it falls back to
+	// the ongoing/upcoming divider. Only rows above the first divider are
+	// past, so the scan stops there.
+	function scrollToToday() {
+		const startOfToday = new Date();
+		startOfToday.setHours(0, 0, 0, 0);
+		const list = contentEl.querySelector('.hud-now-divider')?.parentElement || contentEl.firstElementChild;
+		let target = null;
+		for (const node of list ? Array.from(list.children) : []) {
+			if (node.classList.contains('hud-now-divider')) break;
+			const utc = node.querySelector('.match-time[data-utc-time]')?.getAttribute('data-utc-time');
+			if (utc && new Date(utc) >= startOfToday) {
+				target = node;
+				break;
+			}
+		}
+		if (!target) {
+			scrollToUpcoming('smooth');
+			return;
+		}
+		scrollToEl(target, 'smooth');
+		const row = target.querySelector('.hud-match') || target;
+		row.classList.remove('hud-today-flash');
+		void row.offsetWidth; // restart the animation on repeat clicks
+		row.classList.add('hud-today-flash');
+		row.addEventListener('animationend', () => row.classList.remove('hud-today-flash'), { once: true });
+	}
+
+	document.getElementById('fixtures-today')?.addEventListener('click', scrollToToday, { signal });
 
 	let inflight = null;
 	async function refresh(opts) {
