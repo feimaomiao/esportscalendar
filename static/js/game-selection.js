@@ -1,33 +1,80 @@
-// Check if any selections are made and enable/disable submit button
-function checkAndUpdateSubmitButton() {
-	const gameCards = document.querySelectorAll('[data-game-id]');
-	let hasSelections = false;
+// League/team names and image URLs come from the PandaScore API, so every
+// node below is built with DOM APIs (textContent, attributes) rather than
+// interpolated into innerHTML.
+function createItemIcon(src, alt, className) {
+	const DEFAULT_ITEM_LOGO = '/static/images/default-logo.png';
+	const img = document.createElement('img');
+	img.src = src || DEFAULT_ITEM_LOGO;
+	img.alt = alt;
+	img.className = className;
+	img.addEventListener(
+		'error',
+		() => {
+			img.src = DEFAULT_ITEM_LOGO;
+		},
+		{ once: true },
+	);
+	return img;
+}
 
-	gameCards.forEach((card) => {
-		// Selected leagues and selected teams now live in two separate
-		// containers per card; scan all `.selected-items-container` under
-		// the card so either type's badges count.
-		if (card.querySelectorAll('.selected-items-container .badge').length > 0) {
-			hasSelections = true;
-		}
-	});
+// One checkbox row in a league/team search dropdown.
+function createOptionItem(index, item, label, checked, onChange) {
+	const li = document.createElement('li');
+	li.dataset.index = String(index);
 
-	const submitBtn = document.getElementById('submit-selection-btn');
-	if (submitBtn) {
-		submitBtn.disabled = !hasSelections;
-	}
+	const labelEl = document.createElement('label');
+	labelEl.className = 'label cursor-pointer justify-start gap-2 p-2';
+
+	const checkbox = document.createElement('input');
+	checkbox.type = 'checkbox';
+	checkbox.className = 'checkbox checkbox-sm checkbox-primary';
+	checkbox.checked = checked;
+	checkbox.addEventListener('change', onChange);
+
+	const iconWrap = document.createElement('div');
+	iconWrap.className = 'item-icon-container';
+	iconWrap.appendChild(createItemIcon(item.image, item.name, 'item-icon'));
+
+	const text = document.createElement('span');
+	text.className = 'text-sm';
+	text.textContent = label;
+
+	labelEl.append(checkbox, iconWrap, text);
+	li.appendChild(labelEl);
+	return li;
+}
+
+// One removable pill in a card's "selected leagues/teams" row.
+function createSelectedBadge(variant, item, label, onRemove) {
+	const badge = document.createElement('div');
+	badge.className = `badge ${variant} rounded-md inline-flex items-center gap-1.5`;
+
+	const text = document.createElement('span');
+	text.textContent = label;
+
+	const removeBtn = document.createElement('button');
+	removeBtn.type = 'button';
+	removeBtn.className = 'cursor-pointer leading-none opacity-70 hover:opacity-100';
+	removeBtn.setAttribute('aria-label', `Remove ${item.name}`);
+	removeBtn.textContent = '✕';
+	removeBtn.addEventListener('click', onRemove);
+
+	badge.append(createItemIcon(item.image, item.name, 'item-icon-badge'), text, removeBtn);
+	return badge;
+}
+
+function teamLabel(team) {
+	return team.acronym ? team.acronym + ' - ' + team.name : team.name;
 }
 
 // Game selection - League and Team management.
-// storagePrefix lets callers (e.g. /fixtures) namespace their saved filters
-// instead of sharing the wizard's `lts-selections-` keys.
+// storagePrefix namespaces the saved filters in sessionStorage; /fixtures and
+// /calendar share the same prefix so their filters stay in sync.
 function initGameSelection(gameId, storagePrefix) {
 	if (!gameId || gameId === 'null' || gameId === 'undefined') {
 		console.error('Invalid gameId:', gameId);
 		return;
 	}
-
-	const prefix = storagePrefix || 'lts-selections-';
 
 	const searchInput = document.getElementById('search-' + gameId);
 	const dropdownMenu = document.getElementById('dropdown-menu-' + gameId);
@@ -48,7 +95,7 @@ function initGameSelection(gameId, storagePrefix) {
 	let maxTier = 2; // Default to tier A (tier 2)
 
 	// Restore saved selections from sessionStorage
-	const savedKey = prefix + gameId;
+	const savedKey = storagePrefix + gameId;
 	const savedData = sessionStorage.getItem(savedKey);
 	let hasSavedSelections = false;
 	if (savedData) {
@@ -110,26 +157,14 @@ function initGameSelection(gameId, storagePrefix) {
 	// Render leagues list
 	let highlightedLeagueIndex = -1;
 	function renderLeagues(leagues) {
-		const html = leagues
-			.map(
-				(league, index) => `
-			<li data-index="${index}">
-				<label class="label cursor-pointer justify-start gap-2 p-2">
-					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedLeagues.has(league.id) ? 'checked' : ''}>
-					<div class="item-icon-container">
-						<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon" onerror="this.src='/static/images/default-logo.png'">
-					</div>
-					<span class="text-sm">${league.name}</span>
-				</label>
-			</li>
-		`,
-			)
-			.join('');
-		leagueList.innerHTML = html;
+		leagueList.replaceChildren(
+			...leagues.map((league, index) =>
+				createOptionItem(index, league, league.name, selectedLeagues.has(league.id), () =>
+					toggleLeague(league),
+				),
+			),
+		);
 		highlightedLeagueIndex = -1;
-		leagueList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
-			cb.addEventListener('change', () => toggleLeague(leagues[i]));
-		});
 	}
 
 	// Save selections to sessionStorage
@@ -287,26 +322,12 @@ function initGameSelection(gameId, storagePrefix) {
 
 	let highlightedTeamIndex = -1;
 	function renderTeams(teams) {
-		const html = teams
-			.map(
-				(team, index) => `
-			<li data-index="${index}">
-				<label class="label cursor-pointer justify-start gap-2 p-2">
-					<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" ${selectedTeams.has(team.id) ? 'checked' : ''}>
-					<div class="item-icon-container">
-						<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon" onerror="this.src='/static/images/default-logo.png'">
-					</div>
-					<span class="text-sm">${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
-				</label>
-			</li>
-		`,
-			)
-			.join('');
-		teamList.innerHTML = html;
+		teamList.replaceChildren(
+			...teams.map((team, index) =>
+				createOptionItem(index, team, teamLabel(team), selectedTeams.has(team.id), () => toggleTeam(team)),
+			),
+		);
 		highlightedTeamIndex = -1;
-		teamList.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
-			cb.addEventListener('change', () => toggleTeam(teams[i]));
-		});
 	}
 
 	function toggleTeam(team) {
@@ -320,81 +341,47 @@ function initGameSelection(gameId, storagePrefix) {
 	}
 
 	function updateCombinedDisplay() {
-		const leagueHTML = allLeagues
-			.filter((l) => selectedLeagues.has(l.id))
-			.map(
-				(league) => `
-			<div class="badge badge-primary rounded-md inline-flex items-center gap-1.5" data-league-id="${league.id}">
-				<img src="${league.image || '/static/images/default-logo.png'}" alt="${league.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
-				<span>${league.name}</span>
-				<button type="button" class="cursor-pointer leading-none opacity-70 hover:opacity-100" onclick="removeLeague(${league.id}, '${gameId}')" aria-label="Remove ${league.name}">✕</button>
-			</div>
-		`,
-			)
-			.join('');
-
-		const teamHTML = allTeams
-			.filter((t) => selectedTeams.has(t.id))
-			.map(
-				(team) => `
-			<div class="badge badge-secondary rounded-md inline-flex items-center gap-1.5" data-team-id="${team.id}">
-				<img src="${team.image || '/static/images/default-logo.png'}" alt="${team.name}" class="item-icon-badge" onerror="this.src='/static/images/default-logo.png'">
-				<span>${team.acronym ? team.acronym + ' - ' + team.name : team.name}</span>
-				<button type="button" class="cursor-pointer leading-none opacity-70 hover:opacity-100" onclick="removeTeam(${team.id}, '${gameId}')" aria-label="Remove ${team.name}">✕</button>
-			</div>
-		`,
-			)
-			.join('');
-
-		if (selectedLeaguesContainer) selectedLeaguesContainer.innerHTML = leagueHTML;
-		if (selectedTeamsContainer) selectedTeamsContainer.innerHTML = teamHTML;
-
-		checkAndUpdateSubmitButton();
+		if (selectedLeaguesContainer) {
+			selectedLeaguesContainer.replaceChildren(
+				...allLeagues
+					.filter((l) => selectedLeagues.has(l.id))
+					.map((league) => {
+						const badge = createSelectedBadge('badge-primary', league, league.name, () =>
+							removeLeague(league.id),
+						);
+						badge.dataset.leagueId = String(league.id);
+						return badge;
+					}),
+			);
+		}
+		if (selectedTeamsContainer) {
+			selectedTeamsContainer.replaceChildren(
+				...allTeams
+					.filter((t) => selectedTeams.has(t.id))
+					.map((team) => {
+						const badge = createSelectedBadge('badge-secondary', team, teamLabel(team), () =>
+							removeTeam(team.id),
+						);
+						badge.dataset.teamId = String(team.id);
+						return badge;
+					}),
+			);
+		}
 	}
 
-	// Per-card handlers — registered in a global registry keyed by gameId so
-	// pages with multiple game cards (e.g. /fixtures) don't clobber each other's
-	// closures via a single window.removeLeague.
-	window.__gameSelectionHandlers = window.__gameSelectionHandlers || {};
-	window.__gameSelectionHandlers[gameId] = {
-		removeLeague(id) {
-			const league = allLeagues.find((l) => l.id === id);
-			if (!league) return false;
-			selectedLeagues.delete(id);
-			saveSelections();
-			updateCombinedDisplay();
-			renderLeagues(filterLeagues(searchInput.value));
-			return true;
-		},
-		removeTeam(id) {
-			const team = allTeams.find((t) => t.id === id);
-			if (!team) return false;
-			selectedTeams.delete(id);
-			saveSelections();
-			updateCombinedDisplay();
-			renderTeams(filterTeams(searchTeamsInput.value));
-			return true;
-		},
-	};
+	function removeLeague(id) {
+		selectedLeagues.delete(id);
+		saveSelections();
+		updateCombinedDisplay();
+		renderLeagues(filterLeagues(searchInput.value));
+	}
 
-	// Global dispatchers — preferred call form passes the owning gameId; falls
-	// back to a sweep across registered cards for legacy callers that omit it.
-	window.removeLeague = function (id, ownerGameId) {
-		const handlers = window.__gameSelectionHandlers || {};
-		if (ownerGameId && handlers[ownerGameId]) {
-			handlers[ownerGameId].removeLeague(id);
-			return;
-		}
-		Object.values(handlers).some((h) => h.removeLeague(id));
-	};
-	window.removeTeam = function (id, ownerGameId) {
-		const handlers = window.__gameSelectionHandlers || {};
-		if (ownerGameId && handlers[ownerGameId]) {
-			handlers[ownerGameId].removeTeam(id);
-			return;
-		}
-		Object.values(handlers).some((h) => h.removeTeam(id));
-	};
+	function removeTeam(id) {
+		selectedTeams.delete(id);
+		saveSelections();
+		updateCombinedDisplay();
+		renderTeams(filterTeams(searchTeamsInput.value));
+	}
 
 	function filterTeams(query) {
 		const lowerQuery = query.toLowerCase();

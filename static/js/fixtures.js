@@ -336,7 +336,7 @@
 
 		// app.js is deferred, so on cold load it hasn't defined
 		// convertMatchTimesIn yet when this IIFE runs. Wait for DOMContentLoaded
-		// in that case; on htmx swaps readyState is already 'complete'.
+		// in that case.
 		const localizeAndScroll = () => {
 			window.convertMatchTimesIn?.(contentEl);
 			scrollToUpcoming('auto');
