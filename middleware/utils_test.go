@@ -16,8 +16,8 @@ func TestGenerateHash(t *testing.T) {
 
 	t.Run("deterministic for the same input", func(t *testing.T) {
 		t.Parallel()
-		a := generateHash([]byte(`{"hello":"world"}`))
-		b := generateHash([]byte(`{"hello":"world"}`))
+		a := CalendarHash([]byte(`{"hello":"world"}`))
+		b := CalendarHash([]byte(`{"hello":"world"}`))
 		if a != b {
 			t.Fatalf("expected identical hashes, got %q vs %q", a, b)
 		}
@@ -25,14 +25,14 @@ func TestGenerateHash(t *testing.T) {
 
 	t.Run("different inputs produce different hashes", func(t *testing.T) {
 		t.Parallel()
-		if generateHash([]byte("a")) == generateHash([]byte("b")) {
+		if CalendarHash([]byte("a")) == CalendarHash([]byte("b")) {
 			t.Fatal("expected different hashes for different inputs")
 		}
 	})
 
 	t.Run("output length is 16", func(t *testing.T) {
 		t.Parallel()
-		h := generateHash([]byte(""))
+		h := CalendarHash([]byte(""))
 		if len(h) != expectedLen {
 			t.Fatalf("hash length = %d, want %d", len(h), expectedLen)
 		}
@@ -40,7 +40,7 @@ func TestGenerateHash(t *testing.T) {
 
 	t.Run("output is lowercase hex", func(t *testing.T) {
 		t.Parallel()
-		h := generateHash([]byte("anything"))
+		h := CalendarHash([]byte("anything"))
 		if h != strings.ToLower(h) {
 			t.Fatalf("hash %q is not lowercase", h)
 		}
@@ -339,4 +339,16 @@ func equalSetInt32(a, b []int32) bool {
 		}
 	}
 	return true
+}
+
+func TestIsCalendarHash(t *testing.T) {
+	t.Parallel()
+	if !isCalendarHash(CalendarHash([]byte(`{"hideScores":false}`))) {
+		t.Error("a CalendarHash result must be accepted")
+	}
+	for _, s := range []string{"", "0123456789abcde", "0123456789abcdef0", "0123456789ABCDEF", "wp-admin", "0123456789abcdeg"} {
+		if isCalendarHash(s) {
+			t.Errorf("isCalendarHash(%q) = true", s)
+		}
+	}
 }

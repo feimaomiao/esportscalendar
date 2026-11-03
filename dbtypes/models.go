@@ -42,6 +42,14 @@ type Match struct {
 	TournamentID      int32
 }
 
+type MissingCalendar struct {
+	HashedKey   string
+	FirstSeen   pgtype.Timestamp
+	LastSeen    pgtype.Timestamp
+	HitCount    int32
+	RecoveredAt pgtype.Timestamp
+}
+
 type Series struct {
 	ID       int32
 	Name     string

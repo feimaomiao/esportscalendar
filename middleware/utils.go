@@ -3,7 +3,9 @@ package middleware
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"slices"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -34,11 +36,48 @@ const (
 	maxTeamsPerRequest   = 5000
 )
 
-// generateHash creates a consistent hash from the selections JSON.
-func generateHash(data []byte) string {
+// CalendarHash creates a consistent hash from the selections JSON. The hash is
+// the calendar's public URL key, so it must never change for a given payload.
+func CalendarHash(data []byte) string {
 	hash := sha256.Sum256(data)
 	// Return first 16 characters for a shorter URL
 	return hex.EncodeToString(hash[:])[:16]
+}
+
+// CanonicalExportJSON returns the bytes ExportHandler stores and hashes for a
+// decoded /export body. The default title format is dropped so selections
+// made before titleFormat existed keep hashing to the same URL; json.Marshal
+// sorts map keys. It mutates requestBody.
+func CanonicalExportJSON(requestBody map[string]any) ([]byte, error) {
+	if f := parseTitleFormat(requestBody["titleFormat"]); f == titleFormatDefault {
+		delete(requestBody, "titleFormat")
+	} else {
+		requestBody["titleFormat"] = string(f)
+	}
+	return json.Marshal(requestBody)
+}
+
+// IsHiddenGame reports whether a game is left off the game pickers, so no
+// calendar can select it.
+func IsHiddenGame(id int32) bool {
+	return slices.Contains([]int32{20, 25, 27, 29, 30}, id)
+}
+
+// calendarHashLen is the length of every hash CalendarHash returns.
+const calendarHashLen = 16
+
+// isCalendarHash reports whether s has the shape of a CalendarHash: 16
+// lowercase hex characters.
+func isCalendarHash(s string) bool {
+	if len(s) != calendarHashLen {
+		return false
+	}
+	for _, r := range s {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 // unwrapSelections returns the per-game selections from a stored or submitted

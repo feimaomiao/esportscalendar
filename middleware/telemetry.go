@@ -27,6 +27,7 @@ const (
 	uniqueDayFormat      = "2006-01-02"
 	visitorIDBytes       = 16
 	calendarRoute        = "/:hash.ics"
+	calendarExpiredRoute = "/:hash.ics (expired)"
 	unmatchedRoute       = "unmatched"
 	telemetryMeterPrefix = "esportscalendar."
 )
@@ -176,7 +177,8 @@ func NewTelemetry(
 // Static assets, robots.txt and sitemap.xml are ignored. Unmatched routes are
 // counted under a fixed route label but not as visitors. Successful .ics
 // fetches are tracked per calendar hash rather than per visitor, because
-// calendar apps poll from shared fetcher IPs. Unique recording runs in the
+// calendar apps poll from shared fetcher IPs. Expired-link notices are counted
+// under their own route and never as unique calendars. Unique recording runs in the
 // background so Redis latency never delays a response.
 func (t *Telemetry) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -195,7 +197,10 @@ func (t *Telemetry) Middleware() gin.HandlerFunc {
 			// Never label by the raw path: each calendar hash would become
 			// its own metric series.
 			route = calendarRoute
-			if status == http.StatusOK {
+			if c.GetBool(calendarExpiredKey) {
+				// The expired-link notice is a 200 but not a live calendar.
+				route = calendarExpiredRoute
+			} else if status == http.StatusOK {
 				hash := strings.TrimSuffix(strings.TrimPrefix(path, "/"), ".ics")
 				record = func(ctx context.Context, day string) error {
 					return t.uniques.AddCalendar(ctx, day, hash)

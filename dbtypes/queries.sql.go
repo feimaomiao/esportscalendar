@@ -1117,6 +1117,33 @@ func (q *Queries) GetURLMapping(ctx context.Context, hashedKey string) (UrlMappi
 	return i, err
 }
 
+const getUnrecoveredMissingCalendars = `-- name: GetUnrecoveredMissingCalendars :many
+SELECT hashed_key
+FROM missing_calendars
+WHERE recovered_at IS NULL
+ORDER BY hashed_key
+`
+
+func (q *Queries) GetUnrecoveredMissingCalendars(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, getUnrecoveredMissingCalendars)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var hashed_key string
+		if err := rows.Scan(&hashed_key); err != nil {
+			return nil, err
+		}
+		items = append(items, hashed_key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertToGames = `-- name: InsertToGames :exec
 
 INSERT INTO games (id, name, slug)
@@ -1359,6 +1386,17 @@ func (q *Queries) LeagueExist(ctx context.Context, id int32) (int64, error) {
 	return count, err
 }
 
+const markMissingCalendarRecovered = `-- name: MarkMissingCalendarRecovered :exec
+UPDATE missing_calendars
+SET recovered_at = CURRENT_TIMESTAMP
+WHERE hashed_key = $1
+`
+
+func (q *Queries) MarkMissingCalendarRecovered(ctx context.Context, hashedKey string) error {
+	_, err := q.db.Exec(ctx, markMissingCalendarRecovered, hashedKey)
+	return err
+}
+
 const markPastUnfinishedMatchesAsFinished = `-- name: MarkPastUnfinishedMatchesAsFinished :exec
 
 UPDATE matches
@@ -1384,6 +1422,21 @@ func (q *Queries) MatchExist(ctx context.Context, id int32) (int64, error) {
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const recordMissingCalendar = `-- name: RecordMissingCalendar :one
+INSERT INTO missing_calendars (hashed_key)
+VALUES ($1)
+ON CONFLICT (hashed_key) DO UPDATE
+SET last_seen = CURRENT_TIMESTAMP, hit_count = missing_calendars.hit_count + 1
+RETURNING first_seen
+`
+
+func (q *Queries) RecordMissingCalendar(ctx context.Context, hashedKey string) (pgtype.Timestamp, error) {
+	row := q.db.QueryRow(ctx, recordMissingCalendar, hashedKey)
+	var first_seen pgtype.Timestamp
+	err := row.Scan(&first_seen)
+	return first_seen, err
 }
 
 const seriesExist = `-- name: SeriesExist :one

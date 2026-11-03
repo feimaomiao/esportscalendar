@@ -222,3 +222,47 @@ func escapeICS(s string) string {
 	s = strings.ReplaceAll(s, "\n", "\\n")
 	return s
 }
+
+const (
+	// expiredNoticeDays is how many consecutive days the expired-link notice
+	// repeats for, starting the day the hash was first seen missing.
+	expiredNoticeDays = 30
+	expiredNoticeName = "Esports Calendar (link expired)"
+	expiredNoticeText = "Esports Calendar: this calendar link has expired"
+	expiredNoticeBody = "This calendar subscription no longer works: its saved selections were lost " +
+		"and could not be restored.\n\n" +
+		"To keep getting matches, create a new calendar at %s/calendar, add the new link to " +
+		"your calendar app, then remove this subscription.\n\n" +
+		"Tip: if you pick exactly the same games, tiers, teams and options as before, you may get " +
+		"the same link back, and this subscription will start working again on its own."
+)
+
+// generateExpiredICS builds the feed served for a calendar hash that has no
+// stored selections. It holds one all-day notice repeating daily from since,
+// so it shows on "today" in any calendar app. The UID and dates depend only on
+// hash and since, so repeated polls update the event instead of duplicating it.
+func generateExpiredICS(hash, baseURL string, since time.Time) string {
+	start := since.UTC()
+	day := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+
+	var ics strings.Builder
+	ics.WriteString("BEGIN:VCALENDAR\r\n")
+	ics.WriteString("VERSION:2.0\r\n")
+	ics.WriteString("PRODID:-//EsportsCalendar//EN\r\n")
+	ics.WriteString("CALSCALE:GREGORIAN\r\n")
+	fmt.Fprintf(&ics, "X-WR-CALNAME:%s\r\n", escapeICS(expiredNoticeName))
+	ics.WriteString("X-WR-TIMEZONE:UTC\r\n")
+	ics.WriteString("BEGIN:VEVENT\r\n")
+	fmt.Fprintf(&ics, "UID:expired-%s@%s\r\n", hash, baseURL)
+	fmt.Fprintf(&ics, "DTSTAMP:%s\r\n", start.Format("20060102T150405Z"))
+	fmt.Fprintf(&ics, "DTSTART;VALUE=DATE:%s\r\n", day.Format("20060102"))
+	fmt.Fprintf(&ics, "DTEND;VALUE=DATE:%s\r\n", day.AddDate(0, 0, 1).Format("20060102"))
+	fmt.Fprintf(&ics, "RRULE:FREQ=DAILY;COUNT=%d\r\n", expiredNoticeDays)
+	fmt.Fprintf(&ics, "SUMMARY:%s\r\n", escapeICS(expiredNoticeText))
+	fmt.Fprintf(&ics, "DESCRIPTION:%s\r\n", escapeICS(fmt.Sprintf(expiredNoticeBody, baseURL)))
+	fmt.Fprintf(&ics, "URL:%s/calendar\r\n", baseURL)
+	ics.WriteString("TRANSP:TRANSPARENT\r\n")
+	ics.WriteString("END:VEVENT\r\n")
+	ics.WriteString("END:VCALENDAR\r\n")
+	return foldICS(ics.String())
+}

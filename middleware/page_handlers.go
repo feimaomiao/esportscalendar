@@ -74,10 +74,9 @@ func (m *Middleware) gameOptions() ([]components.Option, error) {
 		}
 	}
 
-	ignored := map[int]bool{20: true, 25: true, 27: true, 29: true, 30: true}
 	var options []components.Option
 	for _, game := range games {
-		if ignored[int(game.ID)] {
+		if IsHiddenGame(game.ID) {
 			continue
 		}
 		logo := components.DefaultLogo()
