@@ -22,13 +22,10 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 			<div class="card bg-base-100 border border-base-300">
 				<div class="card-body">
 					<div class="flex items-baseline justify-between mb-1">
-						<span class="hud-label">{ "// channel.05" }</span>
+						<span class="hud-label">{ "// channel.00" }</span>
 						<span class="hud-label hud-bracket">calendar</span>
 					</div>
-					<h1 class="hud-display text-2xl mb-1">Match Calendar</h1>
-					<p class="hud-mono text-xs opacity-60 mb-4">
-						Monthly view of every filtered match. All times shown in your local timezone.
-					</p>
+					<h1 class="hud-display text-2xl mb-4">Match Calendar</h1>
 					<div class="hud-control-bar" role="region" aria-label="Calendar filters">
 						<div class="hud-control-bar-chips" id="calendar-game-toggles">
 							for _, game := range games {

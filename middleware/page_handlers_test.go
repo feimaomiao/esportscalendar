@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -242,60 +240,6 @@ func TestIsTier1League(t *testing.T) {
 				t.Fatalf("isTier1League(%v) = %v, want %v", tt.in, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestIsHTMXRequest(t *testing.T) {
-	t.Parallel()
-
-	t.Run("returns true when Hx-Request: true", func(t *testing.T) {
-		t.Parallel()
-		c, _ := newTestContext(t, http.MethodGet, "/", nil)
-		c.Request.Header.Set("Hx-Request", "true")
-		if !isHTMXRequest(c) {
-			t.Fatal("expected true")
-		}
-	})
-
-	t.Run("returns false when header missing", func(t *testing.T) {
-		t.Parallel()
-		c, _ := newTestContext(t, http.MethodGet, "/", nil)
-		if isHTMXRequest(c) {
-			t.Fatal("expected false")
-		}
-	})
-
-	t.Run("returns false for any other value", func(t *testing.T) {
-		t.Parallel()
-		c, _ := newTestContext(t, http.MethodGet, "/", nil)
-		c.Request.Header.Set("Hx-Request", "false")
-		if isHTMXRequest(c) {
-			t.Fatal("expected false")
-		}
-	})
-}
-
-func TestSetHTMXTitle(t *testing.T) {
-	t.Parallel()
-
-	c, w := newTestContext(t, http.MethodGet, "/", nil)
-	setHTMXTitle(c, "Calendar - EsportsCalendar")
-
-	got := w.Header().Get("HX-Trigger")
-	if got == "" {
-		t.Fatal("HX-Trigger header was not set")
-	}
-
-	var payload map[string]map[string]string
-	if err := json.Unmarshal([]byte(got), &payload); err != nil {
-		t.Fatalf("HX-Trigger payload not valid JSON: %v (%q)", err, got)
-	}
-	inner, ok := payload["page:title"]
-	if !ok {
-		t.Fatalf("payload missing page:title key: %q", got)
-	}
-	if inner["title"] != "Calendar - EsportsCalendar" {
-		t.Fatalf("title = %q, want %q", inner["title"], "Calendar - EsportsCalendar")
 	}
 }
 

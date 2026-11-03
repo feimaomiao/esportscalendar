@@ -5,12 +5,9 @@ import prettierConfig from 'eslint-config-prettier/flat';
 // Globals our own JS defines and consumes across files. Marked `writable` so
 // the file that defines them isn't flagged by `no-redeclare`.
 const projectGlobals = {
-	htmx: 'readonly',
 	initGameSelection: 'writable',
-	checkAndUpdateSubmitButton: 'writable',
 	showToast: 'writable',
 	setButtonLoading: 'writable',
-	executeScriptsIn: 'writable',
 	convertMatchTimesIn: 'writable',
 };
 
@@ -42,9 +39,9 @@ export default [
 			'no-empty': ['error', { allowEmptyCatch: true }],
 			// `} catch (e) {` patterns where `e` is intentionally ignored.
 			// `vars: 'local'` skips top-level function/var declarations so
-			// cross-file globals (initGameSelection, checkAndUpdateSubmitButton,
-			// etc.) loaded via separate <script> tags don't get flagged as
-			// "unused" in their defining file.
+			// cross-file globals (initGameSelection, showToast, etc.) loaded via
+			// separate <script> tags don't get flagged as "unused" in their
+			// defining file.
 			'no-unused-vars': [
 				'error',
 				{ vars: 'local', args: 'after-used', argsIgnorePattern: '^_', caughtErrors: 'none' },

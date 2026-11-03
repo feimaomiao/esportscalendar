@@ -17,120 +17,6 @@ import (
 
 const allGamesCacheKey = "all-games"
 
-func (m *Middleware) IndexHandler(c *gin.Context) {
-	m.Logger.Info("IndexHandler", zap.String("method", c.Request.Method), zap.String("path", c.Request.URL.Path))
-
-	var games []dbtypes.Game
-	var cacheHit bool
-
-	// Check cache first
-	cacheKey := allGamesCacheKey
-	if m.RedisCache != nil {
-		if cachedJSON, ok := m.RedisCache.GetData(cacheKey); ok {
-			//nolint:musttag // dbtypes.Game has json tags defined
-			if err := json.Unmarshal([]byte(cachedJSON), &games); err == nil {
-				m.Logger.Info("Cache HIT",
-					zap.String("handler", "IndexHandler"),
-					zap.String("cache_key", cacheKey),
-					zap.Int("num_games", len(games)))
-				cacheHit = true
-			} else {
-				m.Logger.Warn("Failed to unmarshal cached games", zap.Error(err))
-			}
-		}
-	}
-
-	// If not in cache, fetch from database
-	//nolint:nestif // Nested structure is readable and necessary for cache-then-db pattern
-	if games == nil {
-		m.Logger.Info("Cache MISS",
-			zap.String("handler", "IndexHandler"),
-			zap.String("cache_key", cacheKey))
-		var err error
-		games, err = m.DBConn.GetAllGames(m.Context)
-		if err != nil {
-			c.String(http.StatusInternalServerError, "Failed to fetch games")
-			return
-		}
-		// Cache the games list
-		if m.RedisCache != nil {
-			//nolint:musttag // dbtypes.Game has json tags defined
-			if gamesJSON, marshalErr := json.Marshal(games); marshalErr == nil {
-				if cacheErr := m.RedisCache.SetData(cacheKey, string(gamesJSON)); cacheErr != nil {
-					m.Logger.Warn("Failed to cache games", zap.Error(cacheErr))
-				} else {
-					m.Logger.Info("Data cached",
-						zap.String("handler", "IndexHandler"),
-						zap.String("cache_key", cacheKey),
-						zap.Int("num_games", len(games)))
-				}
-			}
-		}
-	}
-
-	var options []components.Option
-	for _, game := range games {
-		logo := components.DefaultLogo()
-		slug := ""
-		ignored := map[int]bool{20: true, 25: true, 27: true, 29: true, 30: true}
-
-		if ignored[int(game.ID)] {
-			continue
-		}
-		if game.Slug.Valid {
-			slug = game.Slug.String
-			logo = components.LogoPath(slug) + ".png"
-		}
-		options = append(options, components.Option{
-			ID:      strconv.Itoa(int(game.ID)),
-			Label:   game.Name,
-			Logo:    logo,
-			Slug:    slug,
-			Checked: false,
-		})
-	}
-
-	// Set HTTP cache headers (cache for 5 minutes)
-	c.Header("Cache-Control", "public, max-age=300")
-	if cacheHit {
-		c.Header("X-Cache", "HIT")
-	} else {
-		c.Header("X-Cache", "MISS")
-	}
-
-	if isHTMXRequest(c) {
-		setHTMXTitle(c, "Select Games - EsportsCalendar")
-		component := components.IndexInner(options)
-		if err := component.Render(m.Context, c.Writer); err != nil {
-			m.Logger.Error("Failed to render index inner", zap.Error(err))
-			c.String(http.StatusInternalServerError, "Failed to render page")
-		}
-		return
-	}
-
-	component := components.Index(options)
-	if err := component.Render(m.Context, c.Writer); err != nil {
-		m.Logger.Error("Failed to render index", zap.Error(err))
-		c.String(http.StatusInternalServerError, "Failed to render page")
-	}
-}
-
-// isHTMXRequest reports whether the incoming request was issued by HTMX.
-func isHTMXRequest(c *gin.Context) bool {
-	return c.Request.Header.Get("Hx-Request") == "true"
-}
-
-// setHTMXTitle sets the HX-Trigger header so the client updates document.title.
-func setHTMXTitle(c *gin.Context, title string) {
-	payload, err := json.Marshal(map[string]any{
-		"page:title": map[string]string{"title": title},
-	})
-	if err != nil {
-		return
-	}
-	c.Header("HX-Trigger", string(payload))
-}
-
 func (m *Middleware) HowToUseHandler(c *gin.Context) {
 	m.Logger.Info("Handler",
 		zap.String("handler", "HowToUseHandler"),
@@ -171,7 +57,7 @@ func (m *Middleware) gameOptions() ([]components.Option, error) {
 			}
 		}
 	}
-	//nolint:nestif // Cache-then-DB pattern with optional re-cache, mirrors IndexHandler.
+	//nolint:nestif // Cache-then-DB pattern with optional re-cache.
 	if games == nil {
 		var err error
 		games, err = m.DBConn.GetAllGames(m.Context)
@@ -201,11 +87,10 @@ func (m *Middleware) gameOptions() ([]components.Option, error) {
 			logo = components.LogoPath(slug) + ".png"
 		}
 		options = append(options, components.Option{
-			ID:      strconv.Itoa(int(game.ID)),
-			Label:   game.Name,
-			Logo:    logo,
-			Slug:    slug,
-			Checked: false,
+			ID:    strconv.Itoa(int(game.ID)),
+			Label: game.Name,
+			Logo:  logo,
+			Slug:  slug,
 		})
 	}
 	return options, nil
@@ -429,15 +314,6 @@ func (m *Middleware) FixturesHandler(c *gin.Context) {
 	// The page bakes in match data tied to wall-clock time (dividers,
 	// list order). Caching it would serve a stale state on revisit.
 	c.Header("Cache-Control", "no-store")
-	if isHTMXRequest(c) {
-		setHTMXTitle(c, "Fixtures - EsportsCalendar")
-		component := components.FixturesPageInner(options, matches, pastIndex, ongoingIndex, defaultHideScores)
-		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
-			m.Logger.Error("Failed to render fixtures inner", zap.Error(renderErr))
-			c.String(http.StatusInternalServerError, "Failed to render page")
-		}
-		return
-	}
 
 	component := components.FixturesPage(options, matches, pastIndex, ongoingIndex, defaultHideScores)
 	if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
@@ -626,21 +502,6 @@ func (m *Middleware) CalendarHandler(c *gin.Context) {
 	// Same reasoning as FixturesHandler: page bakes in wall-clock-relative
 	// markup (today highlight), so we don't want shared HTTP cache.
 	c.Header("Cache-Control", "no-store")
-
-	if isHTMXRequest(c) {
-		setHTMXTitle(c, "Calendar - EsportsCalendar")
-		component := components.CalendarPageInner(
-			options, year, month,
-			calendarMinYear, calendarMinMonth,
-			maxYear, maxMonth,
-			matches, defaultHideScores,
-		)
-		if renderErr := component.Render(m.Context, c.Writer); renderErr != nil {
-			m.Logger.Error("Failed to render calendar inner", zap.Error(renderErr))
-			c.String(http.StatusInternalServerError, "Failed to render page")
-		}
-		return
-	}
 
 	component := components.CalendarPage(
 		options, year, month,

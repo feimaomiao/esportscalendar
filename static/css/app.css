@@ -1311,42 +1311,6 @@ dialog.modal .modal-box {
   filter: brightness(1.05);
 }
 
-.fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* HTMX loading states */
-.htmx-request .htmx-indicator {
-  display: inline-block;
-}
-.htmx-indicator {
-  display: none;
-}
-.htmx-indicator::after {
-  content: "";
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid color-mix(in oklch, var(--color-base-content) 15%, transparent);
-  border-top: 2px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* HUD game module — top-level container on second-page (filter/tune) */
 .hud-game-module {
   position: relative;
@@ -1670,6 +1634,60 @@ dialog.modal .modal-box {
   }
   .hud-tune-btn {
     padding: 0.4rem;
+  }
+}
+
+/* "Today" jump — same footprint as Tune, outlined so Tune stays the primary action. */
+.hud-today-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  color: var(--color-base-content);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 28%, transparent);
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+.hud-today-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.hud-today-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .hud-today-btn span {
+    display: none;
+  }
+  .hud-today-btn {
+    padding: 0.4rem;
+  }
+}
+
+/* Brief marker on the row "Today" lands on, so the jump target is obvious. */
+.hud-today-flash {
+  animation: hud-today-flash 1.2s ease-out;
+}
+@keyframes hud-today-flash {
+  0%,
+  30% {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-today-flash {
+    animation: none;
   }
 }
 

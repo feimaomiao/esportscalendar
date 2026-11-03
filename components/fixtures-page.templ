@@ -14,13 +14,10 @@ templ FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySele
 			<div class="card bg-base-100 border border-base-300">
 				<div class="card-body">
 					<div class="flex items-baseline justify-between mb-1">
-						<span class="hud-label">{ "// channel.04" }</span>
+						<span class="hud-label">{ "// channel.01" }</span>
 						<span class="hud-label hud-bracket">fixtures</span>
 					</div>
-					<h1 class="hud-display text-2xl mb-1">Match Fixtures</h1>
-					<p class="hud-mono text-xs opacity-60 mb-4">
-						Past and upcoming matches across the leagues you follow. All times in your local timezone.
-					</p>
+					<h1 class="hud-display text-2xl mb-4">Match Fixtures</h1>
 					<div class="hud-control-bar" role="region" aria-label="Fixtures filters">
 						<div class="hud-control-bar-chips" id="fixtures-game-toggles">
 							for _, game := range games {
@@ -53,6 +50,13 @@ templ FixturesPageInner(games []Option, matches []dbtypes.GetFutureMatchesBySele
 								/>
 								<span class="hidden sm:inline">Spoiler</span>
 							</label>
+							<button type="button" id="fixtures-today" class="hud-today-btn" aria-label="Go to today">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"></path>
+									<circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"></circle>
+								</svg>
+								<span class="uppercase tracking-widest">Today</span>
+							</button>
 							<button type="button" id="fixtures-tune-open" class="hud-tune-btn" aria-haspopup="dialog" aria-controls="fixtures-drawer">
 								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9m-9 6h9m-9 6h9M3.75 6h.008v.008H3.75V6zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 18h.008v.008H3.75V18zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"></path>
