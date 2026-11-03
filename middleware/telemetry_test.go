@@ -81,7 +81,12 @@ func newTelemetryRouter(tel *Telemetry) *gin.Engine {
 	r.GET("/static/*filepath", ok)
 	r.GET("/robots.txt", ok)
 	r.NoRoute(func(c *gin.Context) {
-		if c.Request.URL.Path == "/known.ics" {
+		switch c.Request.URL.Path {
+		case "/known.ics":
+			c.Status(http.StatusOK)
+			return
+		case "/expired.ics":
+			c.Set(calendarExpiredKey, true)
 			c.Status(http.StatusOK)
 			return
 		}
@@ -125,7 +130,9 @@ func TestTelemetryMiddleware_CountsRequestsByRoute(t *testing.T) {
 	tel, reader := newTestTelemetry(t, nil)
 	r := newTelemetryRouter(tel)
 
-	for _, path := range []string{"/", "/", "/known.ics", "/missing.ics", "/wp-login.php", "/static/css/app.css", "/robots.txt"} {
+	for _, path := range []string{
+		"/", "/", "/known.ics", "/missing.ics", "/expired.ics", "/wp-login.php", "/static/css/app.css", "/robots.txt",
+	} {
 		serve(r, path, "1.2.3.4", "ua")
 	}
 
@@ -141,10 +148,11 @@ func TestTelemetryMiddleware_CountsRequestsByRoute(t *testing.T) {
 		}
 	}
 	want := map[string]int64{
-		"/ 200":          2,
-		"/:hash.ics 200": 1,
-		"/:hash.ics 404": 1,
-		"unmatched 404":  1,
+		"/ 200":                    2,
+		"/:hash.ics 200":           1,
+		"/:hash.ics 404":           1,
+		"/:hash.ics (expired) 200": 1,
+		"unmatched 404":            1,
 	}
 	if len(got) != len(want) {
 		t.Fatalf("data points = %v, want %v", got, want)
@@ -192,7 +200,7 @@ func TestTelemetryMiddleware_SkipsNonVisitorUniques(t *testing.T) {
 	tel, _ := newTestTelemetry(t, uniques)
 	r := newTelemetryRouter(tel)
 
-	for _, path := range []string{"/static/css/app.css", "/robots.txt", "/wp-login.php", "/missing.ics"} {
+	for _, path := range []string{"/static/css/app.css", "/robots.txt", "/wp-login.php", "/missing.ics", "/expired.ics"} {
 		serve(r, path, "1.2.3.4", "ua")
 	}
 	// Recording is async, so send a recorded request last: if it is the first

@@ -88,6 +88,17 @@ CREATE TABLE IF NOT EXISTS URL_MAPPINGS(
     accessed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Calendar hashes that were requested but have no URL_MAPPINGS row (e.g. links
+-- lost with a database). Recorded so the recover-calendars tool can rebuild
+-- the mappings it can brute-force; recovered_at is set once one is restored.
+CREATE TABLE IF NOT EXISTS MISSING_CALENDARS(
+    hashed_key VARCHAR(16) NOT NULL PRIMARY KEY,
+    first_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hit_count INT NOT NULL DEFAULT 1,
+    recovered_at TIMESTAMP
+);
+
 -- =============================================================================
 -- Migration appendix: add columns to existing deployments that pre-date them.
 -- New deployments hit the CREATE TABLE definitions above and skip these.

@@ -6,6 +6,8 @@ package dbtypes
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -54,6 +56,7 @@ type Querier interface {
 	GetTeamNamesByIDs(ctx context.Context, ids []int32) ([]GetTeamNamesByIDsRow, error)
 	GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, error)
 	GetURLMapping(ctx context.Context, hashedKey string) (UrlMapping, error)
+	GetUnrecoveredMissingCalendars(ctx context.Context) ([]string, error)
 	// ============================================================================
 	// INSERT/UPSERT Queries
 	// ============================================================================
@@ -68,11 +71,13 @@ type Querier interface {
 	// ============================================================================
 	InsertURLMapping(ctx context.Context, arg InsertURLMappingParams) error
 	LeagueExist(ctx context.Context, id int32) (int64, error)
+	MarkMissingCalendarRecovered(ctx context.Context, hashedKey string) error
 	// ============================================================================
 	// Maintenance Queries
 	// ============================================================================
 	MarkPastUnfinishedMatchesAsFinished(ctx context.Context) error
 	MatchExist(ctx context.Context, id int32) (int64, error)
+	RecordMissingCalendar(ctx context.Context, hashedKey string) (pgtype.Timestamp, error)
 	SeriesExist(ctx context.Context, id int32) (int64, error)
 	TeamExist(ctx context.Context, id int32) (int64, error)
 	TournamentExist(ctx context.Context, id int32) (int64, error)

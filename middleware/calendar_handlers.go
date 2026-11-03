@@ -2,11 +2,14 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 
 	"github.com/feimaomiao/esportscalendar/dbtypes"
@@ -36,17 +39,9 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 		return
 	}
 
-	// Only store known title formats; the default is omitted so existing
-	// selections keep hashing to the same URL.
-	if f := parseTitleFormat(requestBody["titleFormat"]); f == titleFormatDefault {
-		delete(requestBody, "titleFormat")
-	} else {
-		requestBody["titleFormat"] = string(f)
-	}
-
-	// Generate canonical JSON (sorted keys for consistent hashing)
-	// This preserves selections, hideScores and titleFormat in the stored data
-	jsonBytes, err := json.Marshal(requestBody)
+	// Canonical JSON (sorted keys, default title format dropped) so the same
+	// selections always hash to the same URL.
+	jsonBytes, err := CanonicalExportJSON(requestBody)
 	if err != nil {
 		m.Logger.Error("Failed to marshal selections", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, map[string]string{jsonError: "Failed to process selections"})
@@ -54,7 +49,7 @@ func (m *Middleware) ExportHandler(c *gin.Context) {
 	}
 
 	// Generate hash
-	hash := generateHash(jsonBytes)
+	hash := CalendarHash(jsonBytes)
 	previewLen := 100
 	if len(jsonBytes) < previewLen {
 		previewLen = len(jsonBytes)
@@ -104,12 +99,21 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 
 	// Retrieve selections from database
 	mapping, err := m.DBConn.GetURLMapping(m.Context, hash)
-	if err != nil {
-		m.Logger.Error("Calendar not found in database",
-			zap.String("hash", hash),
-			zap.String("url", c.Request.URL.Path),
-			zap.Error(err))
+	if errors.Is(err, pgx.ErrNoRows) && isCalendarHash(hash) {
+		m.serveExpiredCalendar(c, hash)
+		return
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
 		c.String(http.StatusNotFound, "Calendar not found")
+		return
+	}
+	if err != nil {
+		// Not a 404 or the notice feed: a transient DB failure must not tell
+		// calendar apps the subscription is gone.
+		m.Logger.Error("Failed to look up calendar",
+			zap.String("hash", hash),
+			zap.Error(err))
+		c.String(http.StatusServiceUnavailable, "Calendar temporarily unavailable")
 		return
 	}
 
@@ -222,4 +226,34 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 	}
 
 	m.Logger.Debug("Served calendar", zap.Int("match_count", len(matches)), zap.String("hash", hash))
+}
+
+// calendarExpiredKey marks, on the gin context, a .ics request answered with
+// the expired-link notice, so telemetry does not count it as a live calendar.
+const calendarExpiredKey = "calendar_expired"
+
+// serveExpiredCalendar answers a well-formed calendar hash that has no stored
+// selections. Calendar apps never show an error body, so instead of a 404 it
+// serves a feed whose only event tells the user to create a new calendar. The
+// hash is recorded so recover-calendars can try to rebuild its mapping.
+func (m *Middleware) serveExpiredCalendar(c *gin.Context, hash string) {
+	c.Set(calendarExpiredKey, true)
+	since := time.Now()
+	firstSeen, err := m.DBConn.RecordMissingCalendar(m.Context, hash)
+	if err != nil {
+		m.Logger.Warn("Failed to record missing calendar", zap.Error(err), zap.String("hash", hash))
+	} else if firstSeen.Valid {
+		since = firstSeen.Time
+	}
+	m.Logger.Info("Serving expired calendar notice", zap.String("hash", hash))
+
+	c.Status(http.StatusOK)
+	c.Header("Content-Type", "text/calendar; charset=utf-8")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"esports-calendar-%s.ics\"", hash))
+	// no-store so the real feed replaces the notice as soon as the mapping is
+	// recovered, rather than after a CDN or client cache expires.
+	c.Header("Cache-Control", "no-store")
+	if _, writeErr := c.Writer.WriteString(generateExpiredICS(hash, m.BaseURL, since)); writeErr != nil {
+		m.Logger.Error("Failed to write expired calendar notice", zap.Error(writeErr))
+	}
 }

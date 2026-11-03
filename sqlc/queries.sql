@@ -389,6 +389,24 @@ UPDATE url_mappings
 SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP
 WHERE hashed_key = $1;
 
+-- name: RecordMissingCalendar :one
+INSERT INTO missing_calendars (hashed_key)
+VALUES ($1)
+ON CONFLICT (hashed_key) DO UPDATE
+SET last_seen = CURRENT_TIMESTAMP, hit_count = missing_calendars.hit_count + 1
+RETURNING first_seen;
+
+-- name: GetUnrecoveredMissingCalendars :many
+SELECT hashed_key
+FROM missing_calendars
+WHERE recovered_at IS NULL
+ORDER BY hashed_key;
+
+-- name: MarkMissingCalendarRecovered :exec
+UPDATE missing_calendars
+SET recovered_at = CURRENT_TIMESTAMP
+WHERE hashed_key = $1;
+
 -- ============================================================================
 -- Telemetry: what active calendars are tracking
 -- ============================================================================

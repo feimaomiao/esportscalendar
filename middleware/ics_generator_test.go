@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pashagolub/pgxmock/v4"
 	"go.uber.org/zap/zaptest"
@@ -177,7 +179,7 @@ func TestExportHandlerStoresTitleFormat(t *testing.T) {
 				BaseURL: "https://test.example",
 			}
 			mockDB.ExpectExec(`INSERT INTO url_mappings`).
-				WithArgs(generateHash([]byte(tc.stored)), []byte(tc.stored)).
+				WithArgs(CalendarHash([]byte(tc.stored)), []byte(tc.stored)).
 				WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 			w := httptest.NewRecorder()
@@ -280,5 +282,133 @@ func TestFoldICSKeepsMultiByteRunesIntact(t *testing.T) {
 	}
 	if strings.ReplaceAll(folded, "\r\n ", "") != line+"\r\n" {
 		t.Errorf("folding is not reversible")
+	}
+}
+
+func TestGenerateExpiredICS(t *testing.T) {
+	t.Parallel()
+	since := time.Date(2026, 11, 2, 23, 30, 0, 0, time.UTC)
+	got := generateExpiredICS("0123456789abcdef", "https://test.example", since)
+	unfolded := strings.ReplaceAll(got, "\r\n ", "")
+	for _, want := range []string{
+		"X-WR-CALNAME:Esports Calendar (link expired)\r\n",
+		"UID:expired-0123456789abcdef@https://test.example\r\n",
+		"DTSTART;VALUE=DATE:20261102\r\n",
+		"DTEND;VALUE=DATE:20261103\r\n",
+		"RRULE:FREQ=DAILY;COUNT=30\r\n",
+		"URL:https://test.example/calendar\r\n",
+		"https://test.example/calendar\\, add the new link",
+	} {
+		if !strings.Contains(unfolded, want) {
+			t.Errorf("notice missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Count(got, "BEGIN:VEVENT") != 1 {
+		t.Errorf("want exactly one event:\n%s", got)
+	}
+	if again := generateExpiredICS("0123456789abcdef", "https://test.example", since); again != got {
+		t.Error("notice must be identical across polls so clients update rather than duplicate it")
+	}
+	for _, line := range strings.Split(got, "\r\n") {
+		if len(line) > 75 {
+			t.Errorf("unfolded line over 75 octets: %q", line)
+		}
+	}
+}
+
+func TestCalendarICSHandlerMissingCalendars(t *testing.T) {
+	t.Parallel()
+	const known = "0123456789abcdef"
+	tests := []struct {
+		name       string
+		path       string
+		setup      func(mock pgxmock.PgxPoolIface)
+		wantStatus int
+		wantNotice bool
+	}{
+		{
+			name: "lost hash gets the notice and is recorded",
+			path: "/" + known + ".ics",
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`FROM url_mappings`).WithArgs(known).WillReturnError(pgx.ErrNoRows)
+				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known).
+					WillReturnRows(pgxmock.NewRows([]string{"first_seen"}).AddRow(
+						pgtype.Timestamp{Time: time.Date(2026, 11, 1, 8, 0, 0, 0, time.UTC), Valid: true}))
+			},
+			wantStatus: http.StatusOK,
+			wantNotice: true,
+		},
+		{
+			name: "notice is still served when recording fails",
+			path: "/" + known + ".ics",
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`FROM url_mappings`).WithArgs(known).WillReturnError(pgx.ErrNoRows)
+				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known).
+					WillReturnError(errors.New("relation does not exist"))
+			},
+			wantStatus: http.StatusOK,
+			wantNotice: true,
+		},
+		{
+			name: "malformed hash is a plain 404 and not recorded",
+			path: "/wp-admin.ics",
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`FROM url_mappings`).WithArgs("wp-admin").WillReturnError(pgx.ErrNoRows)
+			},
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name: "database failure is a 503, not a dead calendar",
+			path: "/" + known + ".ics",
+			setup: func(mock pgxmock.PgxPoolIface) {
+				mock.ExpectQuery(`FROM url_mappings`).WithArgs(known).WillReturnError(errors.New("connection refused"))
+			},
+			wantStatus: http.StatusServiceUnavailable,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mockDB, err := pgxmock.NewPool()
+			if err != nil {
+				t.Fatalf("pgxmock.NewPool: %v", err)
+			}
+			t.Cleanup(func() { mockDB.Close() })
+			tc.setup(mockDB)
+
+			mw := &Middleware{
+				DBConn:  dbtypes.New(mockDB),
+				Context: context.Background(),
+				Logger:  zaptest.NewLogger(t),
+				BaseURL: "https://test.example",
+			}
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, tc.path, nil)
+
+			mw.CalendarICSHandler(c)
+
+			if w.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d, body=%s", w.Code, tc.wantStatus, w.Body.String())
+			}
+			isNotice := strings.Contains(w.Body.String(), "UID:expired-"+known)
+			if isNotice != tc.wantNotice {
+				t.Errorf("notice served = %v, want %v, body=%s", isNotice, tc.wantNotice, w.Body.String())
+			}
+			if c.GetBool(calendarExpiredKey) != tc.wantNotice {
+				t.Errorf("expired flag = %v, want %v", c.GetBool(calendarExpiredKey), tc.wantNotice)
+			}
+			if tc.wantNotice {
+				if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+					t.Errorf("Cache-Control = %q, want no-store", cc)
+				}
+				if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/calendar") {
+					t.Errorf("Content-Type = %q, want text/calendar", ct)
+				}
+			}
+			if err := mockDB.ExpectationsWereMet(); err != nil {
+				t.Errorf("unmet DB expectations: %v", err)
+			}
+		})
 	}
 }

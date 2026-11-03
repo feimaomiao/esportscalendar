@@ -21,10 +21,9 @@ type Middleware struct {
 	BaseURL    string
 }
 
-func InitMiddleHandler(logger *zap.Logger) Middleware {
-	logger.Info("Initializing middleware with database connection")
-	ctx := context.Background()
-
+// NewDBPool connects to Postgres using the POSTGRES_HOST, POSTGRES_PORT,
+// postgres_user and postgres_password environment variables.
+func NewDBPool(ctx context.Context) (*pgxpool.Pool, error) {
 	pgHost := os.Getenv("POSTGRES_HOST")
 	if pgHost == "" {
 		pgHost = "postgres"
@@ -41,10 +40,21 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		os.Getenv("postgres_user"))
 	pgxCfg, err := pgxpool.ParseConfig(baseConnStr)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
 	pgxCfg.ConnConfig.Password = os.Getenv("postgres_password")
 	conn, err := pgxpool.NewWithConfig(ctx, pgxCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database pool: %w", err)
+	}
+	return conn, nil
+}
+
+func InitMiddleHandler(logger *zap.Logger) Middleware {
+	logger.Info("Initializing middleware with database connection")
+	ctx := context.Background()
+
+	conn, err := NewDBPool(ctx)
 	if err != nil {
 		panic(err)
 	}

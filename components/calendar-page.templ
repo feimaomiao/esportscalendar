@@ -26,6 +26,7 @@ templ CalendarPageInner(games []Option, year int, month int, minYear int, minMon
 						<span class="hud-label hud-bracket">calendar</span>
 					</div>
 					<h1 class="hud-display text-2xl mb-4">Match Calendar</h1>
+					@ResubscribeNotice()
 					<div class="hud-control-bar" role="region" aria-label="Calendar filters">
 						<div class="hud-control-bar-chips" id="calendar-game-toggles">
 							for _, game := range games {
@@ -373,4 +374,17 @@ func visibleMatches(matches []dbtypes.GetFutureMatchesBySelectionsRow) []dbtypes
 		return matches
 	}
 	return matches[:calendarChipsPerDay]
+}
+
+// ResubscribeNotice tells users whose old subscription links were lost to
+// export a new calendar. Temporary: remove once lost links stop polling.
+templ ResubscribeNotice() {
+	<div class="hud-alert hud-alert-warning mb-4" role="status">
+		@IconWarning("stroke-current shrink-0 w-5 h-5")
+		<span>
+			Is your calendar app showing an error or a "link expired" event? Some saved calendar links were lost, so
+			yours may have stopped updating. Pick your games below, then <strong>Export Calendar</strong> and add the
+			new link to your calendar app. If you choose exactly the same settings as before, you may get your old link back.
+		</span>
+	</div>
 }
