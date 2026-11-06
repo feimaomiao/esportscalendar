@@ -178,8 +178,9 @@ func NewTelemetry(
 // counted under a fixed route label but not as visitors. Successful .ics
 // fetches are tracked per calendar hash rather than per visitor, because
 // calendar apps poll from shared fetcher IPs. Expired-link notices are counted
-// under their own route and never as unique calendars. Unique recording runs in the
-// background so Redis latency never delays a response.
+// under their own route and never as unique calendars. HEAD requests are counted
+// but never as uniques, since they come from monitors and link checkers. Unique
+// recording runs in the background so Redis latency never delays a response.
 func (t *Telemetry) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
@@ -221,7 +222,7 @@ func (t *Telemetry) Middleware() gin.HandlerFunc {
 			semconv.HTTPResponseStatusCode(status),
 		))
 
-		if record == nil || t.uniques == nil {
+		if record == nil || t.uniques == nil || c.Request.Method == http.MethodHead {
 			return
 		}
 		day := time.Now().UTC().Format(uniqueDayFormat)

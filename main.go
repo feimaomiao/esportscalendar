@@ -48,7 +48,10 @@ func main() {
 		logger.Fatal("Failed to create sub filesystem", zap.Error(err))
 	}
 	fileServer := http.FileServer(http.FS(staticSubFS))
-	router.GET("/static/*filepath", func(c *gin.Context) {
+	// net/http discards the body of a HEAD response, so the GET handlers can
+	// serve HEAD as they are.
+	readMethods := []string{http.MethodGet, http.MethodHead}
+	router.Match(readMethods, "/static/*filepath", func(c *gin.Context) {
 		// Set proper MIME types for CSS and JS files
 		if strings.HasSuffix(c.Request.URL.Path, ".css") {
 			c.Header("Content-Type", "text/css; charset=utf-8")
@@ -75,7 +78,7 @@ func main() {
 	router.Use(tel.Middleware())
 
 	// Serve robots.txt and sitemap.xml from embedded static files
-	router.GET("/robots.txt", func(c *gin.Context) {
+	router.Match(readMethods, "/robots.txt", func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain; charset=utf-8")
 		data, readErr := staticFS.ReadFile("static/robots.txt")
 		if readErr != nil {
@@ -84,7 +87,7 @@ func main() {
 		}
 		c.Data(http.StatusOK, "text/plain; charset=utf-8", data)
 	})
-	router.GET("/sitemap.xml", func(c *gin.Context) {
+	router.Match(readMethods, "/sitemap.xml", func(c *gin.Context) {
 		c.Header("Content-Type", "application/xml; charset=utf-8")
 		data, readErr := staticFS.ReadFile("static/sitemap.xml")
 		if readErr != nil {
@@ -95,16 +98,16 @@ func main() {
 	})
 
 	// Routes
-	router.GET("/", mw.CalendarHandler)
+	router.Match(readMethods, "/", mw.CalendarHandler)
 	router.POST("/export", mw.ExportHandler)
-	router.GET("/how-to-use", mw.HowToUseHandler)
-	router.GET("/about", mw.AboutHandler)
-	router.GET("/fixtures", mw.FixturesHandler)
+	router.Match(readMethods, "/how-to-use", mw.HowToUseHandler)
+	router.Match(readMethods, "/about", mw.AboutHandler)
+	router.Match(readMethods, "/fixtures", mw.FixturesHandler)
 	router.POST("/api/fixtures", mw.FixturesAPIHandler)
-	router.GET("/calendar", mw.CalendarHandler)
+	router.Match(readMethods, "/calendar", mw.CalendarHandler)
 	router.POST("/api/calendar", mw.CalendarAPIHandler)
-	router.GET("/api/league-options/*param", mw.LeagueOptionsHandler)
-	router.GET("/api/team-options/*param", mw.TeamOptionsHandler)
+	router.Match(readMethods, "/api/league-options/*param", mw.LeagueOptionsHandler)
+	router.Match(readMethods, "/api/team-options/*param", mw.TeamOptionsHandler)
 
 	// NoRoute handler for .ics files (calendar downloads)
 	router.NoRoute(func(c *gin.Context) {
