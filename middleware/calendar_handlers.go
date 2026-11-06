@@ -119,14 +119,20 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 
 	m.Logger.Info("Calendar found in database", zap.String("hash", hash))
 
+	// HEAD only probes the calendar, so it neither counts as an access nor
+	// honours a cache refresh.
+	isHead := c.Request.Method == http.MethodHead
+
 	// Update access count
-	err = m.DBConn.UpdateURLMappingAccessCount(m.Context, hash)
-	if err != nil {
-		m.Logger.Warn("Failed to update access count", zap.Error(err), zap.String("hash", hash))
+	if !isHead {
+		err = m.DBConn.UpdateURLMappingAccessCount(m.Context, hash)
+		if err != nil {
+			m.Logger.Warn("Failed to update access count", zap.Error(err), zap.String("hash", hash))
+		}
 	}
 
 	// Check if refresh is requested via query parameter
-	refresh := c.Query("refresh") == "1"
+	refresh := c.Query("refresh") == "1" && !isHead
 	if refresh && m.RedisCache != nil {
 		m.Logger.Info("Cache refresh requested", zap.String("hash", hash))
 		if delErr := m.RedisCache.DeleteICS(hash); delErr != nil {
@@ -245,18 +251,21 @@ const maxMissingCalendars = 10000
 func (m *Middleware) serveExpiredCalendar(c *gin.Context, hash string) {
 	c.Set(calendarExpiredKey, true)
 	since := time.Now()
-	firstSeen, err := m.DBConn.RecordMissingCalendar(m.Context, dbtypes.RecordMissingCalendarParams{
-		HashedKey: hash,
-		MaxRows:   maxMissingCalendars,
-	})
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		// The table is full. The notice doesn't depend on the row existing.
-		m.Logger.Warn("Missing calendar table is full", zap.String("hash", hash))
-	case err != nil:
-		m.Logger.Warn("Failed to record missing calendar", zap.Error(err), zap.String("hash", hash))
-	case firstSeen.Valid:
-		since = firstSeen.Time
+	// HEAD only probes the link, and `since` only feeds the body it never gets.
+	if c.Request.Method != http.MethodHead {
+		firstSeen, err := m.DBConn.RecordMissingCalendar(m.Context, dbtypes.RecordMissingCalendarParams{
+			HashedKey: hash,
+			MaxRows:   maxMissingCalendars,
+		})
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			// The table is full. The notice doesn't depend on the row existing.
+			m.Logger.Warn("Missing calendar table is full", zap.String("hash", hash))
+		case err != nil:
+			m.Logger.Warn("Failed to record missing calendar", zap.Error(err), zap.String("hash", hash))
+		case firstSeen.Valid:
+			since = firstSeen.Time
+		}
 	}
 	m.Logger.Info("Serving expired calendar notice", zap.String("hash", hash))
 
