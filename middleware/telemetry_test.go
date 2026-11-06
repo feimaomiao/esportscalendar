@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -77,7 +78,7 @@ func newTelemetryRouter(tel *Telemetry) *gin.Engine {
 	r := gin.New()
 	r.Use(tel.Middleware())
 	ok := func(c *gin.Context) { c.Status(http.StatusOK) }
-	r.GET("/", ok)
+	r.Match([]string{http.MethodGet, http.MethodHead}, "/", ok)
 	r.GET("/static/*filepath", ok)
 	r.GET("/robots.txt", ok)
 	r.NoRoute(func(c *gin.Context) {
@@ -96,7 +97,11 @@ func newTelemetryRouter(tel *Telemetry) *gin.Engine {
 }
 
 func serve(r *gin.Engine, path, ip, ua string) {
-	req := httptest.NewRequest(http.MethodGet, path, nil)
+	serveMethod(r, http.MethodGet, path, ip, ua)
+}
+
+func serveMethod(r *gin.Engine, method, path, ip, ua string) {
+	req := httptest.NewRequest(method, path, nil)
 	req.RemoteAddr = ip + ":1234"
 	req.Header.Set("User-Agent", ua)
 	r.ServeHTTP(httptest.NewRecorder(), req)
@@ -215,6 +220,42 @@ func TestTelemetryMiddleware_SkipsNonVisitorUniques(t *testing.T) {
 	case extra := <-uniques.events:
 		t.Fatalf("unexpected extra event %+v", extra)
 	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+func TestTelemetryMiddleware_HeadCountsRequestsButNotUniques(t *testing.T) {
+	t.Parallel()
+	uniques := newFakeUniques()
+	tel, reader := newTestTelemetry(t, uniques)
+	r := newTelemetryRouter(tel)
+
+	serveMethod(r, http.MethodHead, "/", "1.2.3.4", "monitor")
+	serveMethod(r, http.MethodHead, "/known.ics", "1.2.3.4", "monitor")
+	// Recording is async, so send a recorded request last: if it is the first
+	// event to arrive, neither HEAD above was recorded.
+	serve(r, "/", "5.6.7.8", "browser")
+
+	if ev := uniques.next(t); ev.kind != "visitor" {
+		t.Fatalf("first event = %+v, want the GET visitor", ev)
+	}
+	select {
+	case extra := <-uniques.events:
+		t.Fatalf("unexpected extra event %+v", extra)
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	sum, ok := collect(t, reader, "esportscalendar.http.requests").Data.(metricdata.Sum[int64])
+	if !ok {
+		t.Fatal("requests metric is not an int64 sum")
+	}
+	var heads int64
+	for _, dp := range sum.DataPoints {
+		if attr(dp.Attributes, semconv.HTTPRequestMethodKey) == http.MethodHead {
+			heads += dp.Value
+		}
+	}
+	if heads != 2 {
+		t.Fatalf("HEAD requests counted = %d, want 2", heads)
 	}
 }
 
