@@ -34,12 +34,17 @@
 	window.__calendarAbort = controller;
 	const { signal } = controller;
 
-	const cardWraps = Array.from(cardsContainer.querySelectorAll('[data-calendar-card]'));
-	const initialized = new Set();
+	// gameId -> the promise initGameSelection returned for it.
+	const readiness = new Map();
 	let lastDayTrigger = null;
 
 	let currentYear = parseInt(monthIsoEl.dataset.year, 10);
 	let currentMonth = parseInt(monthIsoEl.dataset.month, 10);
+	// current* is the month being asked for; rendered* is the month the grid
+	// shows. They only differ until a fetch lands, and a failed fetch rolls
+	// current* back so the label can't sit over another month's grid.
+	let renderedYear = currentYear;
+	let renderedMonth = currentMonth;
 	const minYear = parseInt(prevBtn.dataset.minYear, 10);
 	const minMonth = parseInt(prevBtn.dataset.minMonth, 10);
 	const maxYear = parseInt(nextBtn.dataset.maxYear, 10);
@@ -127,12 +132,14 @@
 		if (label) label.textContent = active ? 'ON' : 'OFF';
 	}
 
+	function ensureGameInit(gameId) {
+		if (!readiness.has(gameId)) readiness.set(gameId, initGameSelection(gameId, STORAGE_PREFIX));
+		return readiness.get(gameId);
+	}
+
 	function setActive(gameId, active) {
 		applyToggleVisibility(gameId, active);
-		if (active && !initialized.has(gameId)) {
-			initGameSelection(gameId, STORAGE_PREFIX);
-			initialized.add(gameId);
-		}
+		if (active) ensureGameInit(gameId);
 		saveToggleState();
 		scheduleRefresh();
 	}
@@ -198,21 +205,19 @@
 		);
 	}
 
+	let backdropHideTimer = null;
 	function openDrawer() {
 		if (!drawer) return;
 		drawer.setAttribute('aria-hidden', 'false');
 		drawer.classList.add('is-open');
 		if (backdrop) {
+			// A close still fading out must not hide the backdrop after this open.
+			clearTimeout(backdropHideTimer);
 			backdrop.hidden = false;
 			requestAnimationFrame(() => backdrop.classList.add('is-open'));
 		}
 		document.body.classList.add('drawer-open');
-		activeGameIds().forEach((gameId) => {
-			if (!initialized.has(gameId)) {
-				initGameSelection(gameId, STORAGE_PREFIX);
-				initialized.add(gameId);
-			}
-		});
+		activeGameIds().forEach(ensureGameInit);
 		setTimeout(() => tuneCloseBtn?.focus(), 50);
 	}
 	function closeDrawer() {
@@ -221,7 +226,7 @@
 		drawer.classList.remove('is-open');
 		if (backdrop) {
 			backdrop.classList.remove('is-open');
-			setTimeout(() => {
+			backdropHideTimer = setTimeout(() => {
 				backdrop.hidden = true;
 			}, 200);
 		}
@@ -303,17 +308,27 @@
 		updateNavButtons();
 	}
 
+	function revertMonth() {
+		currentYear = renderedYear;
+		currentMonth = renderedMonth;
+		setMonthLabel();
+	}
+
 	let inflight = null;
 	async function refresh() {
 		const selections = collectSelections();
+		if (inflight) inflight.abort();
 		if (Object.keys(selections).length === 0) {
+			inflight = null;
+			contentEl.classList.remove('opacity-60');
+			renderedYear = currentYear;
+			renderedMonth = currentMonth;
 			contentEl.innerHTML = `
 				<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
 					<span class="hud-mono text-sm">Pick at least one game with a league or team to see the calendar.</span>
 				</div>`;
 			return;
 		}
-		if (inflight) inflight.abort();
 		const reqController = new AbortController();
 		inflight = reqController;
 
@@ -332,27 +347,49 @@
 			});
 			if (!response.ok) {
 				window.showToast?.(`Calendar failed (${response.status}).`, 'error');
+				revertMonth();
 				return;
 			}
 			const html = await response.text();
 			contentEl.innerHTML = html;
+			renderedYear = currentYear;
+			renderedMonth = currentMonth;
 			rebucketCalendar();
 		} catch (err) {
 			if (err.name !== 'AbortError') {
 				window.showToast?.('Network error: ' + err.message, 'error');
+				revertMonth();
 			}
 		} finally {
-			contentEl.classList.remove('opacity-60');
-			if (inflight === reqController) inflight = null;
+			// Only the latest request may clear the shared loading state.
+			if (inflight === reqController) {
+				contentEl.classList.remove('opacity-60');
+				inflight = null;
+			}
 		}
 	}
 
 	let refreshTimer = null;
-	let suppressRefresh = true;
+	// Hydration lasts until every active game's selections have settled. Until
+	// then seeding is not a change (the server already rendered those defaults),
+	// and a real change waits, because the request would miss seeds still arriving.
+	let hydrating = true;
+	let changedWhileHydrating = false;
 	function scheduleRefresh() {
-		if (suppressRefresh) return;
+		if (hydrating) {
+			changedWhileHydrating = true;
+			return;
+		}
 		clearTimeout(refreshTimer);
 		refreshTimer = setTimeout(refresh, REFRESH_DEBOUNCE_MS);
+	}
+
+	// Month navigation is explicit, so it runs now even during hydration, and
+	// runs again when hydration ends in case seeds were still arriving.
+	function refreshNow() {
+		if (hydrating) changedWhileHydrating = true;
+		clearTimeout(refreshTimer);
+		refresh();
 	}
 
 	function navigateMonth(delta) {
@@ -363,9 +400,7 @@
 		currentYear = Math.floor(total / 12);
 		currentMonth = (total % 12) + 1;
 		setMonthLabel();
-		// Force refresh even during initial suppression — month nav is explicit.
-		clearTimeout(refreshTimer);
-		refresh();
+		refreshNow();
 	}
 	prevBtn.addEventListener('click', () => navigateMonth(-1), { signal });
 	nextBtn.addEventListener('click', () => navigateMonth(1), { signal });
@@ -377,8 +412,7 @@
 			currentYear = clamped.year;
 			currentMonth = clamped.month;
 			setMonthLabel();
-			clearTimeout(refreshTimer);
-			refresh();
+			refreshNow();
 		},
 		{ signal },
 	);
@@ -386,7 +420,16 @@
 	const exportBtn = document.getElementById('calendar-export-btn');
 	exportBtn?.addEventListener(
 		'click',
-		() => {
+		async () => {
+			// The link hashes the selections, so exporting before tier-1 seeds land
+			// would hand out a permanent URL for something the user never saw.
+			window.setButtonLoading?.(exportBtn, true);
+			const settled = await Promise.all(activeGameIds().map((gameId) => readiness.get(gameId)));
+			window.setButtonLoading?.(exportBtn, false);
+			if (settled.includes(false)) {
+				window.showToast?.('Some leagues failed to load. Reload the page before exporting.', 'error');
+				return;
+			}
 			const selections = collectSelections();
 			if (Object.keys(selections).length === 0) {
 				window.showToast?.('Pick at least one league or team before exporting.', 'warning');
@@ -476,8 +519,12 @@
 		});
 		wrappersByLocalDate.forEach((b) => b.sort((a, b) => a.time - b.time));
 
+		// The server picks "today" in UTC, which is the wrong cell for part of
+		// every day in most timezones.
+		const todayKey = formatLocalDate(new Date());
 		contentEl.querySelectorAll('.hud-cal-day[data-date]').forEach((cell) => {
 			const dateKey = cell.getAttribute('data-date');
+			cell.classList.toggle('hud-cal-day-today', dateKey === todayKey);
 			const bucket = wrappersByLocalDate.get(dateKey) || [];
 			const chipsEl = cell.querySelector('.hud-cal-daychips');
 			if (chipsEl) {
@@ -578,15 +625,17 @@
 	setMonthLabel();
 
 	ensureGameSelectionThen(() => {
-		activeGameIds().forEach((gameId) => {
-			initGameSelection(gameId, STORAGE_PREFIX);
-			initialized.add(gameId);
-		});
-		const observer = new MutationObserver(() => scheduleRefresh());
-		cardWraps.forEach((wrap) => {
-			observer.observe(wrap, { subtree: true, childList: true });
-		});
-		controller.signal.addEventListener('abort', () => observer.disconnect());
+		// Read before init: seeding writes to sessionStorage.
+		const warmVisit = hasPriorState();
+		const settled = activeGameIds().map(ensureGameInit);
+		document.addEventListener(
+			'game-selection-change',
+			(e) => {
+				if (hydrating && e.detail.seeded) return;
+				scheduleRefresh();
+			},
+			{ signal },
+		);
 
 		cardsContainer.addEventListener(
 			'input',
@@ -604,22 +653,13 @@
 			rebucketCalendar();
 		}
 
-		// Same suppression strategy as fixtures.js: cold load already matches
-		// the server-rendered grid, so we wait briefly to swallow tier-1 cascades;
-		// warm load (with prior state) needs an immediate re-fetch to reflect it.
-		// If the user navigated to a month other than the server-rendered one
-		// (via CURRENT_MONTH_KEY), force a refresh regardless.
-		const initialYear = parseInt(monthIsoEl.dataset.year, 10);
-		const initialMonth = parseInt(monthIsoEl.dataset.month, 10);
-		if (currentYear !== initialYear || currentMonth !== initialMonth) {
-			suppressRefresh = false;
-			refresh();
-		} else if (hasPriorState()) {
-			suppressRefresh = false;
-		} else {
-			setTimeout(() => {
-				suppressRefresh = false;
-			}, 1500);
-		}
+		// A cold visit with no changes already shows what the server rendered, so
+		// it skips the roundtrip. Anything else has filters to apply, or a saved
+		// month (CURRENT_MONTH_KEY) other than the one the server rendered.
+		Promise.all(settled).then(() => {
+			hydrating = false;
+			const otherMonth = currentYear !== renderedYear || currentMonth !== renderedMonth;
+			if (warmVisit || changedWhileHydrating || otherMonth) refresh();
+		});
 	});
 })();

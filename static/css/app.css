@@ -330,7 +330,9 @@ body::before {
 .hud-match[data-status="ongoing"]::before {
   animation: hud-pulse 1.4s ease-in-out infinite;
 }
-.hud-match[data-status="finished"]::before {
+.hud-match[data-status="finished"]::before,
+.hud-match[data-status="cancelled"]::before,
+.hud-match[data-status="forfeit"]::before {
   opacity: 0.55;
 }
 @keyframes hud-pulse {
@@ -535,6 +537,7 @@ body::before {
   justify-content: center;
   gap: 0.4rem;
   width: 7rem;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -552,7 +555,8 @@ body::before {
   background: currentColor;
 }
 /* Status chips use fixed semantic colours so users learn the trio at a glance:
-   blue = upcoming, red = live/ongoing, green = finished. The per-game accent
+   blue = upcoming, red = live/ongoing, green = finished, amber = awaiting
+   result or postponed, grey = cancelled or forfeit. The per-game accent
    already lives on the row's left bar, time hour stays neutral white, so the
    status chip is the one place where state colour is canonical. */
 .hud-status-upcoming {
@@ -566,6 +570,19 @@ body::before {
 }
 .hud-status-finished {
   color: #22c55e;
+}
+.hud-status-awaiting,
+.hud-status-postponed {
+  color: #f59e0b;
+}
+.hud-status-cancelled,
+.hud-status-forfeit {
+  color: #9ca3af;
+}
+/* One letter longer than UPCOMING, so tighten to keep the fixed chip width. */
+.hud-status-postponed,
+.hud-status-cancelled {
+  letter-spacing: 0.08em;
 }
 .hud-status-live {
   color: #ef4444;
@@ -2019,8 +2036,14 @@ body.drawer-open {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.hud-cal-chip[data-status="finished"] {
+.hud-cal-chip[data-status="finished"],
+.hud-cal-chip[data-status="cancelled"],
+.hud-cal-chip[data-status="forfeit"] {
   opacity: 0.55;
+}
+.hud-cal-chip[data-status="cancelled"] .hud-cal-chip-text,
+.hud-cal-chip[data-status="forfeit"] .hud-cal-chip-text {
+  text-decoration: line-through;
 }
 .hud-cal-chip-time {
   flex-shrink: 0;

@@ -36,6 +36,11 @@ type Match struct {
 	AmountOfGames     int32
 	IsLive            bool
 	StreamURL         pgtype.Text
+	Status            pgtype.Text
+	ModifiedAt        pgtype.Timestamp
+	Forfeit           bool
+	WinnerID          int32
+	Revision          int32
 	GameID            int32
 	LeagueID          int32
 	SeriesID          int32

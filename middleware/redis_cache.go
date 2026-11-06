@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -19,6 +18,10 @@ const (
 	// Cache TTLs.
 	icsCacheTTL  = time.Hour        // ICS files expire after 1 hour
 	dataCacheTTL = 30 * time.Minute // General data cache expires after 30 minutes
+
+	// redisDialTimeout keeps requests quick while Redis is unreachable, since
+	// every cache call waits on the dial before falling back.
+	redisDialTimeout = time.Second
 )
 
 // RedisCache wraps the Redis client for caching operations.
@@ -28,8 +31,11 @@ type RedisCache struct {
 	logger *zap.Logger
 }
 
-// NewRedisCache creates a new Redis cache client.
-func NewRedisCache(ctx context.Context, logger *zap.Logger) (*RedisCache, error) {
+// NewRedisCache creates a new Redis cache client. It always returns a client:
+// go-redis reconnects on its own, so a replica that boots while Redis is down
+// picks the cache back up when Redis returns. Until then operations fail, and
+// callers treat that as a miss.
+func NewRedisCache(ctx context.Context, logger *zap.Logger) *RedisCache {
 	// Get Redis address from environment variable, default to redis service in Docker network
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
@@ -44,25 +50,27 @@ func NewRedisCache(ctx context.Context, logger *zap.Logger) (*RedisCache, error)
 
 	//nolint:exhaustruct // Other Redis options use defaults
 	client := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       redisDB,
+		Addr:        redisAddr,
+		Password:    redisPassword,
+		DB:          redisDB,
+		DialTimeout: redisDialTimeout,
 	})
 
 	// Test connection
 	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+		logger.Error("Redis unreachable at startup, running without cache until it returns",
+			zap.String("addr", redisAddr), zap.Error(err))
+	} else {
+		logger.Info("Redis cache initialized",
+			zap.String("addr", redisAddr),
+			zap.Int("db", redisDB))
 	}
-
-	logger.Info("Redis cache initialized",
-		zap.String("addr", redisAddr),
-		zap.Int("db", redisDB))
 
 	return &RedisCache{
 		client: client,
 		ctx:    ctx,
 		logger: logger,
-	}, nil
+	}
 }
 
 // GetICS retrieves an ICS file from cache.

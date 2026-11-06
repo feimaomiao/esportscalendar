@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS MATCHES(
     amount_of_games INT NOT NULL,
     is_live BOOLEAN NOT NULL DEFAULT false,
     stream_url TEXT,
+    status TEXT,
+    modified_at TIMESTAMP,
+    forfeit BOOLEAN NOT NULL DEFAULT false,
+    winner_id INT NOT NULL DEFAULT 0,
+    revision INT NOT NULL DEFAULT 0,
     game_id INT NOT NULL,
     league_id INT NOT NULL,
     series_id INT NOT NULL,
@@ -107,3 +112,13 @@ CREATE TABLE IF NOT EXISTS MISSING_CALENDARS(
 -- =============================================================================
 ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS is_live BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS stream_url TEXT;
+-- PandaScore lifecycle status, or 'removed' once a match 404s. NULL means not
+-- yet seen since this column was added; stalka's reconcile sweep fills it in.
+-- Deliberately unconstrained so a new upstream value can't fail the upsert.
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS status TEXT;
+-- PandaScore's modified_at for the row. Older data can't overwrite newer data.
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS modified_at TIMESTAMP;
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS forfeit BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS winner_id INT NOT NULL DEFAULT 0;
+-- Bumped whenever a calendar-visible field changes; served as the ICS SEQUENCE.
+ALTER TABLE MATCHES ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 0;

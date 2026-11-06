@@ -198,8 +198,10 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 			MaxTiers:  maxTiers,
 		})
 		if err != nil {
+			// 503 as for the mapping lookup above: a transient DB failure must
+			// not read as a dead subscription.
 			m.Logger.Error("Failed to fetch matches", zap.Error(err))
-			c.String(http.StatusInternalServerError, "Failed to generate calendar")
+			c.String(http.StatusServiceUnavailable, "Failed to generate calendar")
 			return
 		}
 	}
@@ -232,6 +234,10 @@ func (m *Middleware) CalendarICSHandler(c *gin.Context) {
 // the expired-link notice, so telemetry does not count it as a live calendar.
 const calendarExpiredKey = "calendar_expired"
 
+// maxMissingCalendars caps missing_calendars, which any request for a random
+// hash could otherwise grow without limit. The 2026 outage produced 134 rows.
+const maxMissingCalendars = 10000
+
 // serveExpiredCalendar answers a well-formed calendar hash that has no stored
 // selections. Calendar apps never show an error body, so instead of a 404 it
 // serves a feed whose only event tells the user to create a new calendar. The
@@ -239,10 +245,17 @@ const calendarExpiredKey = "calendar_expired"
 func (m *Middleware) serveExpiredCalendar(c *gin.Context, hash string) {
 	c.Set(calendarExpiredKey, true)
 	since := time.Now()
-	firstSeen, err := m.DBConn.RecordMissingCalendar(m.Context, hash)
-	if err != nil {
+	firstSeen, err := m.DBConn.RecordMissingCalendar(m.Context, dbtypes.RecordMissingCalendarParams{
+		HashedKey: hash,
+		MaxRows:   maxMissingCalendars,
+	})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		// The table is full. The notice doesn't depend on the row existing.
+		m.Logger.Warn("Missing calendar table is full", zap.String("hash", hash))
+	case err != nil:
 		m.Logger.Warn("Failed to record missing calendar", zap.Error(err), zap.String("hash", hash))
-	} else if firstSeen.Valid {
+	case firstSeen.Valid:
 		since = firstSeen.Time
 	}
 	m.Logger.Info("Serving expired calendar notice", zap.String("hash", hash))

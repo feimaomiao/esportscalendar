@@ -331,7 +331,7 @@ func TestCalendarICSHandlerMissingCalendars(t *testing.T) {
 			path: "/" + known + ".ics",
 			setup: func(mock pgxmock.PgxPoolIface) {
 				mock.ExpectQuery(`FROM url_mappings`).WithArgs(known).WillReturnError(pgx.ErrNoRows)
-				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known).
+				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known, int64(maxMissingCalendars)).
 					WillReturnRows(pgxmock.NewRows([]string{"first_seen"}).AddRow(
 						pgtype.Timestamp{Time: time.Date(2026, 11, 1, 8, 0, 0, 0, time.UTC), Valid: true}))
 			},
@@ -343,7 +343,7 @@ func TestCalendarICSHandlerMissingCalendars(t *testing.T) {
 			path: "/" + known + ".ics",
 			setup: func(mock pgxmock.PgxPoolIface) {
 				mock.ExpectQuery(`FROM url_mappings`).WithArgs(known).WillReturnError(pgx.ErrNoRows)
-				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known).
+				mock.ExpectQuery(`INSERT INTO missing_calendars`).WithArgs(known, int64(maxMissingCalendars)).
 					WillReturnError(errors.New("relation does not exist"))
 			},
 			wantStatus: http.StatusOK,
@@ -410,5 +410,110 @@ func TestCalendarICSHandlerMissingCalendars(t *testing.T) {
 				t.Errorf("unmet DB expectations: %v", err)
 			}
 		})
+	}
+}
+
+func TestGenerateICSStatus(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		status pgtype.Text
+		want   string
+	}{
+		{name: "not yet refetched", status: pgtype.Text{}, want: "STATUS:CONFIRMED"},
+		{name: "not started", status: text("not_started"), want: "STATUS:CONFIRMED"},
+		{name: "canceled", status: text("canceled"), want: "STATUS:CANCELLED"},
+		{name: "removed upstream", status: text("removed"), want: "STATUS:CANCELLED"},
+		{name: "postponed", status: text("postponed"), want: "STATUS:TENTATIVE"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			match := testMatch("")
+			match.Finished = false
+			match.Status = tc.status
+			out := generateICS(
+				[]dbtypes.GetCalendarMatchesBySelectionsRow{match},
+				false,
+				titleFormatDefault,
+				"http://test",
+			)
+			if !strings.Contains(out, tc.want+"\r\n") {
+				t.Fatalf("output has no %s:\n%s", tc.want, out)
+			}
+		})
+	}
+}
+
+// A match that was never played must not show a 0-0 result, even if a stale
+// finished flag says otherwise.
+func TestGenerateICSCancelledHasNoScore(t *testing.T) {
+	t.Parallel()
+	match := sampleMatch()
+	match.ExpectedStartTime = pgtype.Timestamp{Time: time.Now().Add(-time.Hour), Valid: true}
+	match.Finished = true
+	match.Status = text("canceled")
+	if got := buildSummary(match, false, titleFormatTeamsOnly); strings.Contains(got, "[1-2]") {
+		t.Fatalf("cancelled match shows a score: %q", got)
+	}
+
+	match.Status = text("finished")
+	if got := buildSummary(match, false, titleFormatTeamsOnly); !strings.Contains(got, "[1-2]") {
+		t.Fatalf("finished match lost its score: %q", got)
+	}
+}
+
+func TestGenerateICSVersioning(t *testing.T) {
+	t.Parallel()
+	generate := func(match dbtypes.GetCalendarMatchesBySelectionsRow) string {
+		return generateICS([]dbtypes.GetCalendarMatchesBySelectionsRow{match}, false, titleFormatDefault, "http://test")
+	}
+
+	t.Run("stamped with the last change", func(t *testing.T) {
+		t.Parallel()
+		match := testMatch("")
+		match.ModifiedAt = pgtype.Timestamp{Time: time.Date(2026, 10, 1, 9, 30, 0, 0, time.UTC), Valid: true}
+		match.Revision = 4
+		out := generate(match)
+		for _, want := range []string{
+			"DTSTAMP:20261001T093000Z\r\n", "LAST-MODIFIED:20261001T093000Z\r\n", "SEQUENCE:4\r\n",
+		} {
+			if !strings.Contains(out, want) {
+				t.Errorf("output has no %q:\n%s", want, out)
+			}
+		}
+	})
+
+	t.Run("rows without modified_at keep a valid stamp", func(t *testing.T) {
+		t.Parallel()
+		out := generate(testMatch(""))
+		if !strings.Contains(out, "DTSTAMP:20261015T180000Z\r\n") || !strings.Contains(out, "SEQUENCE:0\r\n") {
+			t.Errorf("unexpected stamp:\n%s", out)
+		}
+		if strings.Contains(out, "LAST-MODIFIED") {
+			t.Errorf("LAST-MODIFIED with nothing to report:\n%s", out)
+		}
+	})
+}
+
+func TestGenerateICSForfeit(t *testing.T) {
+	t.Parallel()
+	match := testMatch("")
+	match.Finished = false
+	match.Status = text("canceled")
+	match.Forfeit = true
+	match.Team1ID, match.Team2ID, match.WinnerID = 7, 8, 7
+	rows := []dbtypes.GetCalendarMatchesBySelectionsRow{match}
+
+	shown := generateICS(rows, false, titleFormatDefault, "http://test")
+	if !strings.Contains(strings.ReplaceAll(shown, "\r\n ", ""), "Cloud9 won by forfeit") {
+		t.Errorf("winner missing:\n%s", shown)
+	}
+	if !strings.Contains(shown, "STATUS:CANCELLED\r\n") {
+		t.Errorf("forfeit should be cancelled, it was never played:\n%s", shown)
+	}
+	hidden := generateICS(rows, true, titleFormatDefault, "http://test")
+	if strings.Contains(hidden, "won by forfeit") {
+		t.Errorf("hideScores leaked the winner:\n%s", hidden)
 	}
 }
