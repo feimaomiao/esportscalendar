@@ -139,6 +139,9 @@ SELECT
     m.game_id, m.league_id, m.series_id, m.tournament_id,
     m.is_live,
     m.stream_url,
+    m.status,
+    m.forfeit,
+    m.winner_id,
     g.name AS game_name,
     g.slug AS game_slug,
     l.name AS league_name,
@@ -154,7 +157,15 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 LEFT JOIN teams t1 ON m.team1_id = t1.id
 LEFT JOIN teams t2 ON m.team2_id = t2.id
+-- Future half of the partition described at GetOngoingMatchesBySelections.
 WHERE m.expected_start_time >= NOW()
+    AND NOT m.finished
+    AND NOT (
+        m.is_live
+        AND NOT m.finished
+        AND COALESCE(m.status, '') NOT IN ('canceled', 'removed')
+        AND (m.expected_start_time IS NULL OR m.expected_start_time > NOW() - INTERVAL '24 hours')
+    )
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
@@ -171,6 +182,9 @@ SELECT
     m.game_id, m.league_id, m.series_id, m.tournament_id,
     m.is_live,
     m.stream_url,
+    m.status,
+    m.forfeit,
+    m.winner_id,
     g.name AS game_name,
     g.slug AS game_slug,
     l.name AS league_name,
@@ -186,14 +200,15 @@ JOIN series s ON m.series_id = s.id
 JOIN tournaments tour ON m.tournament_id = tour.id
 LEFT JOIN teams t1 ON m.team1_id = t1.id
 LEFT JOIN teams t2 ON m.team2_id = t2.id
--- "Ongoing" must mean is_live=true so it lines up with the per-row badge
--- (see matchStatus in components/match-row.templ). expected_start_time is
--- only an estimate; matches whose schedule has slipped past NOW() but never
--- went live are stale, not ongoing — they get cleaned up by
--- MarkPastUnfinishedMatchesAsFinished and shouldn't show under a // ongoing
--- divider in the meantime.
-WHERE m.is_live = true
-    AND m.finished = false
+-- The Past, Ongoing and Future queries split every row with a start time into
+-- exactly one section, using the same rules as DeriveMatchState in
+-- components/match_state.go. Keep the two in step. expected_start_time is only
+-- an estimate, so a match can go live before it, or still be unplayed after it;
+-- neither may drop out of /fixtures or appear in it twice.
+WHERE m.is_live
+    AND NOT m.finished
+    AND COALESCE(m.status, '') NOT IN ('canceled', 'removed')
+    AND (m.expected_start_time IS NULL OR m.expected_start_time > NOW() - INTERVAL '24 hours')
     AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
     AND (
         (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
@@ -210,6 +225,9 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
+    status,
+    forfeit,
+    winner_id,
     game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
@@ -220,6 +238,9 @@ FROM (
         m.game_id, m.league_id, m.series_id, m.tournament_id,
         m.is_live,
         m.stream_url,
+        m.status,
+        m.forfeit,
+        m.winner_id,
         g.name AS game_name,
         g.slug AS game_slug,
         l.name AS league_name,
@@ -235,8 +256,15 @@ FROM (
     JOIN tournaments tour ON m.tournament_id = tour.id
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
-    WHERE m.expected_start_time < NOW()
-        AND m.finished = true
+    -- Past half of the partition described at GetOngoingMatchesBySelections.
+    WHERE m.expected_start_time IS NOT NULL
+        AND (m.finished OR m.expected_start_time < NOW())
+        AND NOT (
+        m.is_live
+        AND NOT m.finished
+        AND COALESCE(m.status, '') NOT IN ('canceled', 'removed')
+        AND (m.expected_start_time IS NULL OR m.expected_start_time > NOW() - INTERVAL '24 hours')
+    )
         AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
@@ -255,6 +283,9 @@ SELECT
     m.game_id, m.league_id, m.series_id, m.tournament_id,
     m.is_live,
     m.stream_url,
+    m.status,
+    m.forfeit,
+    m.winner_id,
     g.name AS game_name,
     g.slug AS game_slug,
     l.name AS league_name,
@@ -292,6 +323,11 @@ SELECT
     game_id, league_id, series_id, tournament_id,
     is_live,
     stream_url,
+    status,
+    forfeit,
+    winner_id,
+    modified_at,
+    revision,
     game_name, game_slug, league_name, series_name, tournament_name, tournament_tier,
     team1_name, team1_acronym, team1_image,
     team2_name, team2_acronym, team2_image
@@ -302,6 +338,11 @@ FROM (
         m.game_id, m.league_id, m.series_id, m.tournament_id,
         m.is_live,
         m.stream_url,
+        m.status,
+        m.forfeit,
+        m.winner_id,
+        m.modified_at,
+        m.revision,
         g.name AS game_name,
         g.slug AS game_slug,
         l.name AS league_name,
@@ -318,7 +359,10 @@ FROM (
     JOIN tournaments tour ON m.tournament_id = tour.id
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
-    WHERE m.game_id = ANY(sqlc.arg(game_ids)::int[])
+    -- An event can't exist without a start time, so such rows can't appear in
+    -- the feed. Dropping them here stops them using up the per-game cap below.
+    WHERE m.expected_start_time IS NOT NULL
+        AND m.game_id = ANY(sqlc.arg(game_ids)::int[])
         AND (
             (CARDINALITY(sqlc.arg(team_ids)::int[]) > 0 AND (m.team1_id = ANY(sqlc.arg(team_ids)::int[]) OR m.team2_id = ANY(sqlc.arg(team_ids)::int[])))
             OR (CARDINALITY(sqlc.arg(league_ids)::int[]) > 0 AND m.league_id = ANY(sqlc.arg(league_ids)::int[]))
@@ -361,16 +405,6 @@ WHERE m.is_live = true
 ORDER BY m.expected_start_time ASC;
 
 -- ============================================================================
--- Maintenance Queries
--- ============================================================================
-
--- name: MarkPastUnfinishedMatchesAsFinished :exec
-UPDATE matches
-SET finished = true
-WHERE finished = false
-  AND expected_start_time < CURRENT_DATE - INTERVAL '1 day';
-
--- ============================================================================
 -- URL Mapping Queries (for Calendar Links)
 -- ============================================================================
 
@@ -390,17 +424,23 @@ SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP
 WHERE hashed_key = $1;
 
 -- name: RecordMissingCalendar :one
+-- Anyone can request a well-formed random hash, so new rows stop at max_rows.
+-- Hashes already in the table keep counting. Returns no row when capped.
 INSERT INTO missing_calendars (hashed_key)
-VALUES ($1)
+SELECT sqlc.arg(hashed_key)::varchar
+WHERE (SELECT COUNT(*) FROM missing_calendars) < sqlc.arg(max_rows)::bigint
+    OR EXISTS (SELECT 1 FROM missing_calendars WHERE hashed_key = sqlc.arg(hashed_key)::varchar)
 ON CONFLICT (hashed_key) DO UPDATE
 SET last_seen = CURRENT_TIMESTAMP, hit_count = missing_calendars.hit_count + 1
 RETURNING first_seen;
 
 -- name: GetUnrecoveredMissingCalendars :many
-SELECT hashed_key
-FROM missing_calendars
-WHERE recovered_at IS NULL
-ORDER BY hashed_key;
+-- Asks url_mappings rather than recovered_at, which only the recovery tool sets:
+-- a user re-exporting restores a link too, and a second loss must reappear here.
+SELECT m.hashed_key
+FROM missing_calendars m
+WHERE NOT EXISTS (SELECT 1 FROM url_mappings u WHERE u.hashed_key = m.hashed_key)
+ORDER BY m.hashed_key;
 
 -- name: MarkMissingCalendarRecovered :exec
 UPDATE missing_calendars

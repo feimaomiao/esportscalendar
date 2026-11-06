@@ -663,9 +663,9 @@ func CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFuture
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var36 string
-			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(matchStatus(match))
+			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(string(matchStatus(match)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 232, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 232, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
@@ -678,7 +678,7 @@ func CalendarDayCell(day time.Time, anchorMonth int, matches []dbtypes.GetFuture
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(gameSlug(match.GameSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 232, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/calendar-page.templ`, Line: 232, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {

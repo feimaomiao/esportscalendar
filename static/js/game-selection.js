@@ -63,6 +63,8 @@ function createSelectedBadge(variant, item, label, onRemove) {
 	return badge;
 }
 
+const LEAGUE_OPTIONS_TIMEOUT_MS = 10000;
+
 function teamLabel(team) {
 	return team.acronym ? team.acronym + ' - ' + team.name : team.name;
 }
@@ -70,10 +72,15 @@ function teamLabel(team) {
 // Game selection - League and Team management.
 // storagePrefix namespaces the saved filters in sessionStorage; /fixtures and
 // /calendar share the same prefix so their filters stay in sync.
+// Every saved change dispatches `game-selection-change` on document, with
+// detail.seeded true when it's the tier-1 auto-select rather than the user.
+// Returns a promise that settles once this game's selections are final: true if
+// they can be trusted, false if the options failed to load and nothing was saved,
+// which leaves the game without its tier-1 seed.
 function initGameSelection(gameId, storagePrefix) {
 	if (!gameId || gameId === 'null' || gameId === 'undefined') {
 		console.error('Invalid gameId:', gameId);
-		return;
+		return Promise.resolve(false);
 	}
 
 	const searchInput = document.getElementById('search-' + gameId);
@@ -86,7 +93,7 @@ function initGameSelection(gameId, storagePrefix) {
 
 	if (!searchInput || !dropdownMenu || !loadingElement) {
 		console.error('Required elements not found for gameId:', gameId);
-		return;
+		return Promise.resolve(false);
 	}
 
 	let allLeagues = [];
@@ -114,8 +121,10 @@ function initGameSelection(gameId, storagePrefix) {
 	}
 
 	// Fetch leagues from API
+	// The timeout matters: pages hold changes back until this settles, so a hung
+	// request must end in the catch below rather than leave them waiting.
 	const apiUrl = '/api/league-options/' + gameId;
-	fetch(apiUrl)
+	const ready = fetch(apiUrl, { signal: AbortSignal.timeout(LEAGUE_OPTIONS_TIMEOUT_MS) })
 		.then((response) => response.json())
 		.then((data) => {
 			loadingElement.classList.add('hidden');
@@ -123,7 +132,9 @@ function initGameSelection(gameId, storagePrefix) {
 			if (data.error) {
 				noResults.textContent = data.message;
 				noResults.classList.remove('hidden');
-			} else if (data.leagues && data.leagues.length > 0) {
+				return hasSavedSelections;
+			}
+			if (data.leagues && data.leagues.length > 0) {
 				allLeagues = data.leagues;
 				currentFilteredLeagues = data.leagues;
 
@@ -135,7 +146,7 @@ function initGameSelection(gameId, storagePrefix) {
 						}
 					});
 					if (selectedLeagues.size > 0) {
-						saveSelections();
+						saveSelections({ seeded: true });
 					}
 				}
 
@@ -146,12 +157,14 @@ function initGameSelection(gameId, storagePrefix) {
 				noResults.textContent = 'No leagues available for this game';
 				noResults.classList.remove('hidden');
 			}
+			return true;
 		})
 		.catch((error) => {
 			loadingElement.classList.add('hidden');
 			noResults.textContent = 'Failed to load leagues. Please try again.';
 			noResults.classList.remove('hidden');
 			console.error('Error fetching leagues:', error);
+			return hasSavedSelections;
 		});
 
 	// Render leagues list
@@ -168,13 +181,18 @@ function initGameSelection(gameId, storagePrefix) {
 	}
 
 	// Save selections to sessionStorage
-	function saveSelections() {
+	function saveSelections(opts) {
 		const data = {
 			leagues: Array.from(selectedLeagues),
 			teams: Array.from(selectedTeams),
 			maxTier: maxTier,
 		};
 		sessionStorage.setItem(savedKey, JSON.stringify(data));
+		document.dispatchEvent(
+			new CustomEvent('game-selection-change', {
+				detail: { gameId, seeded: !!(opts && opts.seeded) },
+			}),
+		);
 	}
 
 	// Toggle league selection
@@ -528,4 +546,6 @@ function initGameSelection(gameId, storagePrefix) {
 		setupDeselectAllButton();
 		setupTierSlider();
 	}, 100);
+
+	return ready;
 }

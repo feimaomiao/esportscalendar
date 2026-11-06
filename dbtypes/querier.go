@@ -32,6 +32,7 @@ type Querier interface {
 	// ============================================================================
 	// Match Selection Queries (for Preview)
 	// ============================================================================
+	// Future half of the partition described at GetOngoingMatchesBySelections.
 	GetFutureMatchesBySelections(ctx context.Context, arg GetFutureMatchesBySelectionsParams) ([]GetFutureMatchesBySelectionsRow, error)
 	GetLeagueNamesByIDs(ctx context.Context, ids []int32) ([]GetLeagueNamesByIDsRow, error)
 	GetLeaguesByGameID(ctx context.Context, gameID int32) ([]GetLeaguesByGameIDRow, error)
@@ -44,18 +45,19 @@ type Querier interface {
 	// ============================================================================
 	GetMatchByID(ctx context.Context, id int32) (GetMatchByIDRow, error)
 	GetMatchesInRangeBySelections(ctx context.Context, arg GetMatchesInRangeBySelectionsParams) ([]GetMatchesInRangeBySelectionsRow, error)
-	// "Ongoing" must mean is_live=true so it lines up with the per-row badge
-	// (see matchStatus in components/match-row.templ). expected_start_time is
-	// only an estimate; matches whose schedule has slipped past NOW() but never
-	// went live are stale, not ongoing — they get cleaned up by
-	// MarkPastUnfinishedMatchesAsFinished and shouldn't show under a // ongoing
-	// divider in the meantime.
+	// The Past, Ongoing and Future queries split every row with a start time into
+	// exactly one section, using the same rules as DeriveMatchState in
+	// components/match_state.go. Keep the two in step. expected_start_time is only
+	// an estimate, so a match can go live before it, or still be unplayed after it;
+	// neither may drop out of /fixtures or appear in it twice.
 	GetOngoingMatchesBySelections(ctx context.Context, arg GetOngoingMatchesBySelectionsParams) ([]GetOngoingMatchesBySelectionsRow, error)
 	GetPastMatchesBySelections(ctx context.Context, arg GetPastMatchesBySelectionsParams) ([]GetPastMatchesBySelectionsRow, error)
 	GetSeriesByGameID(ctx context.Context, gameID int32) ([]Series, error)
 	GetTeamNamesByIDs(ctx context.Context, ids []int32) ([]GetTeamNamesByIDsRow, error)
 	GetTeamsByGameID(ctx context.Context, gameID int32) ([]Team, error)
 	GetURLMapping(ctx context.Context, hashedKey string) (UrlMapping, error)
+	// Asks url_mappings rather than recovered_at, which only the recovery tool sets:
+	// a user re-exporting restores a link too, and a second loss must reappear here.
 	GetUnrecoveredMissingCalendars(ctx context.Context) ([]string, error)
 	// ============================================================================
 	// INSERT/UPSERT Queries
@@ -72,12 +74,10 @@ type Querier interface {
 	InsertURLMapping(ctx context.Context, arg InsertURLMappingParams) error
 	LeagueExist(ctx context.Context, id int32) (int64, error)
 	MarkMissingCalendarRecovered(ctx context.Context, hashedKey string) error
-	// ============================================================================
-	// Maintenance Queries
-	// ============================================================================
-	MarkPastUnfinishedMatchesAsFinished(ctx context.Context) error
 	MatchExist(ctx context.Context, id int32) (int64, error)
-	RecordMissingCalendar(ctx context.Context, hashedKey string) (pgtype.Timestamp, error)
+	// Anyone can request a well-formed random hash, so new rows stop at max_rows.
+	// Hashes already in the table keep counting. Returns no row when capped.
+	RecordMissingCalendar(ctx context.Context, arg RecordMissingCalendarParams) (pgtype.Timestamp, error)
 	SeriesExist(ctx context.Context, id int32) (int64, error)
 	TeamExist(ctx context.Context, id int32) (int64, error)
 	TournamentExist(ctx context.Context, id int32) (int64, error)

@@ -3,10 +3,11 @@ package components
 import "github.com/feimaomiao/esportscalendar/dbtypes"
 import "github.com/jackc/pgx/v5/pgtype"
 import "fmt"
+import "time"
 
 templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) {
 	<div class="hud-match-wrapper" data-match-id={ fmt.Sprintf("%d", match.ID) } data-game-slug={ gameSlug(match.GameSlug) }>
-		<div class="hud-match" data-status={ matchStatus(match) } data-match-toggle role="button" tabindex="0" aria-expanded="false" aria-controls={ fmt.Sprintf("match-detail-%d", match.ID) }>
+		<div class="hud-match" data-status={ string(matchStatus(match)) } data-match-toggle role="button" tabindex="0" aria-expanded="false" aria-controls={ fmt.Sprintf("match-detail-%d", match.ID) }>
 			<span class="hud-match-game" title={ match.GameName }>
 				if slug := gameSlug(match.GameSlug); slug != "" {
 					<span class="hud-match-game-logo" aria-hidden="true">
@@ -73,25 +74,34 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 				}
 			</div>
 			<div class="hud-match-status">
-				if match.Finished {
-					if hideScores {
-						<span class="hud-status hud-status-finished">Final</span>
-					} else {
-						<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
-					}
-				} else if match.IsLive {
-					if match.StreamURL.Valid && match.StreamURL.String != "" {
-						<a
-							href={ match.StreamURL.String }
-							class="hud-status hud-status-ongoing hud-status-link"
-							target="_blank"
-							rel="noopener noreferrer"
-						>Ongoing</a>
-					} else {
-						<span class="hud-status hud-status-ongoing">Ongoing</span>
-					}
-				} else {
-					<span class="hud-status hud-status-upcoming">Upcoming</span>
+				switch matchStatus(match) {
+					case MatchFinished:
+						if hideScores {
+							<span class="hud-status hud-status-finished">Final</span>
+						} else {
+							<span class="hud-status hud-status-finished">{ fmt.Sprintf("%d–%d", match.Team1Score, match.Team2Score) }</span>
+						}
+					case MatchOngoing:
+						if match.StreamURL.Valid && match.StreamURL.String != "" {
+							<a
+								href={ match.StreamURL.String }
+								class="hud-status hud-status-ongoing hud-status-link"
+								target="_blank"
+								rel="noopener noreferrer"
+							>Ongoing</a>
+						} else {
+							<span class="hud-status hud-status-ongoing">Ongoing</span>
+						}
+					case MatchAwaitingResult:
+						<span class="hud-status hud-status-awaiting" title="Awaiting result">Awaiting</span>
+					case MatchPostponed:
+						<span class="hud-status hud-status-postponed">Postponed</span>
+					case MatchCancelled:
+						<span class="hud-status hud-status-cancelled">Cancelled</span>
+					case MatchForfeit:
+						<span class="hud-status hud-status-forfeit">Forfeit</span>
+					default:
+						<span class="hud-status hud-status-upcoming">Upcoming</span>
 				}
 			</div>
 			<span class="hud-match-chevron" aria-hidden="true">
@@ -103,6 +113,10 @@ templ HUDMatchRow(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool
 				<span class="truncate" title={ match.Name }>{ match.Name }</span>
 				<span class="hidden md:inline opacity-50">·</span>
 				<span class="hidden md:inline truncate" title={ match.LeagueName }>{ match.LeagueName }</span>
+				if winner := forfeitWinnerLabel(match, hideScores); winner != "" {
+					<span class="opacity-50">·</span>
+					<span class="truncate">{ winner } won by forfeit</span>
+				}
 			</div>
 		</div>
 		<div id={ fmt.Sprintf("match-detail-%d", match.ID) } class="hud-match-detail" hidden>
@@ -163,14 +177,23 @@ templ HUDMatchDetail(match dbtypes.GetFutureMatchesBySelectionsRow) {
 	</div>
 }
 
-func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) string {
-	if match.Finished {
-		return "finished"
+func matchStatus(match dbtypes.GetFutureMatchesBySelectionsRow) MatchState {
+	return DeriveMatchState(MatchFacts{
+		Status:   match.Status,
+		Finished: match.Finished,
+		IsLive:   match.IsLive,
+		Forfeit:  match.Forfeit,
+		Start:    match.ExpectedStartTime,
+	}, time.Now())
+}
+
+// forfeitWinnerLabel is empty unless the result may be shown: who won is as much
+// a spoiler as a score.
+func forfeitWinnerLabel(match dbtypes.GetFutureMatchesBySelectionsRow, hideScores bool) string {
+	if hideScores || matchStatus(match) != MatchForfeit {
+		return ""
 	}
-	if match.IsLive {
-		return "ongoing"
-	}
-	return "upcoming"
+	return ForfeitWinner(match.WinnerID, match.Team1ID, match.Team2ID, match.Team1Name, match.Team2Name)
 }
 
 func formatBestOf(n int32) string {

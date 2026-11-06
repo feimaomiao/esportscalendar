@@ -61,24 +61,7 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 
 	dbConn := dbtypes.New(conn)
 
-	// Clean up old unfinished matches from before today
-	if markErr := dbConn.MarkPastUnfinishedMatchesAsFinished(ctx); markErr != nil {
-		logger.Warn("Failed to mark past unfinished matches as finished", zap.Error(markErr))
-	}
-
-	// Declare cache as the interface type up front so that a Redis init
-	// failure leaves a true-nil interface (not a typed-nil *RedisCache boxed
-	// inside an interface, which would silently break the `m.RedisCache != nil`
-	// guards across handlers).
-	var cache Cache
-	var uniques UniqueStore
-	redisCache, err := NewRedisCache(ctx, logger)
-	if err != nil {
-		logger.Error("Failed to initialize Redis cache, falling back to no cache", zap.Error(err))
-	} else {
-		cache = redisCache
-		uniques = redisCache
-	}
+	redisCache := NewRedisCache(ctx, logger)
 
 	// Get base URL from environment variable with default fallback
 	baseURL := os.Getenv("BASE_URL")
@@ -93,8 +76,8 @@ func InitMiddleHandler(logger *zap.Logger) Middleware {
 		DB:         conn,
 		DBConn:     dbConn,
 		Context:    ctx,
-		RedisCache: cache,
-		Uniques:    uniques,
+		RedisCache: redisCache,
+		Uniques:    redisCache,
 		Logger:     logger,
 		BaseURL:    baseURL,
 	}

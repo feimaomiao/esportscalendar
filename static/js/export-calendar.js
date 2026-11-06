@@ -57,6 +57,7 @@
 				setStatus('Link copied to clipboard.', 'success');
 				copyBtn.classList.add('hud-copy-success');
 			} catch {
+				copyBtn.classList.remove('hud-copy-success');
 				input.focus();
 				input.select();
 				setStatus('Press ⌘C / Ctrl+C to copy.', 'error');

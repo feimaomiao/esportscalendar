@@ -1,5 +1,9 @@
-# Node stage for building CSS
-FROM node:20-alpine AS css-builder
+# Build stages run on the builder's native platform ($BUILDPLATFORM) and
+# cross-compile for the target, so multi-arch builds (amd64 + arm64) need no
+# emulation for npm or Go. Only the runtime stage uses the target platform.
+
+# Node stage for building CSS (output is platform-independent)
+FROM --platform=$BUILDPLATFORM node:20-alpine AS css-builder
 
 WORKDIR /build
 
@@ -20,7 +24,11 @@ RUN mkdir -p ./static/css
 RUN npx @tailwindcss/cli -i input.css -o ./static/css/tw.css --minify
 
 # Go build stage
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+
+# Set by BuildKit from --platform (e.g. linux/arm64 for Apple Silicon hosts)
+ARG TARGETOS
+ARG TARGETARCH
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
@@ -45,10 +53,10 @@ RUN go tool templ generate
 # Copy built CSS from css-builder stage
 COPY --from=css-builder /build/static/css/tw.css ./static/css/tw.css
 
-# Build the application
+# Build the application for the target platform
 # CGO_ENABLED=0 for static binary
 # -ldflags="-w -s" to strip debug info and reduce size
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o esportscalendar .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -o esportscalendar .
 
 # Runtime stage
 FROM alpine:latest

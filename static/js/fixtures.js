@@ -20,8 +20,8 @@
 	window.__fixturesAbort = controller;
 	const { signal } = controller;
 
-	const cardWraps = Array.from(cardsContainer.querySelectorAll('[data-fixtures-card]'));
-	const initialized = new Set();
+	// gameId -> the promise initGameSelection returned for it.
+	const readiness = new Map();
 
 	function chipsForGame(gameId) {
 		return Array.from(document.querySelectorAll(`.hud-game-chip[data-game-id="${gameId}"]`));
@@ -83,12 +83,14 @@
 		if (label) label.textContent = active ? 'ON' : 'OFF';
 	}
 
+	function ensureGameInit(gameId) {
+		if (!readiness.has(gameId)) readiness.set(gameId, initGameSelection(gameId, STORAGE_PREFIX));
+		return readiness.get(gameId);
+	}
+
 	function setActive(gameId, active) {
 		applyToggleVisibility(gameId, active);
-		if (active && !initialized.has(gameId)) {
-			initGameSelection(gameId, STORAGE_PREFIX);
-			initialized.add(gameId);
-		}
+		if (active) ensureGameInit(gameId);
 		saveToggleState();
 		scheduleRefresh();
 	}
@@ -147,11 +149,14 @@
 		);
 	}
 
+	let backdropHideTimer = null;
 	function openDrawer() {
 		if (!drawer) return;
 		drawer.setAttribute('aria-hidden', 'false');
 		drawer.classList.add('is-open');
 		if (backdrop) {
+			// A close still fading out must not hide the backdrop after this open.
+			clearTimeout(backdropHideTimer);
 			backdrop.hidden = false;
 			requestAnimationFrame(() => backdrop.classList.add('is-open'));
 		}
@@ -159,12 +164,7 @@
 		// Lazy-init any cards belonging to active games but not yet initialized.
 		// These exist if the user toggles a game on while the drawer is closed
 		// — we want the card ready by the time they look at it.
-		activeGameIds().forEach((gameId) => {
-			if (!initialized.has(gameId)) {
-				initGameSelection(gameId, STORAGE_PREFIX);
-				initialized.add(gameId);
-			}
-		});
+		activeGameIds().forEach(ensureGameInit);
 		setTimeout(() => tuneCloseBtn?.focus(), 50);
 	}
 
@@ -174,7 +174,7 @@
 		drawer.classList.remove('is-open');
 		if (backdrop) {
 			backdrop.classList.remove('is-open');
-			setTimeout(() => {
+			backdropHideTimer = setTimeout(() => {
 				backdrop.hidden = true;
 			}, 200);
 		}
@@ -289,7 +289,10 @@
 	async function refresh(opts) {
 		const preserveScroll = !!(opts && opts.preserveScroll);
 		const selections = collectSelections();
+		if (inflight) inflight.abort();
 		if (Object.keys(selections).length === 0) {
+			inflight = null;
+			contentEl.classList.remove('opacity-60');
 			contentEl.innerHTML = `
 				<div class="border border-warning/40 bg-warning/10 px-4 py-3 rounded-sm flex items-center gap-3" role="alert">
 					<span class="hud-mono text-sm">Pick at least one game with a league or team to see the fixtures.</span>
@@ -297,7 +300,6 @@
 			return;
 		}
 
-		if (inflight) inflight.abort();
 		const reqController = new AbortController();
 		inflight = reqController;
 
@@ -322,15 +324,25 @@
 				window.showToast?.('Network error: ' + err.message, 'error');
 			}
 		} finally {
-			contentEl.classList.remove('opacity-60');
-			if (inflight === reqController) inflight = null;
+			// Only the latest request may clear the shared loading state.
+			if (inflight === reqController) {
+				contentEl.classList.remove('opacity-60');
+				inflight = null;
+			}
 		}
 	}
 
 	let refreshTimer = null;
-	let suppressRefresh = true; // suppress during hydration
+	// Hydration lasts until every active game's selections have settled. Until
+	// then seeding is not a change (the server already rendered those defaults),
+	// and a real change waits, because the request would miss seeds still arriving.
+	let hydrating = true;
+	let changedWhileHydrating = false;
 	function scheduleRefresh(opts) {
-		if (suppressRefresh) return;
+		if (hydrating) {
+			changedWhileHydrating = true;
+			return;
+		}
 		clearTimeout(refreshTimer);
 		refreshTimer = setTimeout(() => refresh(opts), REFRESH_DEBOUNCE_MS);
 	}
@@ -348,15 +360,17 @@
 	}
 
 	ensureGameSelectionThen(() => {
-		activeGameIds().forEach((gameId) => {
-			initGameSelection(gameId, STORAGE_PREFIX);
-			initialized.add(gameId);
-		});
-		const observer = new MutationObserver(() => scheduleRefresh());
-		cardWraps.forEach((wrap) => {
-			observer.observe(wrap, { subtree: true, childList: true });
-		});
-		controller.signal.addEventListener('abort', () => observer.disconnect());
+		// Read before init: seeding writes to sessionStorage.
+		const warmVisit = hasPriorState();
+		const settled = activeGameIds().map(ensureGameInit);
+		document.addEventListener(
+			'game-selection-change',
+			(e) => {
+				if (hydrating && e.detail.seeded) return;
+				scheduleRefresh();
+			},
+			{ signal },
+		);
 
 		cardsContainer.addEventListener(
 			'input',
@@ -381,18 +395,11 @@
 			localizeAndScroll();
 		}
 
-		// On warm visits the MutationObserver fires when initGameSelection
-		// repopulates badges from sessionStorage — that single debounced refresh
-		// is enough to apply saved filters. On cold visits the server already
-		// rendered the matching default state, so we hold suppression long
-		// enough to swallow the tier-1 auto-select cascade and skip a wasted
-		// roundtrip.
-		if (hasPriorState()) {
-			suppressRefresh = false;
-		} else {
-			setTimeout(() => {
-				suppressRefresh = false;
-			}, 1500);
-		}
+		// A cold visit with no changes already shows what the server rendered, so
+		// it skips the roundtrip. Anything else has filters to apply.
+		Promise.all(settled).then(() => {
+			hydrating = false;
+			if (warmVisit || changedWhileHydrating) refresh();
+		});
 	});
 })();

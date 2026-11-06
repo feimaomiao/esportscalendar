@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/feimaomiao/esportscalendar/components"
 	"github.com/feimaomiao/esportscalendar/dbtypes"
 )
 
@@ -47,9 +48,44 @@ func teamLabel(acronym, name pgtype.Text) string {
 	return unknownTeam
 }
 
+// icsMatchState derives a feed row's state, so the feed can't disagree with the
+// pages about what happened to a match.
+func icsMatchState(match dbtypes.GetCalendarMatchesBySelectionsRow) components.MatchState {
+	return components.DeriveMatchState(components.MatchFacts{
+		Status:   match.Status,
+		Finished: match.Finished,
+		IsLive:   match.IsLive,
+		Forfeit:  match.Forfeit,
+		Start:    match.ExpectedStartTime,
+	}, time.Now())
+}
+
+// icsStamp is the event's last change. Rows stalka hasn't refetched since
+// modified_at was added have no such time, so they fall back to the start time.
+func icsStamp(match dbtypes.GetCalendarMatchesBySelectionsRow) time.Time {
+	if match.ModifiedAt.Valid {
+		return match.ModifiedAt.Time
+	}
+	return match.ExpectedStartTime.Time
+}
+
+// icsStatus maps a match state to the VEVENT STATUS property.
+func icsStatus(state components.MatchState) string {
+	switch state {
+	case components.MatchCancelled, components.MatchForfeit:
+		return "CANCELLED"
+	case components.MatchPostponed:
+		return "TENTATIVE"
+	case components.MatchUpcoming, components.MatchOngoing,
+		components.MatchAwaitingResult, components.MatchFinished:
+		return "CONFIRMED"
+	}
+	return "CONFIRMED"
+}
+
 func buildSummary(match dbtypes.GetCalendarMatchesBySelectionsRow, hideScores bool, format titleFormat) string {
 	score := ""
-	if match.Finished && !hideScores {
+	if icsMatchState(match) == components.MatchFinished && !hideScores {
 		score = fmt.Sprintf(" [%d-%d]", match.Team1Score, match.Team2Score)
 	}
 
@@ -118,7 +154,11 @@ func generateICS(
 
 		ics.WriteString("BEGIN:VEVENT\r\n")
 		fmt.Fprintf(&ics, "UID:%d@%s\r\n", match.ID, baseURL)
-		fmt.Fprintf(&ics, "DTSTAMP:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
+		fmt.Fprintf(&ics, "DTSTAMP:%s\r\n", icsStamp(match).UTC().Format("20060102T150405Z"))
+		if match.ModifiedAt.Valid {
+			fmt.Fprintf(&ics, "LAST-MODIFIED:%s\r\n", match.ModifiedAt.Time.UTC().Format("20060102T150405Z"))
+		}
+		fmt.Fprintf(&ics, "SEQUENCE:%d\r\n", match.Revision)
 		fmt.Fprintf(&ics, "DTSTART:%s\r\n", startTime.UTC().Format("20060102T150405Z"))
 		fmt.Fprintf(&ics, "DTEND:%s\r\n", endTime.UTC().Format("20060102T150405Z"))
 
@@ -133,7 +173,8 @@ func generateICS(
 			match.LeagueName,
 			match.GameName,
 		)
-		if match.Finished {
+		state := icsMatchState(match)
+		if state == components.MatchFinished {
 			if hideScores {
 				// Show "Finished" instead of score
 				description = fmt.Sprintf("%s vs %s [Finished] - %s - %s (%s)",
@@ -153,6 +194,14 @@ func generateICS(
 					match.LeagueName,
 					match.GameName,
 				)
+			}
+		}
+		if state == components.MatchForfeit && !hideScores {
+			winner := components.ForfeitWinner(
+				match.WinnerID, match.Team1ID, match.Team2ID, match.Team1Name, match.Team2Name,
+			)
+			if winner != "" {
+				description += "\n\n" + winner + " won by forfeit"
 			}
 		}
 		// Add stream URL to description if available
@@ -183,8 +232,7 @@ func generateICS(
 			fmt.Fprintf(&ics, "LOCATION:%s\r\n", escapeICS(location))
 		}
 
-		// All matches are confirmed
-		ics.WriteString("STATUS:CONFIRMED\r\n")
+		fmt.Fprintf(&ics, "STATUS:%s\r\n", icsStatus(state))
 		ics.WriteString("END:VEVENT\r\n")
 	}
 
